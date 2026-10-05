@@ -361,6 +361,10 @@ dialog::backdrop{background:#0008}
 </div>
 
 <!-- ============ STAFF (Booking Board + Housekeeping) ============ -->
+<div id="vView" class="hide">
+  <header><div class="brand"><img class="hlogo" alt="A&amp;J"><div class="bt"><b>A&amp;J Kampot Boutique</b><small>📅 Booking Board · មើលតែប៉ុណ្ណោះ / View only</small></div></div><button class="btn alt sm" onclick="loadView(true)">⟳</button></header>
+  <main style="max-width:1200px"><div id="vvSync" class="muted" style="font-size:12px;text-align:center;min-height:16px"></div><div id="vvToday"></div><div id="vvBoard"></div></main>
+</div>
 <div id="vLock" class="hide">
   <header><div class="brand"><img class="hlogo" alt="A&amp;J"><div class="bt"><b>A&amp;J Kampot Boutique</b><small>🔒 Tablet</small></div></div></header>
   <div class="center"><div class="card" id="lockCard" style="width:min(440px,100%);text-align:center;padding:24px"></div></div>
@@ -763,9 +767,10 @@ const DEFS = {
 };
 const CHECKIN_META = {icon:'✍️', short:'ឆែកអ៊ីន', title:'Guest Check-in', full:'Guest Registration & Declaration'};
 const TABLET_TYPES = ['booking','checkin','arrival','companion','guarantee','cancel','luggage','leave','stock','drinks'];
-const QR_TYPES = [...TABLET_TYPES,'payroll']; // payroll QR opens the boss page (password) straight on a new slip
-const qrHash = t => t==='payroll'?'#payroll':'#f/'+t;
-const typeMeta = t => t==='checkin'?CHECKIN_META:DEFS[t];
+const QR_TYPES = [...TABLET_TYPES,'view','payroll']; // payroll QR opens the boss page (password) straight on a new slip
+const qrHash = t => t==='payroll'?'#payroll':t==='view'?'#view':'#f/'+t;
+const VIEW_META = {icon:'📅', short:'Booking Board', title:'Booking Board · View only', full:'Booking Board (មើលតែប៉ុណ្ណោះ)'};
+const typeMeta = t => t==='checkin'?CHECKIN_META:t==='view'?VIEW_META:DEFS[t];
 
 /* =====================================================================
    HELPERS
@@ -879,8 +884,8 @@ const TAB=()=>{try{return JSON.parse(ls.get('ajhub_tablet')||'null')}catch(e){re
 const setTAB=v=>v?ls.set('ajhub_tablet',JSON.stringify(v)):(()=>{try{localStorage.removeItem('ajhub_tablet')}catch(e){}})();
 const unlocked=()=>{try{return sessionStorage.getItem('ajhub_unlock')==='1'}catch(e){return false}};
 const setUnlocked=v=>{try{v?sessionStorage.setItem('ajhub_unlock','1'):sessionStorage.removeItem('ajhub_unlock')}catch(e){}};
-function deviceKey(){ const t=TAB(); return (t&&t.key)||staffKey()||bossKey()||''; }
-function showLock(html){ ['vHome','vTablet','vForm','vBoss','vStaff'].forEach(v=>$(v).classList.add('hide')); $('vLock').classList.remove('hide');
+function deviceKey(){ const t=TAB(); return (t&&t.key)||staffKey()||bossKey()||ls.get('ajhub_view_key')||''; }
+function showLock(html){ ['vHome','vTablet','vForm','vBoss','vStaff','vView'].forEach(v=>$(v).classList.add('hide')); $('vLock').classList.remove('hide');
   document.querySelectorAll('.hlogo').forEach(i=>i.src=document.querySelector('.brand img').src); $('lockCard').innerHTML=`<img class="logo" src="${LOGO_DARK}" alt="A&J" style="width:120px">`+html; const i=$('lk_pin'); if(i) setTimeout(()=>i.focus(),50); }
 const pinBox=(btn,fn)=>`<input id="lk_pin" type="password" inputmode="numeric" placeholder="PIN" style="text-align:center;font-size:22px;letter-spacing:6px;margin:10px 0" onkeydown="if(event.key==='Enter')${fn}"><button class="btn big" onclick="${fn}">${btn}</button><p class="muted" id="lk_err" style="color:var(--bad)"></p>`;
 async function checkPin(){ const p=$('lk_pin').value.trim(); $('lk_err').textContent=''; if(!p) return null;
@@ -895,14 +900,15 @@ async function doUnlock(){ const p=await checkPin(); if(!p) return; const t=TAB(
     <p><button class="btn alt sm" style="color:var(--bad);margin-top:10px" onclick="if(confirm('ដកការចាក់សោ? ថេប្លេតនេះនឹងលែងជាថេប្លេតភ្ញៀវ។')){setTAB(null);setUnlocked(false);location.hash='';route()}">ដកការចាក់សោថេប្លេតនេះ</button></p>`); }
 function route(){
   const h=location.hash.replace('#',''); clearTimeout(window._rt);
-  ['vHome','vTablet','vForm','vBoss','vStaff','vLock'].forEach(v=>$(v).classList.add('hide'));
+  ['vHome','vTablet','vForm','vBoss','vStaff','vLock','vView'].forEach(v=>$(v).classList.add('hide'));
   const T=TAB(); $('lockBtn').classList.toggle('hide',!T);
-  if(T&&!unlocked()&&h!=='boss'&&h!=='payroll'&&h!=='f/'+T.form&&!(T.form==='checkin'&&h==='tablet')&&!(PAIR.includes(T.form)&&['f/booking','f/checkin','tablet'].includes(h))){ history.replaceState(null,'','#f/'+T.form); return route(); }
+  if(T&&!unlocked()&&h!=='boss'&&h!=='payroll'&&h!=='view'&&h!=='f/'+T.form&&!(T.form==='checkin'&&h==='tablet')&&!(PAIR.includes(T.form)&&['f/booking','f/checkin','tablet'].includes(h))){ history.replaceState(null,'','#f/'+T.form); return route(); }
   const ft=h==='tablet'?'checkin':(h.startsWith('f/')?h.slice(2):'');
   if(ft&&(ft==='checkin'||(DEFS[ft]&&!DEFS[ft].bossOnly))&&!deviceKey()) return tabletSetup(ft);
   if(h==='tablet'||h==='f/checkin'){ $('vTablet').classList.remove('hide'); initTabletCommon(); const first=!ciInit; initCheckin(); applyPrefill('checkin'); flowSwitch('checkin');
     if(window._pickedBoard||window._pickedBooking||step>1){ $('ciMain').classList.remove('dash'); renderPicked(); if(!first) loadBookingPick(); } else { /* open the check-in form straight away (list still reachable via ← បញ្ជី) */ if(hasDraft()){ $('ciMain').classList.remove('dash'); renderPicked(); } else openCiForm(-1); renderCiDash(); loadBookingPick(); window.scrollTo(0,0); } }
   else if(h.startsWith('f/') && DEFS[h.slice(2)] && !DEFS[h.slice(2)].bossOnly){ $('vForm').classList.remove('hide'); initTabletCommon(); openGeneric(h.slice(2)); applyPrefill(h.slice(2)); flowSwitch(h.slice(2)); }
+  else if(h==='view'){ if(!deviceKey()) return viewSetup(); $('vView').classList.remove('hide'); initView(); }
   else if(h==='staff'){ $('vStaff').classList.remove('hide'); initStaff(); }
   else if(h==='boss'||h==='payroll'){ if(h==='payroll') window._openPayroll=1; $('gfBody').innerHTML=''; $('vBoss').classList.remove('hide'); initBoss(); }
   else { $('vHome').classList.remove('hide');
@@ -1503,12 +1509,12 @@ const staffKey=()=>{try{return sessionStorage.getItem('ajhub_staff_key')||''}cat
 const boardKey=()=>ROLE==='boss'?bossKey():(staffKey()||deviceKey());
 const rateFor=r=>{const g=roomGroup(r);return g?(Number((S.rates||{})[g[1]])||RATE_DEFAULT[g[1]]||0):0};
 function bkCovering(room,day){return BOARD.bookings.find(b=>String(b.room)===String(room)&&b.status!=='cancelled'&&b.start<=day&&bkEnd(b)>day)}
-function boardHTML(){
+function boardHTML(ro){
   if(!boardStart) boardStart=addDays(todayStr(),-1);
   const days=[...Array(14)].map((_,i)=>addDays(boardStart,i)), t=todayStr();
   const occ=d=>ALL_ROOMS.filter(r=>{const b=bkCovering(r,d);return b&&b.status!=='blocked'}).length;
   const dname=d=>new Date(d+'T00:00:00').toLocaleDateString('en-GB',{weekday:'short'});
-  let html=`<div class="row" style="justify-content:space-between"><div class="row" style="margin:0"><button class="btn alt sm" onclick="boardMove(-7)">‹ មុន</button><button class="btn alt sm" onclick="boardStart=null;renderBoardViews()">ថ្ងៃនេះ</button><button class="btn alt sm" onclick="boardMove(7)">ក្រោយ ›</button></div><b>${fmtD(days[0])} – ${fmtD(days[13])}</b><button class="btn sm" onclick="openBk(null,'${ALL_ROOMS[0]}','${t}')">+ Booking</button></div>`;
+  let html=`<div class="row" style="justify-content:space-between"><div class="row" style="margin:0"><button class="btn alt sm" onclick="boardMove(-7)">‹ មុន</button><button class="btn alt sm" onclick="boardStart=null;renderBoardViews()">ថ្ងៃនេះ</button><button class="btn alt sm" onclick="boardMove(7)">ក្រោយ ›</button></div><b>${fmtD(days[0])} – ${fmtD(days[13])}</b>${ro?'<span></span>':`<button class="btn sm" onclick="openBk(null,'${ALL_ROOMS[0]}','${t}')">+ Booking</button>`}</div>`;
   html+=`<div class="tw"><table class="board"><tr><th style="left:0;z-index:2;position:sticky">បន្ទប់</th>${days.map(d=>`<th class="${d===t?'today':''}">${dname(d)}<br>${d.slice(8)}<br><span style="font-weight:400;opacity:.7">${occ(d)||''}</span></th>`).join('')}</tr>`;
   for(const [gname,,rooms] of ROOM_GROUPS){
     html+=`<tr class="grp"><td colspan="15">${esc(gname)}</td></tr>`;
@@ -1517,8 +1523,8 @@ function boardHTML(){
       for(let i=0;i<14;){
         const d=days[i], b=bkCovering(r,d);
         if(b){ const end=bkEnd(b); let span=0; while(i+span<14&&days[i+span]<end) span++;
-          html+=`<td class="bkc ${esc(b.status)}" colspan="${span}" onclick="openBk('${esc(b.bkId)}')" title="${esc(b.guest)}"><b>${b.status==='checkedin'?'✅ ':''}${b.signedBookingId?'📝 ':''}${(b.extensions||[]).length?'⏰ ':''}${esc(b.status==='blocked'?'🚫 Blocked':b.guest)}</b><small>${b.status==='checkedin'&&b.checkinAt?'ចូល '+esc(b.checkinAt)+' · ':''}${b.guests?esc(b.guests)+'👤 · ':''}${esc(b.source||'')} · ${b.nights}យប់</small></td>`; i+=span; }
-        else { html+=`<td class="empty" onclick="openBk(null,'${r}','${d}')"></td>`; i++; }
+          html+=`<td class="bkc ${esc(b.status)}" colspan="${span}" onclick="${ro?'viewBk':'openBk'}('${esc(b.bkId)}')" title="${esc(b.guest)}"><b>${b.status==='checkedin'?'✅ ':''}${b.signedBookingId?'📝 ':''}${(b.extensions||[]).length?'⏰ ':''}${esc(b.status==='blocked'?'🚫 Blocked':b.guest)}</b><small>${b.status==='checkedin'&&b.checkinAt?'ចូល '+esc(b.checkinAt)+' · ':''}${b.guests?esc(b.guests)+'👤 · ':''}${esc(b.source||'')} · ${b.nights}យប់</small></td>`; i+=span; }
+        else { html+=ro?'<td class="empty" style="cursor:default"></td>':`<td class="empty" onclick="openBk(null,'${r}','${d}')"></td>`; i++; }
       }
       html+='</tr>';
     }
@@ -1543,6 +1549,7 @@ function hkHTML(){
   return html+'</div>';
 }
 function renderBoardViews(){
+  if(ROLE==='view'){ renderView(); return; }
   if($('vTablet')&&!$('vTablet').classList.contains('hide')){ const done=new Set(BOARD.bookings.filter(b=>b.status!=='reserved').map(b=>b.bkId)); WAIT=WAIT.filter(w=>!(w.boardId&&done.has(w.boardId))); renderCiDash(); }
   if(ROLE==='staff'){ $('sWait').innerHTML=waitBoardHTML(); $('sBoard').innerHTML=boardHTML(); $('sHK').innerHTML=hkHTML(); return; }
   if($('bWait')) $('bWait').innerHTML=waitBoardHTML();
@@ -1656,6 +1663,30 @@ async function loadBoard(force){
 }
 async function importOldBoard(){ try{ const j=await api('importOld',{key:bossKey()}); alert(j.already?'បានចម្លងរួចហើយពីមុន':`បានចម្លង Booking ${j.bookings} និងបន្ទប់ ${j.rooms}`); loadBoss(); }catch(e){alert(e.message)} }
 async function setStaffPin(){ const p=$('newStaffPin').value.trim(); if(!/^\d{4,8}$/.test(p)) return alert('PIN ត្រូវជាលេខ ៤–៨ ខ្ទង់'); try{ await api('setStaffPin',{key:bossKey(),pin:p}); $('newStaffPin').value=''; alert('✅ បានរក្សាទុក PIN បុគ្គលិក'); }catch(e){alert(e.message)} }
+/* ---------- 📅 Booking Board — view only for staff (no prices, no booking list) ---------- */
+function viewSetup(){ showLock(`<h2 style="margin:8px 0 4px">📅 Booking Board</h2><p class="muted">មើលតែប៉ុណ្ណោះ · បុគ្គលិកបញ្ចូល PIN <b>ម្ដងគត់</b> លើឧបករណ៍នេះ</p>`+pinBox('ចូល','doViewSetup()')); }
+async function doViewSetup(){ const p=await checkPin(); if(!p) return; ls.set('ajhub_view_key',p); route(); }
+let viewInit=false;
+function initView(){ ROLE='view'; document.querySelectorAll('.hlogo').forEach(i=>i.src=document.querySelector('.brand img').src);
+  const c=boardCache(); if(c&&!BOARD.bookings.length) BOARD.bookings=c; if(BOARD.bookings.length) renderView();
+  loadView(); if(!viewInit){ viewInit=true; setInterval(()=>{ if(!document.hidden&&ROLE==='view') loadView(); },120000); } }
+async function loadView(force){ $('vvSync').textContent='⟳ កំពុងធ្វើបច្ចុប្បន្នភាព…';
+  try{ const j=await api('board',{key:deviceKey()}); BOARD={bookings:j.bookings||[],rooms:j.rooms||[]}; $('vvSync').textContent='បច្ចុប្បន្នភាព '+new Date().toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}); renderView(); }
+  catch(e){ if(/WRONG|NO_STAFF/.test(e.message)){ ls.set('ajhub_view_key',''); try{localStorage.removeItem('ajhub_view_key')}catch(x){} return route(); } $('vvSync').textContent='⚠️ មិនអាចធ្វើបច្ចុប្បន្នភាព'+(force?' — '+e.message:''); } }
+function renderView(){ if(!$('vvBoard')) return; const t=todayStr(), L=BOARD.bookings.filter(b=>b&&b.status!=='cancelled'&&b.status!=='blocked');
+  const inh=L.filter(b=>b.status==='checkedin'), arr=L.filter(b=>b.status==='reserved'&&b.start<=t), dep=L.filter(b=>b.status==='checkedin'&&bkEnd(b)<=t);
+  const chip=b=>`<span class="pill" style="margin:2px;cursor:pointer" onclick="viewBk('${esc(b.bkId)}')"><b>${esc(b.room)}</b> ${esc(b.guest||'')}</span>`;
+  const box=(h,a,col)=>`<div class="card"><div style="font-weight:700;color:${col}">${h} (${a.length})</div><div style="margin-top:6px">${a.length?a.sort((x,y)=>String(x.room).localeCompare(String(y.room),undefined,{numeric:true})).map(chip).join(''):'<span class="muted">—</span>'}</div></div>`;
+  $('vvToday').innerHTML=`<h2 style="margin:6px 0">ថ្ងៃនេះ · ${fmtD(t)}</h2><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr));margin-bottom:12px">${box('🔔 មកដល់ / រង់ចាំ Check-in',arr,'#b45309')}${box('✅ កំពុងស្នាក់នៅ',inh,'#15803d')}${box('🚪 ត្រូវចេញថ្ងៃនេះ',dep,'#b91c1c')}</div>`;
+  $('vvBoard').innerHTML='<h2 style="margin:10px 0 6px">📅 Booking Board</h2>'+boardHTML(true); }
+function viewBk(id){ const b=BOARD.bookings.find(x=>x.bkId===id); if(!b) return; const g=roomGroup(b.room);
+  const st={reserved:'⏳ បានកក់ / រង់ចាំ Check-in',checkedin:'✅ កំពុងស្នាក់នៅ',checkedout:'🏁 ចេញហើយ'}[b.status]||b.status;
+  $('dT').textContent=`🛏 បន្ទប់ ${b.room} · ${b.guest||''}`; setDocBtns(null);
+  $('dB').innerHTML=`<div class="kv"><div>ភ្ញៀវ</div><div><b>${esc(b.guest||'')}</b></div><div>បន្ទប់</div><div>${esc(b.room)}${g?' · '+esc(RT_BY_GROUP[g[1]]||''):''}</div><div>ស្ថានភាព</div><div>${st}</div>
+    <div>ចូល</div><div>${fmtD(b.start)}${b.checkinAt?' · '+esc(b.checkinAt):''}</div><div>ចេញ</div><div>${fmtD(bkEnd(b))} (${b.nights} យប់)</div>
+    ${(b.extensions||[]).length?`<div>⏰ ពន្យារ</div><div>${b.extensions.map(x=>fmtD(x.from)+' → '+fmtD(x.to)).join('<br>')}</div>`:''}
+    ${b.guests?`<div>ចំនួនភ្ញៀវ</div><div>${esc(b.guests)}${Number(b.children)?' + កុមារ '+esc(b.children):''}</div>`:''}${b.source?`<div>ប្រភព</div><div>${esc(b.source)}</div>`:''}${b.note?`<div>ចំណាំ</div><div>${esc(b.note)}</div>`:''}</div>
+    <div class="nav2"><button class="btn alt" onclick="closeDlg()">បិទ</button></div>`; $('dlg').showModal(); }
 /* staff area */
 let staffInit=false;
 function initStaff(){
