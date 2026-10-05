@@ -200,7 +200,7 @@ dialog::backdrop{background:#0008}
 .paper .ref{margin-left:auto;text-align:right;font-size:9.5px;color:#888;letter-spacing:.1em;text-transform:uppercase}
 .paper .ref b{display:block;color:#111;font-size:12.5px;letter-spacing:0;text-transform:none;margin-bottom:5px}
 .paper .band{background:#f4f4f2;text-align:center;padding:10px;border-bottom:1px solid #e2e2de}
-.paper .band b{letter-spacing:.12em;font-size:13.5px}.paper .band span{display:block;font-size:12px;color:#444}
+.paper .band b{letter-spacing:.12em;font-size:13.5px}.paper .band b.km{letter-spacing:0}.paper table.rt{width:100%;border-collapse:collapse;margin:4px 0 2px;font-size:9.5px;line-height:1.45}.paper table.rt th,.paper table.rt td{border:1px solid #9a9a95;padding:3px 4px;text-align:left;vertical-align:top}.paper table.rt th{background:#f0f0ec;color:#111;font-size:9.5px;font-weight:700;line-height:1.35}.paper table.rt th small{display:block;font-weight:500;color:#666;font-size:8.5px;text-transform:uppercase}.paper table.rt td{color:#1d3a8a;font-weight:500;white-space:nowrap}.paper table.rt td.wr{white-space:normal;min-width:70px}.paper table.rt td:first-child,.paper table.rt th:first-child{text-align:center;width:22px;color:#111}.paper table.rt tr{page-break-inside:avoid;break-inside:avoid}.paper .band span{display:block;font-size:12px;color:#444}
 .paper .pbody{padding:12px 24px 14px}
 .paper .grid2{display:grid;grid-template-columns:1fr 1fr;gap:5px 20px}
 .paper .fl{min-width:0}.paper .fl.full{grid-column:1/-1}
@@ -1262,6 +1262,16 @@ function addRow(k){
 }
 const sigsOf=(d,r)=>[...(r&&r.sig&&!d.sigs.some(s=>s.k==='sig')?[{k:'sig',l:'ហត្ថលេខាភ្ញៀវ / Guest Signature'}]:[]),...d.sigs];
 const ROWLBL={adults:'👤 ',kids:'🧒 ',idNo:'ID/Passport: ',plate:'🔢 ',room:'បន្ទប់ '};
+/* repeating rows (e.g. rooms & guests) -> a ruled table on the printed / PDF paper */
+function rowsTable(r,f,rows){
+  const cols=f.cols.filter(c=>c.t!=='photo'&&rows.some(o=>o[c.k]!==''&&o[c.k]!=null));
+  const cv=(c,v)=>v===''||v==null?'':(c.t==='number'&&r.type==='payroll')?money(v):c.t==='date'?dmy(v):String(v);
+  const hd=c=>{const p=String(c.l).split(' / ');return esc(p[0])+(p[1]?'<small>'+esc(p.slice(1).join(' / '))+'</small>':'')};
+  const wr=c=>(c.t==='textarea'||c.t==='select'||/name|note|desc|reason|item/i.test(c.k))?' class="wr"':'';
+  if(!rows.length) return '<div class="fl full"><i>'+esc(f.l)+'</i><div>—</div></div>';
+  return '<div class="fl full"><i>'+esc(f.l)+'</i><table class="rt"><thead><tr><th>#</th>'+cols.map(c=>'<th>'+hd(c)+'</th>').join('')+'</tr></thead><tbody>'+
+    rows.map((o,i)=>'<tr><td>'+(i+1)+'</td>'+cols.map(c=>'<td'+wr(c)+'>'+(esc(cv(c,o[c.k]))||'—')+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>';
+}
 const rowCell=(r,c,v)=>(r.type==='arrival'&&v!==''&&v!=null&&ROWLBL[c.k])?ROWLBL[c.k]+v:v;
 const allFields = t => DEFS[t].sections.flatMap(s=>s.fields);
 function renderGeneric(type,host){
@@ -1668,7 +1678,7 @@ function pImg(v){ if(typeof v!=='string'||!v) return ''; if(v.startsWith('drive:
 const pF=(label,val,full)=>`<div class="fl${full?' full':''}"><i>${esc(label)}</i><div>${val===undefined||val===null||val===''?'—':esc(val)}</div></div>`;
 const pCell=(label,inner)=>`<div><i class="pl">${esc(label)}</i>${inner}</div>`;
 function paperHead(ref,date){ return `<div class="lh"><img src="${LOGO_DARK}" alt="A&J"><div><div class="hn">A&amp;J Kampot Boutique</div><div class="ha">#163, Street 724, Krang Village, Kampot</div><div class="ha">Tel: +855 087 882 020 · www.ajkampotboutique.org</div></div><div class="ref">Booking Ref<b>${esc(ref||'—')}</b>Date<b>${esc(date||'')}</b></div></div>`; }
-const paperBand=(a,b)=>`<div class="band"><b>${esc(a)}</b>${b?`<span>${esc(b)}</span>`:''}</div>`;
+const paperBand=(a,b)=>`<div class="band"><b${/[\u1780-\u17FF]/.test(a)?' class="km"':''}>${esc(a)}</b>${b?`<span>${esc(b)}</span>`:''}</div>`;
 function paperCheckin(c){
   const g=c.extraGuests||[], d=c.decl||{}, co=ciCo(c), signed=c.ciAt?new Date(c.ciAt).toLocaleDateString('en-GB'):dmy(c.ci);
   let h=`<div class="paper">${paperHead(c.ref||c.bookingRef,signed)}${paperBand('GUEST REGISTRATION FORM','ទម្រង់ចុះឈ្មោះភ្ញៀវ · 宾客登记表')}<div class="pbody"><div class="grid2">`+
@@ -1703,7 +1713,7 @@ function paperGeneric(r){
   let h=`<div class="paper">${paperHead(r.ref||r.bookingId||'',dmy(fDate(r))||(r.ciAt?new Date(r.ciAt).toLocaleDateString('en-GB'):''))}${paperBand(en.toUpperCase(),rest.join(' · '))}<div class="pbody">`;
   for(const s of d.sections){
     const cells=s.fields.filter(f=>f.t!=='photo').map(f=>{let v=r[f.k];
-      if(f.t==='rows') v=(v||[]).map(o=>f.cols.map(c=>c.t==='number'&&r.type==='payroll'?money(o[c.k]):rowCell(r,c,o[c.k])).filter(Boolean).join(' · ')).join('\n');
+      if(f.t==='rows') return rowsTable(r,f,v||[]);
       else if(f.t==='date') v=dmy(v); else if(f.t==='month') v=fmtD(v); else if(f.t==='datetime') v=dtLocal(v);
       else if(f.t==='number'&&/salary|meal|bonus|ot|amount|refund|paid|price|deposit/i.test(f.k)) v=v===''||v==null?'':money(v);
       return pF(f.l,v,f.full||f.t==='textarea'||f.t==='rows')}).join('');
@@ -1755,7 +1765,7 @@ function loadH2P(){ return _h2p||(_h2p=new Promise((res,rej)=>{ if(window.html2p
 async function waitImgs(el){ await Promise.all([...el.querySelectorAll('img')].map(i=>i.complete&&i.naturalWidth?0:new Promise(r=>{i.addEventListener('load',r);i.addEventListener('error',r);setTimeout(r,8000)}))); }
 async function pdfWorker(el,name,landscape){
   await loadH2P(); if(el.isConnected&&el.querySelector('img[data-drive]')) await hydrateImages();
-  el=el.cloneNode(true); el.querySelectorAll('.noprint').forEach(x=>x.remove()); khmerBreaks(el); await waitImgs(el); // render a detached copy (no dialog / scroll offset)
+  el=el.cloneNode(true); el.querySelectorAll('.noprint').forEach(x=>x.remove()); khmerBreaks(el); el.querySelectorAll('*').forEach(x=>{ if([...x.childNodes].some(n=>n.nodeType===3&&/[\u1780-\u17FF]/.test(n.nodeValue))) x.style.letterSpacing='0'; }); await waitImgs(el); // Khmer + letter-spacing garbles in the PDF // render a detached copy (no dialog / scroll offset)
   return {w:html2pdf().set({margin:[6,6,8,6],filename:name+'.pdf',image:{type:'jpeg',quality:0.88},
     html2canvas:{scale:1.7,useCORS:true,scrollX:0,scrollY:0,backgroundColor:'#ffffff',logging:false},
     jsPDF:{unit:'mm',format:'a4',orientation:landscape?'landscape':'portrait'},pagebreak:{mode:['css','legacy'],before:'.pb',avoid:['.avoid','tr','figure']}}).from(el)}; // wrapped: the worker is "thenable", so it must not be awaited directly
