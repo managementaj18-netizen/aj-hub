@@ -1349,7 +1349,7 @@ async function loadBoss(){
   $('upd').textContent='កំពុងទាញទិន្នន័យ…'; const errs=[];
   await Promise.all([
     api('list',{key:bossKey()}).then(j=>{const R=j.records||[];S.forms=R.filter(r=>r.type!=='payroll'&&r.type!=='bk'&&r.type!=='room'&&r._origin!=='old-system').map(r=>({...r,_origin:'new'}));
-      const syn={}; R.filter(r=>r._origin==='old-system').forEach(r=>{ if(!syn[r._oldId]||String(r.savedAt)>String(syn[r._oldId].savedAt)) syn[r._oldId]=r; }); S.synced=syn;S.payroll=R.filter(r=>r.type==='payroll');S.pdfs=j.pdfs||{};})
+      const syn={}; R.filter(r=>r._origin==='old-system').forEach(r=>{ if(!syn[r._oldId]||String(r.savedAt)>String(syn[r._oldId].savedAt)) syn[r._oldId]=r; }); S.synced=syn;S.payroll=R.filter(r=>r.type==='payroll');S.pdfs=j.pdfs||{}; setTimeout(prefetchRecentImgs,1500);})
       .catch(e=>{ if(/WRONG|NO_PASSWORD/.test(e.message)) return bossLogout(); errs.push('ហ្វម (Google Sheet) '+e.message)}),
     getJSON(OLD.checkin).then(d=>{S.oldForms=(Array.isArray(d)?d:Object.values(d||{})).filter(Boolean).map((v,i)=>({...v,type:'checkin',_id:'old/'+i,_origin:'old'}))}).catch(e=>errs.push('ហ្វមចាស់ '+e.message)),
     loadBookings().then(a=>S.oldBk=a).catch(()=>{S.oldBk=[]}),
@@ -1413,11 +1413,24 @@ function renderForms(){
 const imgCache={};
 function imgsHTML(list){const a=list.filter(([s])=>typeof s==='string'&&(s.startsWith('data:image')||s.startsWith('drive:')));
   return a.length?'<div class="imgs">'+a.map(([s,c])=>s.startsWith('drive:')?`<figure><img data-drive="${esc(s.slice(6))}" src="${imgCache[s.slice(6)]||''}" alt="${esc(c)}" style="min-height:${imgCache[s.slice(6)]?0:80}px;background:var(--bg)"><figcaption>${esc(c)} · <a href="https://drive.google.com/file/d/${esc(s.slice(6))}/view" target="_blank" rel="noopener">Drive</a></figcaption></figure>`:`<figure><img src="${s}" alt="${esc(c)}"><figcaption>${esc(c)}</figcaption></figure>`).join('')+'</div>':'<div class="muted">គ្មាន</div>'}
-async function hydrateImages(){
-  const ids=[...new Set([...document.querySelectorAll('#dB img[data-drive]')].map(i=>i.dataset.drive).filter(id=>!imgCache[id]))];
-  for(let k=0;k<ids.length;k+=6){ try{ const j=await api('files',{key:bossKey(),ids:ids.slice(k,k+6)}); Object.assign(imgCache,j.files||{}); }catch(e){} 
-    document.querySelectorAll('#dB img[data-drive]').forEach(i=>{const d=imgCache[i.dataset.drive];if(d&&!i.src.startsWith('data:')){i.src=d;i.style.minHeight=0}}); }
-}
+/* Drive images (ID photos, signatures): kept on this device after the first download, fetched in parallel, prefetched in the background */
+function imgDB(){ if(!window._imgDB) window._imgDB=new Promise((res,rej)=>{ const r=indexedDB.open('ajhub_img',1); r.onupgradeneeded=()=>r.result.createObjectStore('img'); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); return window._imgDB; }
+async function imgFromDB(ids){ if(!ids.length) return; try{ const db=await imgDB(); await new Promise(res=>{ const st=db.transaction('img').objectStore('img'); let n=ids.length; ids.forEach(id=>{ const q=st.get(id); q.onsuccess=()=>{ if(q.result) imgCache[id]=q.result; if(!--n) res(); }; q.onerror=()=>{ if(!--n) res(); }; }); }); }catch(e){} }
+async function imgToDB(map){ try{ const db=await imgDB(); const t=db.transaction('img','readwrite'); Object.entries(map).forEach(([k,v])=>{ if(v) t.objectStore('img').put(v,k); }); }catch(e){} }
+function paintImgs(){ document.querySelectorAll('img[data-drive]').forEach(i=>{const d=imgCache[i.dataset.drive];if(d&&!i.src.startsWith('data:')){i.src=d;i.style.minHeight=0}}); }
+const _imgWait={};
+async function fetchImgs(ids,conc){ ids=[...new Set(ids)].filter(id=>id&&!imgCache[id]&&!_imgWait[id]); await imgFromDB(ids); paintImgs();
+  const need=ids.filter(id=>!imgCache[id]); const chunks=[]; for(let k=0;k<need.length;k+=4) chunks.push(need.slice(k,k+4));
+  need.forEach(id=>_imgWait[id]=1);
+  let i=0; const worker=async()=>{ while(i<chunks.length){ const c=chunks[i++]; try{ const j=await api('files',{key:bossKey(),ids:c}); const f=j.files||{}; Object.assign(imgCache,f); imgToDB(f); paintImgs(); }catch(e){} c.forEach(id=>delete _imgWait[id]); } };
+  await Promise.all(Array.from({length:Math.min(conc||4,chunks.length)},worker)); }
+async function hydrateImages(){ const ids=[...document.querySelectorAll('#dB img[data-drive]')].map(i=>i.dataset.drive); paintImgs();
+  const miss=ids.filter(id=>!imgCache[id]);
+  if(miss.length){ await fetchImgs(miss,4); const wait=()=>new Promise(r=>setTimeout(r,300)); for(let k=0;k<60&&ids.some(id=>!imgCache[id]&&_imgWait[id]);k++) await wait(); paintImgs(); } }
+function driveIdsOf(r){ const out=[]; const walk=v=>{ if(typeof v==='string'){ if(v.startsWith('drive:')) out.push(v.slice(6)); } else if(v&&typeof v==='object') Object.values(v).forEach(walk); }; walk(r); return out; }
+/* boss: quietly download images of the newest forms so opening them is instant */
+async function prefetchRecentImgs(){ try{ const recent=[...(S.forms||[])].sort((a,b)=>String(b.ciAt||b.savedAt||'').localeCompare(String(a.ciAt||a.savedAt||''))).slice(0,40);
+  await fetchImgs(recent.flatMap(driveIdsOf),2); }catch(e){} }
 function openRecord(id){
   const r=[...allForms(),...S.payroll].find(x=>String(x._id)===String(id)); if(!r) return;
   if(r.type==='checkin') return openCheckin(r);
