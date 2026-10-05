@@ -767,10 +767,13 @@ const DEFS = {
 };
 const CHECKIN_META = {icon:'✍️', short:'ឆែកអ៊ីន', title:'Guest Check-in', full:'Guest Registration & Declaration'};
 const TABLET_TYPES = ['booking','checkin','arrival','companion','guarantee','cancel','luggage','leave','stock','drinks'];
-const QR_TYPES = [...TABLET_TYPES,'view','payroll']; // payroll QR opens the boss page (password) straight on a new slip
+const QR_TYPES = [...TABLET_TYPES,'decl','view','payroll']; // payroll QR opens the boss page (password) straight on a new slip
 const qrHash = t => t==='payroll'?'#payroll':t==='view'?'#view':'#f/'+t;
+const DECL_URL = 'https://aj-guest-declaration-23-08-26.netlify.app/';
+const DECL_META = {icon:'📋', short:'ប្រកាសភ្ញៀវ', title:'Guest Declaration Form', full:'Guest Declaration Form'};
+const qrUrl = t => t==='decl'?DECL_URL:location.href.split('#')[0]+qrHash(t);
 const VIEW_META = {icon:'📅', short:'Booking Board', title:'Booking Board · View only', full:'Booking Board (មើលតែប៉ុណ្ណោះ)'};
-const typeMeta = t => t==='checkin'?CHECKIN_META:t==='view'?VIEW_META:DEFS[t];
+const typeMeta = t => t==='checkin'?CHECKIN_META:t==='view'?VIEW_META:t==='decl'?DECL_META:DEFS[t];
 
 /* =====================================================================
    HELPERS
@@ -1937,8 +1940,8 @@ function renderHK(){
 function renderTabletLinks(){
   const base=location.href.split('#')[0];
   $('tabletLinks').innerHTML=`<div class="row" style="grid-column:1/-1;margin:0;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="printAllQR()">🖨️ បោះពុម្ព QR ទាំងអស់</button><button class="btn alt sm" onclick="downloadAllQR()">⬇️ ទាញយក QR ទាំងអស់ (PNG)</button></div>`+
-  QR_TYPES.map(t=>`<div class="card"><h3>${typeMeta(t).icon} ${esc(typeMeta(t).short)}</h3><div class="muted">${esc(typeMeta(t).title)}</div><canvas class="qrcard" id="qr_${t}" aria-label="QR ${esc(typeMeta(t).title)}"></canvas><div class="link">${esc(base+qrHash(t))}${t==='payroll'?'<div class="muted" style="font-size:12px">🔐 សម្រាប់មេប៉ុណ្ណោះ — ត្រូវការពាក្យសម្ងាត់មេ</div>':''}</div><div class="row" style="margin:8px 0 0;flex-wrap:wrap"><button class="btn alt sm" onclick="downloadQR('${t}')">⬇️ ទាញយក</button><button class="btn alt sm" onclick="copyText('${base}${qrHash(t)}',this)">ចម្លងលីង</button><a class="btn alt sm" href="${qrHash(t)}" target="_blank" rel="noopener" style="text-decoration:none">បើក</a></div></div>`).join('');
-  const go=()=>QR_TYPES.forEach(t=>{try{drawQRCard($('qr_'+t),t,base+qrHash(t))}catch(e){console.warn('QR',t,e)}});
+  QR_TYPES.map(t=>`<div class="card"><h3>${typeMeta(t).icon} ${esc(typeMeta(t).short)}</h3><div class="muted">${esc(typeMeta(t).title)}</div><canvas class="qrcard" id="qr_${t}" aria-label="QR ${esc(typeMeta(t).title)}"></canvas><div class="link">${esc(qrUrl(t))}${t==='payroll'?'<div class="muted" style="font-size:12px">🔐 សម្រាប់មេប៉ុណ្ណោះ — ត្រូវការពាក្យសម្ងាត់មេ</div>':''}</div><div class="row" style="margin:8px 0 0;flex-wrap:wrap"><button class="btn alt sm" onclick="downloadQR('${t}')">⬇️ ទាញយក</button><button class="btn alt sm" onclick="copyText('${qrUrl(t)}',this)">ចម្លងលីង</button><a class="btn alt sm" href="${qrUrl(t)}" target="_blank" rel="noopener" style="text-decoration:none">បើក</a></div></div>`).join('');
+  const go=()=>QR_TYPES.forEach(t=>{try{drawQRCard($('qr_'+t),t,qrUrl(t))}catch(e){console.warn('QR',t,e)}});
   Promise.all([document.fonts?document.fonts.load("700 40px 'Kantumruy Pro'","ក"):0,loadQRLogo()]).catch(()=>{}).then(go);
 }
 let _qrLogo=null;
