@@ -66,7 +66,11 @@
         var gs = $("f_guests");
         if (gs && G.length > (+gs.value || 1)) { gs.value = G.length; fire(gs, "input"); fire(gs, "change"); }
         setTimeout(function () {
-          var rows = $("f_extraGuests") ? [].slice.call($("f_extraGuests").children) : [];
+          var box = $("f_extraGuests");
+          if (box && typeof window.addGuestRow === "function") {
+            while (box.children.length < G.length - 1) window.addGuestRow();
+          }
+          var rows = box ? [].slice.call(box.children) : [];
           G.slice(1).forEach(function (g, i) {
             var row = rows[i]; if (!row) return;
             setVal(row.querySelector('[data-c="name"]'), fullName(g));
