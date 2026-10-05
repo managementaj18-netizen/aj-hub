@@ -168,6 +168,7 @@ dialog::backdrop{background:#0008}
 #ciMain.isDone .ciTop,#ciMain.isDone #waitBox,#ciMain.isDone #ciPicked{display:none}
 .declWrap{margin-top:12px}.declWrap summary{cursor:pointer;color:var(--mute);font-size:14px;padding:6px 0}
 .err,.sigwrap.err{outline:3px solid #dc2626 !important;outline-offset:2px;border-radius:10px}
+.autoF{background:#f2fbf5 !important}
 .dcard.dr .bd{background:#111}.dcard.dr{border-color:#111;border-style:dashed}
 #ciMain.dash>*:not(#ciDash):not(.pendingBox):not(.flowsw){display:none}#ciMain:not(.dash) #ciDash{display:none}
 .dstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 12px}.dstats .card b{font-size:28px;display:block;line-height:1.1}.dstats .card span{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
@@ -914,6 +915,14 @@ function initCheckin(){
   const tb=$('vTablet'); const live=e=>{ if(e.target.classList) e.target.classList.remove('err'); if(e.target.id==='f_agree') $('agreeRow').classList.remove('err'); clearTimeout(window._ciLive); window._ciLive=setTimeout(()=>{renderDecl();updSummary();},250); };
   tb.addEventListener('input',live); tb.addEventListener('change',live);
   ['sigGuest','sigStaff'].forEach(id=>$(id).addEventListener('pointerup',()=>{$(id).parentElement.classList.remove('err');setTimeout(updSummary,30)}));
+  /* fill once → copied everywhere: Nationality → Country + Departure Country (+ extra guests); Check-in date → Arrival in Cambodia */
+  const natSync=()=>{ const n=$('f_nat').value; ['f_country','f_depcountry'].forEach(id=>{ const el=$(id); if(!el.value.trim()||el.dataset.auto===el.value){ el.value=n; el.dataset.auto=n; el.classList.toggle('autoF',!!n); } });
+    $('f_extraGuests').querySelectorAll('select[data-c="nat"]').forEach(sel=>{ if(!sel.value||sel.dataset.auto===sel.value){ setNat(sel,n); sel.dataset.auto=sel.value; } }); };
+  $('f_nat').addEventListener('change',natSync); $('f_nat').addEventListener('input',natSync);
+  ['f_country','f_depcountry','f_arrival'].forEach(id=>$(id).addEventListener('input',()=>{ $(id).classList.remove('autoF'); delete $(id).dataset.auto; }));
+  const arrSync=()=>{ const el=$('f_arrival'); if(!el.value||el.dataset.auto===el.value){ el.value=$('f_ci').value; el.dataset.auto=el.value; el.classList.toggle('autoF',!!el.value); } };
+  $('f_ci').addEventListener('change',arrSync); $('f_ci').addEventListener('input',arrSync);
+  window._ciAutoSync=()=>{ natSync(); arrSync(); };
   loadBookingPick(); loadCiDrafts();
   go(1);
 }
@@ -1127,7 +1136,7 @@ function waitBoardHTML(){
     <p class="muted" style="margin:0 0 8px">ភ្ញៀវទាក់ទងមកកក់ → 📝 Booking form → ចូលបញ្ជីនេះ → ភ្ញៀវមកដល់ ចុច ✍️ Check-in ព័ត៌មានលោតចូលហ្វមដោយស្វ័យប្រវត្តិ</p>`+
     (L.length?grp('📅 មកដល់ថ្ងៃនេះ',L.filter(w=>w.ci===t))+grp('⚠️ ហួសថ្ងៃ តែមិនទាន់មក',L.filter(w=>w.ci<t))+grp('🗓 ថ្ងៃខាងមុខ (១៤ ថ្ងៃ)',L.filter(w=>w.ci>t)):'<div class="muted">គ្មានភ្ញៀវរង់ចាំទេ</div>');
 }
-function addGuestRow(){const r=document.createElement('div');r.className='r';r.innerHTML='<input data-c="name" placeholder="Full name / ឈ្មោះ"><select data-c="nat">'+natOpts('Nationality / សញ្ជាតិ')+'</select><input data-c="passport" placeholder="Passport / ID"><button type="button" class="btn alt sm x" onclick="this.parentElement.remove()">✕</button>';$('f_extraGuests').appendChild(r)}
+function addGuestRow(){const r=document.createElement('div');r.className='r';r.innerHTML='<input data-c="name" placeholder="Full name / ឈ្មោះ"><select data-c="nat">'+natOpts('Nationality / សញ្ជាតិ')+'</select><input data-c="passport" placeholder="Passport / ID"><button type="button" class="btn alt sm x" onclick="this.parentElement.remove()">✕</button>';$('f_extraGuests').appendChild(r);const n=$('f_nat').value,sl=r.querySelector('select[data-c="nat"]');if(n&&sl){setNat(sl,n);sl.dataset.auto=sl.value}}
 function ciPhotoMulti(inp){ const fs=[...inp.files]; inp.value=''; if(!fs.length) return;
   const free=PHOTO_SLOTS.map(x=>x[0]).filter(k=>!photos[k]); if(!free.length) return alert('ប្រអប់រូបពេញហើយ (5) — សូមលុប/ប្ដូររូបណាមួយដោយចុចលើប្រអប់');
   if(fs.length>free.length) alert(`ដាក់បានតែ ${free.length} រូបទៀតប៉ុណ្ណោះ`);
@@ -1141,7 +1150,7 @@ function updSummary(){ const el=$('summary'); if(!el) return;
 function go(n){
   step=n===5?5:1; $('ciMain').classList.toggle('isDone',step===5);
   document.querySelectorAll('#vTablet .st').forEach(s=>s.classList.toggle('hide',step===5?+s.dataset.s!==5:+s.dataset.s===5));
-  if(step===1){ renderDecl(); updSummary(); setTimeout(()=>{['sigGuest','sigStaff'].forEach(sigResize); mirrorSig(); updSummary();},30); }
+  if(step===1){ if(window._ciAutoSync) window._ciAutoSync(); renderDecl(); updSummary(); setTimeout(()=>{['sigGuest','sigStaff'].forEach(sigResize); mirrorSig(); updSummary();},30); }
   window.scrollTo(0,0);
 }
 function ciErr(el,msg){ if(!el) return false; el.classList.add('err'); el.scrollIntoView({behavior:'smooth',block:'center'}); if(el.focus&&/INPUT|SELECT|TEXTAREA/.test(el.tagName)) setTimeout(()=>el.focus({preventScroll:true}),350); alert(msg); return false; }
