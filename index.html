@@ -821,7 +821,7 @@ function initTabletCommon(){
 }
 function getPending(){try{return JSON.parse(ls.get('ajhub_pending')||'{}')}catch(e){return{}}}
 function setPending(p){return ls.set('ajhub_pending',JSON.stringify(p))}
-function renderPending(){const n=Object.keys(getPending()).length;document.querySelectorAll('.pendingBox').forEach(b=>b.innerHTML=n?`<div class="alert warn">⏳ មានហ្វម ${n} កំពុងរង់ចាំផ្ញើ (គ្មានអ៊ីនធឺណិត)។ វានឹងផ្ញើដោយស្វ័យប្រវត្តិ។ កុំលុប browser។</div>`:'')}
+function renderPending(){const n=Object.keys(getPending()).length;document.querySelectorAll('.pendingBox').forEach(b=>b.innerHTML=n?`<div class="alert warn">⏳ ហ្វម ${n} កំពុងផ្ញើទៅមេ (ឬរង់ចាំអ៊ីនធឺណិត)។ វានឹងផ្ញើដោយស្វ័យប្រវត្តិ។ កុំលុប browser។</div>`:'')}
 async function sendOne(clientId,type,data,extra={}){ let j;
   try{ j=await api('submit',{type,data,clientId,key:deviceKey(),...extra}); }
   catch(e){ if(/WRONG_PIN|NO_STAFF_PIN/.test(e.message)){ const t=TAB(); if(t){t.key='';setTAB(t);} throw new Error('PIN_CHANGED'); } throw e; } const p=getPending(); delete p[clientId]; setPending(p); renderPending();
@@ -834,6 +834,11 @@ async function saveRecord(type,data){
   const clientId=device()+'-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,7);
   data.type=type; data.device=device(); data.ciAt=data.ciAt||new Date().toISOString();
   const p=getPending(); p[clientId]={type,data}; const local=setPending(p); window._lastDoc={clientId,type,data};
+  /* fast mode: already safe on this tablet → don't make staff wait for Google (it can take 10–20 s); send in the background */
+  if(arguments[2]&&arguments[2].fast&&local){ renderPending();
+    sendOne(clientId,type,data).then(()=>{ document.querySelectorAll('.sendStat').forEach(e=>e.innerHTML='☁️ ផ្ញើទៅមេរួច ✅ · Booking Board &amp; Housekeeping updated'); })
+      .catch(()=>{ document.querySelectorAll('.sendStat').forEach(e=>e.textContent='⏳ អ៊ីនធឺណិតយឺត/ដាច់ — tablet នឹងផ្ញើទៅមេដោយស្វ័យប្រវត្តិ'); });
+    return 'local'; }
   try{ await Promise.race([sendOne(clientId,type,data),new Promise((_,rej)=>setTimeout(()=>rej(new Error('timeout')),45000))]); return 'ok'; }
   catch(e){
     if(/API_URL|Unknown form/.test(e.message)){ const q=getPending(); delete q[clientId]; setPending(q); renderPending(); throw e; }
@@ -1212,7 +1217,7 @@ async function submitCheckin(){
     extraGuests:[...$('f_extraGuests').children].map(r=>{const o={};r.querySelectorAll('[data-c]').forEach(i=>o[i.dataset.c]=i.value.trim());return o}).filter(o=>o.name),
     decl:{decl_arrival:v('f_arrival'),decl_departure:v('f_co'),decl_flight:v('f_flight'),decl_depcountry:v('f_depcountry'),decl_purpose:purpose},
     policyAgreed:true, policyVersion:'hub-1', bookingId:window._pickedBooking||'', boardId:window._pickedBoard||'', sigData:sigData('sigGuest'), gdSigData:sigData('sigGuest'), declSigData:sigData('sigGuest'), staffSigData:sigData('sigStaff'), idPhotos:{...photos}, status:'in' };
-  try{ const r=await saveRecord('checkin',data); if(window._ciDraftId){ const did=window._ciDraftId; window._ciDraftId=''; try{ await draftTx('readwrite',st=>st.delete(did)); }catch(e){} loadCiDrafts(); } document.querySelector('#vTablet .doneMsg').innerHTML=esc(doneText(r))+(r==='ok'?'<br>✅ Booking Board → ឆែកអ៊ីនហើយ · Housekeeping → បន្ទប់ '+esc(data.room)+' មានភ្ញៀវ':'')+doneTools()+backLink(); go(5);
+  try{ const r=await saveRecord('checkin',data,{fast:true}); if(window._ciDraftId){ const did=window._ciDraftId; window._ciDraftId=''; try{ await draftTx('readwrite',st=>st.delete(did)); }catch(e){} loadCiDrafts(); } document.querySelector('#vTablet .doneMsg').innerHTML=(r==='local'?'✅ រក្សាទុករួច · Saved<br><span class="sendStat">☁️ កំពុងផ្ញើទៅមេនៅខាងក្រោយ… (មិនចាំបាច់រង់ចាំ — អាចចុចហ្វមថ្មីបាន)</span>':esc(doneText(r))+(r==='ok'?'<br>✅ Booking Board → ឆែកអ៊ីនហើយ · Housekeeping → បន្ទប់ '+esc(data.room)+' មានភ្ញៀវ':''))+doneTools()+backLink(); go(5);
        clearTimeout(window._rt); window._rt=setTimeout(()=>{if(step===5)resetCheckin()},20000); }
   catch(e){ alert(e.message); }
   btn.disabled=false; btn.textContent='✅ រក្សាទុក & ផ្ញើទៅមេ';
