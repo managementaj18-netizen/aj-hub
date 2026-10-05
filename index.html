@@ -763,6 +763,8 @@ const DEFS = {
 };
 const CHECKIN_META = {icon:'✍️', short:'ឆែកអ៊ីន', title:'Guest Check-in', full:'Guest Registration & Declaration'};
 const TABLET_TYPES = ['booking','checkin','arrival','companion','guarantee','cancel','luggage','leave','stock','drinks'];
+const QR_TYPES = [...TABLET_TYPES,'payroll']; // payroll QR opens the boss page (password) straight on a new slip
+const qrHash = t => t==='payroll'?'#payroll':'#f/'+t;
 const typeMeta = t => t==='checkin'?CHECKIN_META:DEFS[t];
 
 /* =====================================================================
@@ -895,14 +897,14 @@ function route(){
   const h=location.hash.replace('#',''); clearTimeout(window._rt);
   ['vHome','vTablet','vForm','vBoss','vStaff','vLock'].forEach(v=>$(v).classList.add('hide'));
   const T=TAB(); $('lockBtn').classList.toggle('hide',!T);
-  if(T&&!unlocked()&&h!=='f/'+T.form&&!(T.form==='checkin'&&h==='tablet')&&!(PAIR.includes(T.form)&&['f/booking','f/checkin','tablet'].includes(h))){ history.replaceState(null,'','#f/'+T.form); return route(); }
+  if(T&&!unlocked()&&h!=='boss'&&h!=='payroll'&&h!=='f/'+T.form&&!(T.form==='checkin'&&h==='tablet')&&!(PAIR.includes(T.form)&&['f/booking','f/checkin','tablet'].includes(h))){ history.replaceState(null,'','#f/'+T.form); return route(); }
   const ft=h==='tablet'?'checkin':(h.startsWith('f/')?h.slice(2):'');
   if(ft&&(ft==='checkin'||(DEFS[ft]&&!DEFS[ft].bossOnly))&&!deviceKey()) return tabletSetup(ft);
   if(h==='tablet'||h==='f/checkin'){ $('vTablet').classList.remove('hide'); initTabletCommon(); const first=!ciInit; initCheckin(); applyPrefill('checkin'); flowSwitch('checkin');
     if(window._pickedBoard||window._pickedBooking||step>1){ $('ciMain').classList.remove('dash'); renderPicked(); if(!first) loadBookingPick(); } else { /* open the check-in form straight away (list still reachable via ← បញ្ជី) */ if(hasDraft()){ $('ciMain').classList.remove('dash'); renderPicked(); } else openCiForm(-1); renderCiDash(); loadBookingPick(); window.scrollTo(0,0); } }
   else if(h.startsWith('f/') && DEFS[h.slice(2)] && !DEFS[h.slice(2)].bossOnly){ $('vForm').classList.remove('hide'); initTabletCommon(); openGeneric(h.slice(2)); applyPrefill(h.slice(2)); flowSwitch(h.slice(2)); }
   else if(h==='staff'){ $('vStaff').classList.remove('hide'); initStaff(); }
-  else if(h==='boss'){ $('gfBody').innerHTML=''; $('vBoss').classList.remove('hide'); initBoss(); }
+  else if(h==='boss'||h==='payroll'){ if(h==='payroll') window._openPayroll=1; $('gfBody').innerHTML=''; $('vBoss').classList.remove('hide'); initBoss(); }
   else { $('vHome').classList.remove('hide');
     $('homeList').innerHTML=`<a href="#staff"><div class="card"><h3>📅 បុគ្គលិក · Booking Board &amp; Housekeeping</h3><div class="muted">ចូលដោយលេខ PIN បុគ្គលិក · ហ្វម និងការកំណត់ថេប្លេតនៅខាងក្នុង</div></div></a>`+
       `<a href="#boss"><div class="card"><h3>🔐 មេ</h3><div class="muted">មើលហ្វមទាំងអស់ ប្រាក់ខែ Booking និង Backup</div></div></a>`; }
@@ -1353,7 +1355,8 @@ async function bossLogin(){
   }catch(e){ $('loginErr').textContent=/WRONG/.test(e.message)?'ពាក្យសម្ងាត់មិនត្រឹមត្រូវ':e.message; }
 }
 function bossLogout(){ try{sessionStorage.removeItem('ajhub_key')}catch(e){} location.reload(); }
-function enterBoss(){ ROLE='boss'; $('bossLogin').classList.add('hide'); $('bossApp').classList.remove('hide'); startBoss(); }
+function enterBoss(){ ROLE='boss'; $('bossLogin').classList.add('hide'); $('bossApp').classList.remove('hide'); startBoss();
+  if(window._openPayroll){ window._openPayroll=0; try{ showTab('payroll'); openPayrollNew(); }catch(e){} history.replaceState(null,'','#boss'); } }
 function startBoss(){
   if(bossStarted) return; bossStarted=true;
   $('ciT').innerHTML='<option value="">គ្រប់ប្រភេទហ្វម</option>'+TABLET_TYPES.map(t=>`<option value="${t}">${typeMeta(t).icon} ${esc(typeMeta(t).short)}</option>`).join('');
@@ -1903,8 +1906,8 @@ function renderHK(){
 function renderTabletLinks(){
   const base=location.href.split('#')[0];
   $('tabletLinks').innerHTML=`<div class="row" style="grid-column:1/-1;margin:0;gap:8px;flex-wrap:wrap"><button class="btn sm" onclick="printAllQR()">🖨️ បោះពុម្ព QR ទាំងអស់</button><button class="btn alt sm" onclick="downloadAllQR()">⬇️ ទាញយក QR ទាំងអស់ (PNG)</button></div>`+
-  TABLET_TYPES.map(t=>`<div class="card"><h3>${typeMeta(t).icon} ${esc(typeMeta(t).short)}</h3><div class="muted">${esc(typeMeta(t).title)}</div><canvas class="qrcard" id="qr_${t}" aria-label="QR ${esc(typeMeta(t).title)}"></canvas><div class="link">${esc(base+'#f/'+t)}</div><div class="row" style="margin:8px 0 0;flex-wrap:wrap"><button class="btn alt sm" onclick="downloadQR('${t}')">⬇️ ទាញយក</button><button class="btn alt sm" onclick="copyText('${base}#f/${t}',this)">ចម្លងលីង</button><a class="btn alt sm" href="#f/${t}" target="_blank" rel="noopener" style="text-decoration:none">បើក</a></div></div>`).join('');
-  const go=()=>TABLET_TYPES.forEach(t=>{try{drawQRCard($('qr_'+t),t,base+'#f/'+t)}catch(e){console.warn('QR',t,e)}});
+  QR_TYPES.map(t=>`<div class="card"><h3>${typeMeta(t).icon} ${esc(typeMeta(t).short)}</h3><div class="muted">${esc(typeMeta(t).title)}</div><canvas class="qrcard" id="qr_${t}" aria-label="QR ${esc(typeMeta(t).title)}"></canvas><div class="link">${esc(base+qrHash(t))}${t==='payroll'?'<div class="muted" style="font-size:12px">🔐 សម្រាប់មេប៉ុណ្ណោះ — ត្រូវការពាក្យសម្ងាត់មេ</div>':''}</div><div class="row" style="margin:8px 0 0;flex-wrap:wrap"><button class="btn alt sm" onclick="downloadQR('${t}')">⬇️ ទាញយក</button><button class="btn alt sm" onclick="copyText('${base}${qrHash(t)}',this)">ចម្លងលីង</button><a class="btn alt sm" href="${qrHash(t)}" target="_blank" rel="noopener" style="text-decoration:none">បើក</a></div></div>`).join('');
+  const go=()=>QR_TYPES.forEach(t=>{try{drawQRCard($('qr_'+t),t,base+qrHash(t))}catch(e){console.warn('QR',t,e)}});
   Promise.all([document.fonts?document.fonts.load("700 40px 'Kantumruy Pro'","ក"):0,loadQRLogo()]).catch(()=>{}).then(go);
 }
 let _qrLogo=null;
@@ -1935,9 +1938,9 @@ function drawQRCard(c,t,url){
   x.fillStyle='#777';x.font="400 22px 'Kantumruy Pro',sans-serif";x.fillText('ស្កេនដើម្បីបើក · Scan to open',W/2,800);
 }
 function downloadQR(t){const c=$('qr_'+t);if(!c)return;const a=document.createElement('a');a.download='AJ-QR-'+t+'.png';a.href=c.toDataURL('image/png');document.body.appendChild(a);a.click();a.remove();}
-function downloadAllQR(){TABLET_TYPES.forEach((t,i)=>setTimeout(()=>downloadQR(t),i*400));}
+function downloadAllQR(){QR_TYPES.forEach((t,i)=>setTimeout(()=>downloadQR(t),i*400));}
 function printAllQR(){
-  const imgs=TABLET_TYPES.map(t=>{const c=$('qr_'+t);return c?`<div class="c"><img src="${c.toDataURL('image/png')}"></div>`:''}).join('');
+  const imgs=QR_TYPES.map(t=>{const c=$('qr_'+t);return c?`<div class="c"><img src="${c.toDataURL('image/png')}"></div>`:''}).join('');
   const w=window.open('','_blank');if(!w){alert('សូមអនុញ្ញាត pop-up ដើម្បីបោះពុម្ព');return;}
   w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>A&J QR Codes</title><style>@page{size:A4;margin:10mm}body{margin:0;font-family:sans-serif}.g{display:grid;grid-template-columns:repeat(3,1fr);gap:6mm}.c{break-inside:avoid}.c img{width:100%;display:block}</style></head><body><div class="g">${imgs}</div><script>window.onload=()=>{setTimeout(()=>window.print(),300)}<\/script></body></html>`);
   w.document.close();
