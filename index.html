@@ -432,6 +432,7 @@ dialog::backdrop{background:#0008}
           <input type="search" id="ciQ" placeholder="ស្វែងរក ឈ្មោះ / ID / បន្ទប់ / ទូរស័ព្ទ" oninput="renderForms()">
           <select id="ciT" onchange="renderForms()"></select>
           <select id="ciM" onchange="renderForms()"><option value="">គ្រប់ខែ</option></select>
+          <button class="btn alt sm" onclick="openBin()">🗑 ធុងសំរាម / Bin</button>
         </div>
         <div class="muted" id="ciCount" style="margin-bottom:8px"></div>
         <div class="tw"><table id="tCi"></table></div>
@@ -1715,12 +1716,33 @@ const paperFor=r=>r.type==='checkin'?paperCheckin(r):paperGeneric(r);
 const docId=r=>r._origin==='old'?'old:'+(r.id||r._oldId||r._id):String(r._id||'');
 function docTitle(r){ const t=r.type==='checkin'?'Check-in':(typeMeta(r.type)?.title||r.type); return [t,dmy(fDate(r)),(fRoom(r)?'Room '+fRoom(r):''),fName(r)].filter(Boolean).join(' - ').replace(/\//g,'-'); }
 /* dialog toolbar */
+/* ---------- boss: 🗑 delete → Bin (kept in sheet "🗑 Deleted", can be restored) ---------- */
+function canDel(id){ id=String(id||''); return !!id&&([...S.forms,...(S.payroll||[])].some(r=>String(r._id)===id&&r._origin!=='old')); }
+async function delRecord(id){
+  const r=[...S.forms,...(S.payroll||[])].find(x=>String(x._id)===String(id)); if(!r) return;
+  if(!confirm(`🗑 លុបហ្វមនេះ?\n${docTitle(r)}\n\nវាទៅក្នុងធុងសំរាម — អាចយកមកវិញបាន។`)) return;
+  try{ await api('delete',{key:bossKey(),id:String(id)}); }
+  catch(e){ return alert(/Unknown action/.test(e.message)?'ម៉ាស៊ីនមេមិនទាន់ Deploy កំណែថ្មីទេ (Apps Script → Deploy → Manage deployments → New version)។':'លុបមិនបាន៖ '+e.message); }
+  S.forms=S.forms.filter(x=>String(x._id)!==String(id)); S.payroll=(S.payroll||[]).filter(x=>String(x._id)!==String(id));
+  closeDlg(); renderAll(); }
+async function openBin(){
+  $('dT').textContent='🗑 ធុងសំរាម / Bin'; setDocBtns(null); $('dB').innerHTML='<p class="muted">កំពុងទាញ…</p>'; $('dlg').showModal();
+  let L=[]; try{ L=(await api('listDeleted',{key:bossKey()})).records||[]; }
+  catch(e){ $('dB').innerHTML=`<div class="alert warn">${/Unknown action/.test(e.message)?'ម៉ាស៊ីនមេមិនទាន់ Deploy កំណែថ្មីទេ':esc(e.message)}</div>`; return; }
+  L.sort((a,b)=>String(b._deletedAt).localeCompare(String(a._deletedAt)));
+  $('dB').innerHTML=`<p class="muted">ហ្វមដែលបានលុប (${L.length}) — ចុច ↩ ដើម្បីយកមកវិញ។ ទិន្នន័យនៅក្នុង Google Sheet ផ្ទាំង "🗑 Deleted"។</p>`+
+    (L.length?L.map(r=>`<div class="dcard" style="cursor:default"><div class="bd" style="background:#8a94a6">${esc(fRoom(r)||'—')}</div><div class="mid"><b>${esc(fName(r)||r.staffName||'—')}</b><small>${esc((typeMeta(r.type)||{}).short||r.type)} · ${esc(fDate(r)||'')}</small><small>🗑 ${esc(String(r._deletedAt).slice(0,16))}</small></div><div class="act"><button class="btn sm" onclick="restoreRecord('${esc(r._id)}',this)">↩ យកមកវិញ</button></div></div>`).join(''):'<div class="card muted">ធុងសំរាមទទេ</div>');
+}
+async function restoreRecord(id,btn){ btn.disabled=true; btn.textContent='…';
+  try{ await api('restore',{key:bossKey(),id}); btn.closest('.dcard').remove(); btn.textContent='✅'; }catch(e){ btn.disabled=false; btn.textContent='↩ យកមកវិញ'; return alert(e.message); }
+  try{ const j=await api('list',{key:bossKey()}); const R=j.records||[]; S.forms=R.filter(r=>r.type!=='payroll'&&r.type!=='bk'&&r.type!=='room'&&r._origin!=='old-system').map(r=>({...r,_origin:'new'})); S.payroll=R.filter(r=>r.type==='payroll'); renderAll(); }catch(e){} }
 function setDocBtns(meta){
   window._doc=meta; const boss=ROLE==='boss'&&bossKey(); const have=meta&&meta.id&&(S.pdfs||{})[meta.id];
   $('docBtns').innerHTML=meta?`<button class="btn alt sm" onclick="printDoc()" title="Print">🖨</button><button class="btn alt sm" onclick="dlPdf()" title="PDF">⬇ PDF</button>`+
     (boss?`<button class="btn alt sm" id="drvBtn" onclick="drivePdf()" title="Google Drive">☁️ Drive</button>`:'')+
     (navigator.canShare?`<button class="btn alt sm" onclick="sharePdf()" title="Share">📤</button>`:'')+
-    (have?`<a class="btn alt sm" target="_blank" rel="noopener" href="https://drive.google.com/file/d/${esc(have)}/view">📄</a>`:''):'';
+    (have?`<a class="btn alt sm" target="_blank" rel="noopener" href="https://drive.google.com/file/d/${esc(have)}/view">📄</a>`:'')+
+    (boss&&canDel(meta.id)?`<button class="btn alt sm" style="color:var(--bad)" onclick="delRecord('${esc(meta.id)}')" title="Delete">🗑 លុប</button>`:''):'';
 }
 function docEl(){ return $('dB').querySelector('.paper')||$('dB'); }
 function printDoc(){ document.body.classList.add('pdlg'); const off=()=>{document.body.classList.remove('pdlg');window.removeEventListener('afterprint',off)}; window.addEventListener('afterprint',off); setTimeout(()=>window.print(),50); }
