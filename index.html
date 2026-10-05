@@ -809,8 +809,11 @@ async function api(action,payload={}){
   if(!/^https:\/\/script\.google\.com\//.test(API_URL)) throw new Error('មិនទាន់ភ្ជាប់ Google Sheet (API_URL)។ សូមដំឡើង Apps Script ជាមុនសិន។');
   const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...payload}),redirect:'follow'});
   if(!r.ok) throw new Error('Server '+r.status);
-  const j=await r.json(); if(!j.ok) throw new Error(j.error||'Error'); return j;
+  const j=await r.json(); if(!j.ok) throw new Error(j.error||'Error');
+  if(action==='board'&&j.bookings) try{ ls.set('ajhub_board_cache',JSON.stringify({at:Date.now(),bookings:j.bookings,rooms:j.rooms||[]})); }catch(e){}
+  return j;
 }
+function boardCache(){ try{ const c=JSON.parse(ls.get('ajhub_board_cache')||'null'); return c&&c.bookings||null; }catch(e){ return null; } }
 /* ---------- tablet common: online tag, offline queue ---------- */
 let tbCommon=false;
 function netTag(){document.querySelectorAll('.net-tag').forEach(e=>e.textContent=navigator.onLine?'🟢 Online':'🔴 Offline')}
@@ -1086,6 +1089,7 @@ async function loadBookingPick(){
   const add=x=>{ const clean=Object.fromEntries(Object.entries(x).filter(([,v])=>v!==''&&v!=null));
     const e=L.find(w=>(x.boardId&&w.boardId===x.boardId)||(x.signedId&&w.signedId===x.signedId));
     if(e) Object.assign(e,clean); else L.push({room:'',name:'',ci:'',co:'',...clean}); };
+  if(!WAIT.length){ const c=boardCache(); if(c&&c.length){ if(!BOARD.bookings.length) BOARD.bookings=c; const done0=new Set(c.filter(b=>b.status!=='reserved').map(b=>b.bkId)); WAIT=waitingFromBoard(c).filter(w=>!done0.has(w.boardId)); renderWait(); } }
   if($('waitList')&&!WAIT.length) $('waitList').innerHTML='<div class="muted">កំពុងទាញ…</div>';
   let ok=false, board=null;
   try{ const j=await api('board',{key:deviceKey()}); board=j.bookings||[]; BOARD={bookings:board,rooms:j.rooms||[]}; waitingFromBoard(board).forEach(add); ok=true; }catch(e){}
@@ -2048,10 +2052,15 @@ async function openBkList(){
     +'<div id="bklStats" class="bkl-stats"></div><input type="search" id="bklQ" placeholder="🔍 ស្វែងរក ឈ្មោះ / បន្ទប់ / ប្រភព..." oninput="BKL.q=this.value;renderBkList()">'
     +'<div id="bklChips" class="bkl-chips"></div><div id="bklBody"><div class="muted" style="padding:24px;text-align:center">កំពុងទាញ…</div></div></div>';
   $('bklQ').value=BKL.q;
-  try{ const j=await api('board',{key:deviceKey()}); BKL.list=(j.bookings||[]).filter(b=>b&&b.status!=='blocked'&&b.status!=='cancelled'); }
-  catch(e){ $('bklBody').innerHTML='<div class="alert warn">ទាញ Booking មិនបាន ('+esc(e.message)+')។ សូមពិនិត្យអ៊ីនធឺណិត ហើយចុច ⟳</div>'; return; }
+  /* show the last known list instantly, then refresh from Google in the background */
+  const keep=b=>b&&b.status!=='blocked'&&b.status!=='cancelled';
+  const cached=(BOARD.bookings&&BOARD.bookings.length)?BOARD.bookings:boardCache();
+  if(cached&&cached.length){ BKL.list=cached.filter(keep); renderBkList(); bklSync('⟳ កំពុងធ្វើបច្ចុប្បន្នភាព…'); }
+  try{ const j=await api('board',{key:deviceKey()}); BOARD={bookings:j.bookings||[],rooms:j.rooms||BOARD.rooms||[]}; BKL.list=(j.bookings||[]).filter(keep); bklSync(''); }
+  catch(e){ if(cached&&cached.length){ bklSync('⚠️ មិនអាចធ្វើបច្ចុប្បន្នភាព — បង្ហាញទិន្នន័យចុងក្រោយ'); return; } $('bklBody').innerHTML='<div class="alert warn">ទាញ Booking មិនបាន ('+esc(e.message)+')។ សូមពិនិត្យអ៊ីនធឺណិត ហើយចុច ⟳</div>'; return; }
   renderBkList();
 }
+function bklSync(t){ let el=$('bklSync'); if(!el){ const st=$('bklStats'); if(!st) return; el=document.createElement('div'); el.id='bklSync'; el.className='muted'; el.style.cssText='font-size:12px;text-align:center;margin:4px 0'; st.parentNode.insertBefore(el,st); } el.textContent=t; }
 function renderBkList(){ if(!$('bklBody')) return;
   const L=BKL.list, t=todayStr(), n={reserved:0,checkedin:0,checkedout:0};
   L.forEach(b=>{ if(n[b.status]!==undefined) n[b.status]++; });
