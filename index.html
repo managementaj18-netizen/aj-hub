@@ -159,6 +159,16 @@ dialog::backdrop{background:#0008}
 .wcard .r{font-size:20px;font-weight:700;margin-right:6px}
 .wcard small{display:block;color:var(--mute);font-size:12.5px}
 .wgrp{font-size:13px;color:var(--mute);margin:10px 0 6px;font-weight:600}
+.ciTop{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:4px 0 10px}
+.ciSec{background:var(--card,#fff);border:1px solid var(--line);border-radius:16px;padding:16px;margin:0 0 16px}
+.ciNo{display:inline-grid;place-items:center;width:30px;height:30px;border-radius:50%;background:#111;color:#fff;font-size:16px;margin-right:6px;vertical-align:middle}
+.ciSec.okd .ciNo{background:#1f7a3a}
+.draftBar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-top:14px;padding:12px;border:2px dashed #111;border-radius:12px;background:#fafafa}
+.draftBar .btn{white-space:normal}
+#ciMain.isDone .ciTop,#ciMain.isDone #waitBox,#ciMain.isDone #ciPicked{display:none}
+.declWrap{margin-top:12px}.declWrap summary{cursor:pointer;color:var(--mute);font-size:14px;padding:6px 0}
+.err,.sigwrap.err{outline:3px solid #dc2626 !important;outline-offset:2px;border-radius:10px}
+.dcard.dr .bd{background:#111}.dcard.dr{border-color:#111;border-style:dashed}
 #ciMain.dash>*:not(#ciDash):not(.pendingBox):not(.flowsw){display:none}#ciMain:not(.dash) #ciDash{display:none}
 .dstats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:10px 0 12px}.dstats .card b{font-size:28px;display:block;line-height:1.1}.dstats .card span{font-size:12px;color:var(--mute);text-transform:uppercase;letter-spacing:.04em}
 .dbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:10px}.dbar input{flex:1;min-width:180px;width:auto}
@@ -248,16 +258,37 @@ dialog::backdrop{background:#0008}
   <div class="center"><div class="choose" id="homeList"></div></div>
 </div>
 
-<!-- ============ CHECK-IN TABLET (multi-step) ============ -->
+<!-- ============ CHECK-IN TABLET (one scrolling page) ============ -->
 <div id="vTablet" class="hide">
   <header><div class="brand"><img src="data:image/png;base64,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" alt="A&amp;J"><div class="bt"><b>A&amp;J Kampot Boutique</b><small>Guest Check-in · <span class="devname"></span></small></div></div><span class="tag net-tag">…</span></header>
   <main style="max-width:820px" id="ciMain">
     <div class="flowsw hide" id="flowswCi"></div><div class="pendingBox"></div><div id="ciDash"></div><div id="ciPicked"></div>
-    <div id="ciHead"></div><div class="steps" id="ciSteps"><span></span><span></span><span></span><span></span></div>
+    <div id="ciHead"></div>
 
-    <section class="st" data-s="1">
-      <h2 style="margin-top:0">១. បុគ្គលិកបំពេញ / Staff</h2>
-      <div id="waitBox" class="wait"></div><select id="bkPick" class="hide"></select>
+    <div class="ciTop"><button class="btn alt sm" onclick="showCiDash()">← បញ្ជី</button><span class="muted">រំកិលចុះក្រោម ↓ មិនចាំបាច់ចុច Next · Scroll down — no Next</span></div>
+    <div id="waitBox" class="wait"></div><select id="bkPick" class="hide"></select>
+
+    <section class="st ciSec" data-s="1" id="secSign">
+      <h2 style="margin-top:0"><span class="ciNo">1</span> ភ្ញៀវអាន &amp; ស៊ីញ៉េ / Guest: read &amp; sign / 住客阅读并签名</h2>
+      <div class="policy" id="policyBox"></div>
+      <label class="check" id="agreeRow"><input type="checkbox" id="f_agree"><span>I have read and agree to the hotel policy and declaration above. / ខ្ញុំបានអាន និងយល់ព្រមតាមលក្ខខណ្ឌខាងលើ។ / 我已阅读并同意以上条款。</span></label>
+      <h3>① Guest Signature — Hotel Policy / ហត្ថលេខាភ្ញៀវ — គោលការណ៍សណ្ឋាគារ / 住客签名</h3>
+      <div class="sigwrap"><canvas id="sigGuest"></canvas><div class="ph">✍️ Sign here / ស៊ីញ៉េនៅទីនេះ / 请在此签名</div></div>
+      <div class="row" style="margin-top:8px"><button class="btn alt" onclick="sigClear('sigGuest');mirrorSig()">Clear / លុប</button><span class="muted">Sign once — copied automatically to ② and ③ / ស៊ីញ៉េម្ដង ចម្លងទៅ ② និង ③ ដោយស្វ័យប្រវត្តិ</span></div>
+      <details class="declWrap" open><summary>② ③ Declaration (auto) — ចុចមើល</summary><div id="declBox"></div></details>
+    </section>
+
+    <section class="st ciSec" data-s="1" id="secPhoto">
+      <h2 style="margin-top:0"><span class="ciNo">2</span> 📷 ថតឯកសារ ID / Passport — បុគ្គលិកថត</h2>
+      <div class="photos" id="photos"></div>
+      <div class="draftBar">
+        <div><b>ភ្ញៀវស៊ីញ៉េ + ថតរួចហើយ?</b><div class="muted">ចុចរក្សាទុកសិន → នាំភ្ញៀវចូលបន្ទប់ → ត្រលប់មកបំពេញខាងក្រោមពេលក្រោយ (មើលក្នុង ← បញ្ជី)</div></div>
+        <button class="btn big" type="button" id="draftBtn" onclick="saveCiDraft()">💾 រក្សាទុកសិន — បំពេញពេលក្រោយ</button>
+      </div>
+    </section>
+
+    <section class="st ciSec" data-s="1" id="secStaff">
+      <h2 style="margin-top:0"><span class="ciNo">3</span> បុគ្គលិកបំពេញ / Staff fill</h2>
       <div class="fg">
         <label>Room No. * / លេខបន្ទប់<input id="f_room"></label>
         <label>Room Type / ប្រភេទបន្ទប់<select id="f_roomtype"><option></option><option>Superior Room</option><option>Superior Room with Balcony</option><option>Superior Twin Room Type A</option><option>Superior Twin Room Type B</option><option>Family Suite</option></select></label>
@@ -275,11 +306,10 @@ dialog::backdrop{background:#0008}
         <label>Extra<input id="f_extra" placeholder="ឧ. គ្រែបន្ថែម"></label>
         <label class="full">Notes / ចំណាំ<textarea id="f_notes" rows="2"></textarea></label>
       </div>
-      <div class="nav2"><button class="btn alt" onclick="showCiDash()">← បញ្ជី</button><button class="btn big" style="flex:1" onclick="go(2)">បន្ទាប់ → ប្រគល់ឲ្យភ្ញៀវ</button></div>
     </section>
 
-    <section class="st hide" data-s="2">
-      <h2 style="margin-top:0">2. Guest Information / ព័ត៌មានភ្ញៀវ / 宾客信息</h2>
+    <section class="st ciSec" data-s="1" id="secGuest">
+      <h2 style="margin-top:0"><span class="ciNo">4</span> Guest Information / ព័ត៌មានភ្ញៀវ / 宾客信息 <small class="muted" style="font-weight:400">(បុគ្គលិកអាចបំពេញពីរូប Passport)</small></h2>
       <div class="fg">
         <label class="full">Full Name * / ឈ្មោះពេញ / 姓名<input id="f_name" autocomplete="off"></label>
         <label>Passport / ID No. * / 护照号码<input id="f_passport" autocomplete="off"></label>
@@ -298,29 +328,15 @@ dialog::backdrop{background:#0008}
           <div class="chips" id="purposeChips"><button type="button">Tourism / 旅游</button><button type="button">Business / 商务</button><button type="button">Work / 工作</button><button type="button">Study / 学习</button><button type="button">Other / 其他</button></div>
         </label>
       </div>
-      <div class="nav2"><button class="btn alt" onclick="go(1)">←</button><button class="btn" onclick="go(3)">Next / បន្ទាប់ / 下一步 →</button></div>
     </section>
 
-    <section class="st hide" data-s="3">
-      <h2 style="margin-top:0">3. Hotel Policy & Declaration / គោលការណ៍ & សេចក្ដីប្រកាស / 酒店规定与声明</h2>
-      <div class="policy" id="policyBox"></div>
-      <label class="check"><input type="checkbox" id="f_agree"><span>I have read and agree to the hotel policy and declaration above. / ខ្ញុំបានអាន និងយល់ព្រមតាមលក្ខខណ្ឌខាងលើ។ / 我已阅读并同意以上条款。</span></label>
-      <h3>① Guest Signature — Hotel Policy / ហត្ថលេខាភ្ញៀវ — គោលការណ៍សណ្ឋាគារ / 住客签名</h3>
-      <div class="sigwrap"><canvas id="sigGuest"></canvas><div class="ph">✍️ Sign here / ស៊ីញ៉េនៅទីនេះ / 请在此签名</div></div>
-      <div class="row" style="margin-top:8px"><button class="btn alt" onclick="sigClear('sigGuest');mirrorSig()">Clear / លុប</button><span class="muted">Sign once — copied automatically to ② and ③ / ស៊ីញ៉េម្ដង ចម្លងទៅ ② និង ③ ដោយស្វ័យប្រវត្តិ</span></div>
-      <div id="declBox"></div>
-      <div class="nav2"><button class="btn alt" onclick="go(2)">←</button><button class="btn" onclick="go(4)">Next / បន្ទាប់ →</button></div>
-    </section>
-
-    <section class="st hide" data-s="4">
-      <h2 style="margin-top:0">៤. រូបថត ID / Passport — ថតដោយបុគ្គលិក</h2>
-      <div class="photos" id="photos"></div>
-      <h2>បុគ្គលិកបញ្ជាក់ / Staff confirm</h2>
+    <section class="st ciSec" data-s="1" id="secConfirm">
+      <h2 style="margin-top:0"><span class="ciNo">5</span> បុគ្គលិកបញ្ជាក់ / Staff confirm</h2>
       <div class="card" id="summary"></div>
       <h3 style="margin-top:14px">ហត្ថលេខាបុគ្គលិក / Staff Signature</h3>
       <div class="sigwrap"><canvas id="sigStaff"></canvas><div class="ph">✍️ បុគ្គលិកស៊ីញ៉េ</div></div>
       <div class="row" style="margin-top:8px"><button class="btn alt" onclick="sigClear('sigStaff')">លុប</button></div>
-      <div class="nav2"><button class="btn alt" onclick="go(3)">←</button><button class="btn" id="submitBtn" onclick="submitCheckin()">✅ រក្សាទុក & ផ្ញើទៅមេ</button></div>
+      <div class="nav2"><button class="btn alt" onclick="saveCiDraft()">💾 រក្សាទុកសិន</button><button class="btn big" style="flex:1" id="submitBtn" onclick="submitCheckin()">✅ រក្សាទុក &amp; ផ្ញើទៅមេ</button></div>
     </section>
 
     <section class="st hide" data-s="5">
@@ -893,7 +909,10 @@ function initCheckin(){
   $('purposeChips').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;purpose=b.textContent.split(' /')[0];[...$('purposeChips').children].forEach(x=>x.classList.toggle('on',x===b))});
   ['sigGuest','sigStaff'].forEach(initSig); $('sigGuest').addEventListener('pointerup',()=>setTimeout(mirrorSig,20)); $('sigGuest').addEventListener('pointerleave',()=>setTimeout(mirrorSig,20));
   $('f_ci').value=todayStr(); $('f_co').value=addDays(todayStr(),1); $('f_staff').value=ls.get('ajhub_staff')||'';
-  loadBookingPick();
+  const tb=$('vTablet'); const live=e=>{ if(e.target.classList) e.target.classList.remove('err'); if(e.target.id==='f_agree') $('agreeRow').classList.remove('err'); clearTimeout(window._ciLive); window._ciLive=setTimeout(()=>{renderDecl();updSummary();},250); };
+  tb.addEventListener('input',live); tb.addEventListener('change',live);
+  ['sigGuest','sigStaff'].forEach(id=>$(id).addEventListener('pointerup',()=>{$(id).parentElement.classList.remove('err');setTimeout(updSummary,30)}));
+  loadBookingPick(); loadCiDrafts();
   go(1);
 }
 /* ---------- Nationality: full country list (English / ខ្មែរ) ---------- */
@@ -1024,8 +1043,11 @@ function renderCiDash(){
   const ic=b=>`<div class="dcard in"><div class="bd">${esc(b.room)}</div><div class="mid"><b>${esc(b.guest||'')}</b><small>Room ${esc(b.room)}${b.guests?' · '+esc(b.guests)+' pax':''} · ${b.nights} night(s)</small><small>${fmtD(b.start)} → ${fmtD(bkEnd(b))}${(b.extensions||[]).length?' (⏰ extended '+b.extensions.length+'x)':''} · ✓ Checked in${b.checkinAt?' '+esc(b.checkinAt):''}</small></div>
     <div class="act"><span class="pill ok">Checked In</span><span class="muted" style="font-size:12px">${esc(b.source||'')}</span><div class="row"><button class="btn alt sm" onclick="openExtend('${esc(b.bkId)}')">⏰ Extend</button><button class="btn alt sm" onclick="doCheckout('${esc(b.bkId)}')">🚪 Out</button></div></div></div>`;
   const A=wToday.filter(w=>m(w.room,w.name,w.phone,w.ref,w.src)), S2=dashF==='all'?wSoon.filter(w=>m(w.room,w.name,w.phone,w.ref,w.src)):[], I=inh.filter(b=>m(b.room,b.guest,b.phone,b.ref,b.source)).sort((a,b)=>String(a.room).localeCompare(String(b.room),undefined,{numeric:true}));
-  $('dashList').innerHTML=(A.length?`<div class="wgrp">⏳ រង់ចាំ Check-in (${A.length})</div>`+A.map(wc).join(''):'')+(S2.length?`<div class="wgrp">🗓 កក់ថ្ងៃខាងមុខ (${S2.length})</div>`+S2.map(wc).join(''):'')+(I.length?`<div class="wgrp">✅ កំពុងស្នាក់នៅ / Checked in (${I.length})</div>`+I.map(ic).join(''):'')
-    +(A.length||S2.length||I.length?'':`<div class="card muted">${q?'រកមិនឃើញ':'គ្មានភ្ញៀវរង់ចាំទេ — ចុច + Booking ដើម្បីបញ្ចូលការកក់ (១ ឬ ច្រើនបន្ទប់)'}</div>`)
+  const dc=d=>{const f=d.fields||{};return `<div class="dcard dr" onclick="openCiDraft('${d.id}')"><div class="bd">${esc(f.f_room||'✍️')}</div><div class="mid"><b>${esc(f.f_name||'(មិនទាន់មានឈ្មោះ)')}</b><small>ស៊ីញ៉េ ${new Date(d.at).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})} · 📷 ${Object.keys(d.photos||{}).length} រូប${f.f_room?' · Room '+esc(f.f_room):''}</small><small>⚠️ មិនទាន់ផ្ញើទៅមេ — បំពេញបន្ត</small></div>
+    <div class="act"><span class="pill warn">រង់ចាំបំពេញ</span><div class="row"><button class="btn sm" onclick="event.stopPropagation();openCiDraft('${d.id}')">✍️ បំពេញ</button><button class="btn alt sm" onclick="event.stopPropagation();delCiDraft('${d.id}')">✕</button></div></div></div>`;};
+  const D=CIDRAFTS.filter(d=>m(d.fields?.f_room,d.fields?.f_name));
+  $('dashList').innerHTML=(D.length?`<div class="wgrp">📝 ស៊ីញ៉េរួច — រង់ចាំបុគ្គលិកបំពេញ (${D.length})</div>`+D.map(dc).join(''):'')+(A.length?`<div class="wgrp">⏳ រង់ចាំ Check-in (${A.length})</div>`+A.map(wc).join(''):'')+(S2.length?`<div class="wgrp">🗓 កក់ថ្ងៃខាងមុខ (${S2.length})</div>`+S2.map(wc).join(''):'')+(I.length?`<div class="wgrp">✅ កំពុងស្នាក់នៅ / Checked in (${I.length})</div>`+I.map(ic).join(''):'')
+    +(D.length||A.length||S2.length||I.length?'':`<div class="card muted">${q?'រកមិនឃើញ':'គ្មានភ្ញៀវរង់ចាំទេ — ចុច + Booking ដើម្បីបញ្ចូលការកក់ (១ ឬ ច្រើនបន្ទប់)'}</div>`)
     +(dashF==='today'&&wSoon.length?`<p class="muted" style="text-align:center"><a href="javascript:void(0)" onclick="dashF='all';renderCiDash()">មើលការកក់ថ្ងៃខាងមុខ ${wSoon.length} ទៀត →</a></p>`:'');
 }
 function renderPicked(){ const el=$('ciPicked'); if(!el) return; const w=WAIT.find(x=>(window._pickedBoard&&x.boardId===window._pickedBoard)||(window._pickedBooking&&x.signedId===window._pickedBooking));
@@ -1104,22 +1126,69 @@ function waitBoardHTML(){
     (L.length?grp('📅 មកដល់ថ្ងៃនេះ',L.filter(w=>w.ci===t))+grp('⚠️ ហួសថ្ងៃ តែមិនទាន់មក',L.filter(w=>w.ci<t))+grp('🗓 ថ្ងៃខាងមុខ (១៤ ថ្ងៃ)',L.filter(w=>w.ci>t)):'<div class="muted">គ្មានភ្ញៀវរង់ចាំទេ</div>');
 }
 function addGuestRow(){const r=document.createElement('div');r.className='r';r.innerHTML='<input data-c="name" placeholder="Full name / ឈ្មោះ"><select data-c="nat">'+natOpts('Nationality / សញ្ជាតិ')+'</select><input data-c="passport" placeholder="Passport / ID"><button type="button" class="btn alt sm x" onclick="this.parentElement.remove()">✕</button>';$('f_extraGuests').appendChild(r)}
-function ciPhoto(k,inp){const f=inp.files[0];if(!f)return;compressPhoto(f,d=>{photos[k]=d;showThumb($('ph_'+k),d)});inp.value=''}
+function ciPhoto(k,inp){const f=inp.files[0];if(!f)return;compressPhoto(f,d=>{photos[k]=d;showThumb($('ph_'+k),d);updSummary()});inp.value=''}
+function updSummary(){ const el=$('summary'); if(!el) return;
+  el.innerHTML=`<div class="kv"><div>ភ្ញៀវ</div><div><b>${esc($('f_name').value)||'—'}</b></div><div>បន្ទប់</div><div>${esc($('f_room').value)||'—'} ${esc($('f_roomtype').value)}</div><div>ថ្ងៃ</div><div>${fmtD($('f_ci').value)} → ${fmtD($('f_co').value)} (${nightsBetween($('f_ci').value,$('f_co').value)||0} យប់)</div><div>លិខិតឆ្លងដែន</div><div>${esc($('f_passport').value)||'—'} · ${esc($('f_nat').value)||'—'}</div><div>ភ្ញៀវស៊ីញ៉េ</div><div>${sigs.sigGuest?.dirty?'✅':'❌ មិនទាន់'}</div><div>រូប ID</div><div>${Object.keys(photos).length} រូប</div></div>`;
+  const ok={secSign:$('f_agree').checked&&sigs.sigGuest?.dirty, secPhoto:Object.keys(photos).length>0, secStaff:$('f_room').value.trim()&&$('f_staff').value.trim()&&$('f_ci').value&&$('f_co').value, secGuest:$('f_name').value.trim()&&$('f_passport').value.trim()&&$('f_nat').value.trim(), secConfirm:sigs.sigStaff?.dirty};
+  Object.entries(ok).forEach(([id,v])=>$(id)&&$(id).classList.toggle('okd',!!v)); }
+/* one scrolling page: step 1 = the whole form, step 5 = done */
 function go(n){
-  if(n>step){
-    if(step===1){ if(!$('f_room').value.trim()) return alert('សូមបញ្ចូលលេខបន្ទប់'); if(!$('f_staff').value.trim()) return alert('សូមបញ្ចូលឈ្មោះបុគ្គលិក'); if(!$('f_ci').value||!$('f_co').value) return alert('សូមបញ្ចូលថ្ងៃចូល/ចេញ'); ls.set('ajhub_staff',$('f_staff').value.trim()); }
-    if(step===2){ if(!$('f_name').value.trim()||!$('f_passport').value.trim()||!$('f_nat').value.trim()) return alert('Please fill Name, Passport and Nationality.\nសូមបំពេញឈ្មោះ លិខិតឆ្លងដែន និងសញ្ជាតិ'); }
-    if(step===3){ if(!$('f_agree').checked) return alert('Please tick to agree. / សូមធីកយល់ព្រម'); if(!sigs.sigGuest?.dirty) return alert('Please sign. / សូមស៊ីញ៉េ'); }
-  }
-  step=n; document.querySelectorAll('#vTablet .st').forEach(s=>s.classList.toggle('hide',+s.dataset.s!==n));
-  document.querySelectorAll('#ciSteps span').forEach((s,i)=>s.classList.toggle('on',i<n));
-  if(n===4) $('summary').innerHTML=`<div class="kv"><div>ភ្ញៀវ</div><div><b>${esc($('f_name').value)}</b></div><div>បន្ទប់</div><div>${esc($('f_room').value)} ${esc($('f_roomtype').value)}</div><div>ថ្ងៃ</div><div>${fmtD($('f_ci').value)} → ${fmtD($('f_co').value)} (${nightsBetween($('f_ci').value,$('f_co').value)} យប់)</div><div>លិខិតឆ្លងដែន</div><div>${esc($('f_passport').value)} · ${esc($('f_nat').value)}</div><div>រូប ID</div><div>${Object.keys(photos).length} រូប</div></div>`;
-  if(n===3) renderDecl();
-  if(n===3||n===4) setTimeout(()=>{['sigGuest','sigStaff'].forEach(sigResize); mirrorSig();},30);
+  step=n===5?5:1; $('ciMain').classList.toggle('isDone',step===5);
+  document.querySelectorAll('#vTablet .st').forEach(s=>s.classList.toggle('hide',step===5?+s.dataset.s!==5:+s.dataset.s===5));
+  if(step===1){ renderDecl(); updSummary(); setTimeout(()=>{['sigGuest','sigStaff'].forEach(sigResize); mirrorSig(); updSummary();},30); }
   window.scrollTo(0,0);
 }
+function ciErr(el,msg){ if(!el) return false; el.classList.add('err'); el.scrollIntoView({behavior:'smooth',block:'center'}); if(el.focus&&/INPUT|SELECT|TEXTAREA/.test(el.tagName)) setTimeout(()=>el.focus({preventScroll:true}),350); alert(msg); return false; }
+function ciValidate(){
+  const v=id=>$(id).value.trim();
+  if(!$('f_agree').checked) return ciErr($('agreeRow'),'Please tick to agree. / សូមធីកយល់ព្រម (1)');
+  if(!sigs.sigGuest?.dirty) return ciErr($('sigGuest').parentElement,'Please sign. / ភ្ញៀវសូមស៊ីញ៉េ (1)');
+  if(!v('f_room')) return ciErr($('f_room'),'សូមបញ្ចូលលេខបន្ទប់ (3)');
+  if(!$('f_ci').value) return ciErr($('f_ci'),'សូមបញ្ចូលថ្ងៃចូល (3)');
+  if(!$('f_co').value) return ciErr($('f_co'),'សូមបញ្ចូលថ្ងៃចេញ (3)');
+  if(!v('f_staff')) return ciErr($('f_staff'),'សូមបញ្ចូលឈ្មោះបុគ្គលិក (3)');
+  if(!v('f_name')) return ciErr($('f_name'),'Please fill Name. / សូមបំពេញឈ្មោះភ្ញៀវ (4)');
+  if(!v('f_passport')) return ciErr($('f_passport'),'Please fill Passport / ID. / សូមបំពេញលេខលិខិតឆ្លងដែន (4)');
+  if(!v('f_nat')) return ciErr($('f_nat'),'Please select Nationality. / សូមជ្រើសសញ្ជាតិ (4)');
+  if(!sigs.sigStaff?.dirty) return ciErr($('sigStaff').parentElement,'សូមបុគ្គលិកស៊ីញ៉េ (5)');
+  ls.set('ajhub_staff',v('f_staff')); return true;
+}
+
+/* ---------- 💾 Save first, fill later (kept on THIS tablet until sent) ---------- */
+let CIDRAFTS=[];
+function ciDB(){ return new Promise((res,rej)=>{ const r=indexedDB.open('ajhub_ci',1); r.onupgradeneeded=()=>r.result.createObjectStore('drafts',{keyPath:'id'}); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }
+async function draftTx(mode,fn){ const db=await ciDB(); return new Promise((res,rej)=>{ const t=db.transaction('drafts',mode), st=t.objectStore('drafts'); const q=fn(st); t.oncomplete=()=>res(q&&q.result); t.onerror=()=>rej(t.error); }); }
+async function loadCiDrafts(){ try{ CIDRAFTS=(await draftTx('readonly',st=>st.getAll()))||[]; CIDRAFTS.sort((a,b)=>String(a.at).localeCompare(String(b.at))); }catch(e){ CIDRAFTS=[]; } renderCiDash(); }
+const CI_FIELDS=['f_room','f_roomtype','f_ci','f_co','f_guests','f_children','f_src','f_ref','f_staff','f_key','f_transport','f_plate','f_rental','f_extra','f_notes','f_name','f_passport','f_nat','f_phone','f_email','f_address','f_city','f_country','f_arrival','f_flight','f_depcountry'];
+async function saveCiDraft(){
+  if(!$('f_agree').checked) return ciErr($('agreeRow'),'ភ្ញៀវសូមធីកយល់ព្រមជាមុន / Please tick to agree.');
+  if(!sigs.sigGuest?.dirty) return ciErr($('sigGuest').parentElement,'ភ្ញៀវសូមស៊ីញ៉េជាមុន / Please sign first.');
+  if(!Object.keys(photos).length&&!confirm('មិនទាន់មានរូប ID / Passport ទេ។ រក្សាទុកសិនដដែល?')) return;
+  const id=window._ciDraftId||('d'+Date.now().toString(36));
+  const f={}; CI_FIELDS.forEach(k=>f[k]=$(k).value);
+  const d={id,at:new Date().toISOString(),fields:f,purpose,photos:{...photos},sig:sigData('sigGuest'),staffSig:sigData('sigStaff'),
+    extraGuests:[...$('f_extraGuests').children].map(r=>{const o={};r.querySelectorAll('[data-c]').forEach(i=>o[i.dataset.c]=i.value);return o}),
+    pickedBoard:window._pickedBoard||'',pickedBooking:window._pickedBooking||''};
+  try{ await draftTx('readwrite',st=>st.put(d)); }catch(e){ return alert('រក្សាទុកមិនបាន៖ '+e.message); }
+  if($('f_staff').value.trim()) ls.set('ajhub_staff',$('f_staff').value.trim());
+  alert('✅ រក្សាទុកសិនហើយ (ក្នុងថេប្លេតនេះ)\nបន្ទាប់ពីនាំភ្ញៀវចូលបន្ទប់ → ← បញ្ជី → "📝 ស៊ីញ៉េរួច — រង់ចាំបំពេញ" ដើម្បីបំពេញបន្ត ហើយផ្ញើទៅមេ។');
+  resetCheckin(true); showCiDash(); loadCiDrafts();
+}
+function openCiDraft(id){
+  const d=CIDRAFTS.find(x=>x.id===id); if(!d) return;
+  resetCheckin(true); window._ciDraftId=d.id; window._pickedBoard=d.pickedBoard||''; window._pickedBooking=d.pickedBooking||'';
+  Object.entries(d.fields||{}).forEach(([k,v])=>{ if(!$(k)) return; if(k==='f_nat') setNat($(k),v); else $(k).value=v; });
+  purpose=d.purpose||''; [...$('purposeChips').children].forEach(x=>x.classList.toggle('on',!!purpose&&x.textContent.split(' /')[0]===purpose));
+  (d.extraGuests||[]).forEach(g=>{ addGuestRow(); const r=$('f_extraGuests').lastElementChild; Object.entries(g).forEach(([k,v])=>{const i=r.querySelector(`[data-c="${k}"]`); if(!i) return; if(i.tagName==='SELECT') setNat(i,v); else i.value=v;}); });
+  photos={...(d.photos||{})}; Object.entries(photos).forEach(([k,src])=>$('ph_'+k)&&showThumb($('ph_'+k),src));
+  $('f_agree').checked=true;
+  $('ciMain').classList.remove('dash'); go(1); renderPicked();
+  setTimeout(()=>{ [['sigGuest',d.sig],['sigStaff',d.staffSig]].forEach(([cid,src])=>{ if(!src) return; const s=sigs[cid]; const im=new Image(); im.onload=()=>{ const r=s.c.getBoundingClientRect(); s.ctx.drawImage(im,0,0,r.width,r.height); s.dirty=true; s.c.parentElement.querySelector('.ph').style.opacity=0; mirrorSig(); updSummary(); }; im.src=src; }); },120);
+  setTimeout(()=>$('secStaff').scrollIntoView({behavior:'smooth',block:'start'}),300);
+}
+async function delCiDraft(id){ const d=CIDRAFTS.find(x=>x.id===id); if(!confirm(`លុបហ្វមដែលរក្សាទុកសិននេះ? (${d?(d.fields.f_name||d.fields.f_room||''):''})\nហត្ថលេខា និងរូបថតនឹងបាត់។`)) return; try{ await draftTx('readwrite',st=>st.delete(id)); }catch(e){} loadCiDrafts(); }
 async function submitCheckin(){
-  if(!sigs.sigStaff?.dirty) return alert('សូមបុគ្គលិកស៊ីញ៉េ');
+  if(!ciValidate()) return;
   const btn=$('submitBtn'); btn.disabled=true; btn.textContent='កំពុងរក្សាទុក…';
   const v=id=>$(id).value.trim();
   const data={ name:v('f_name'), passport:v('f_passport'), nat:v('f_nat'), phone:v('f_phone'), email:v('f_email'), address:v('f_address'), city:v('f_city'), country:v('f_country'),
@@ -1128,12 +1197,12 @@ async function submitCheckin(){
     extraGuests:[...$('f_extraGuests').children].map(r=>{const o={};r.querySelectorAll('[data-c]').forEach(i=>o[i.dataset.c]=i.value.trim());return o}).filter(o=>o.name),
     decl:{decl_arrival:v('f_arrival'),decl_departure:v('f_co'),decl_flight:v('f_flight'),decl_depcountry:v('f_depcountry'),decl_purpose:purpose},
     policyAgreed:true, policyVersion:'hub-1', bookingId:window._pickedBooking||'', boardId:window._pickedBoard||'', sigData:sigData('sigGuest'), gdSigData:sigData('sigGuest'), declSigData:sigData('sigGuest'), staffSigData:sigData('sigStaff'), idPhotos:{...photos}, status:'in' };
-  try{ const r=await saveRecord('checkin',data); document.querySelector('#vTablet .doneMsg').innerHTML=esc(doneText(r))+(r==='ok'?'<br>✅ Booking Board → ឆែកអ៊ីនហើយ · Housekeeping → បន្ទប់ '+esc(data.room)+' មានភ្ញៀវ':'')+doneTools()+backLink(); go(5);
+  try{ const r=await saveRecord('checkin',data); if(window._ciDraftId){ const did=window._ciDraftId; window._ciDraftId=''; try{ await draftTx('readwrite',st=>st.delete(did)); }catch(e){} loadCiDrafts(); } document.querySelector('#vTablet .doneMsg').innerHTML=esc(doneText(r))+(r==='ok'?'<br>✅ Booking Board → ឆែកអ៊ីនហើយ · Housekeeping → បន្ទប់ '+esc(data.room)+' មានភ្ញៀវ':'')+doneTools()+backLink(); go(5);
        clearTimeout(window._rt); window._rt=setTimeout(()=>{if(step===5)resetCheckin()},20000); }
   catch(e){ alert(e.message); }
   btn.disabled=false; btn.textContent='✅ រក្សាទុក & ផ្ញើទៅមេ';
 }
-function resetCheckin(stay){ try{$('dlg').close()}catch(e){} window._pickedBooking=''; window._pickedBoard=''; if(stay!==true) loadBookingPick(); $('f_extraGuests').innerHTML=''; $('f_transport').value='';
+function resetCheckin(stay){ try{$('dlg').close()}catch(e){} window._ciDraftId=''; document.querySelectorAll('#vTablet .err').forEach(x=>x.classList.remove('err')); window._pickedBooking=''; window._pickedBoard=''; if(stay!==true) loadBookingPick(); $('f_extraGuests').innerHTML=''; $('f_transport').value='';
   document.querySelectorAll('#vTablet input:not([type=checkbox]):not([type=file]),#vTablet textarea').forEach(i=>{if(i.id!=='f_staff')i.value=''});
   $('f_agree').checked=false; $('f_nat').value=''; $('f_guests').value=1; $('f_children').value=0; $('f_roomtype').value=''; $('f_src').value=''; $('bkPick').value='';
   $('f_ci').value=todayStr(); $('f_co').value=addDays(todayStr(),1);
