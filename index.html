@@ -925,10 +925,12 @@ window.addEventListener('hashchange',route);
    CHECK-IN TABLET (multi-step)
    ===================================================================== */
 let ciInit=false, step=1, purpose='', photos={};
-const PHOTO_SLOTS=[['id_front','ID / Passport (មុខ)'],['id_back','ID (ក្រោយ)'],['id_visa','Visa'],['id_extra_1','បន្ថែម 1'],['id_extra_2','បន្ថែម 2']];
+const PHOTO_SLOTS=[['id_front','ID / Passport (មុខ)'],['id_back','ID (ក្រោយ)'],['id_visa','Visa'],...Array.from({length:12},(_,i)=>['id_extra_'+(i+1),'បន្ថែម '+(i+1)])];
+/* show the first 5 boxes + filled ones + one empty extra box (up to 15 photos) */
+function refreshSlots(){ PHOTO_SLOTS.forEach(([k],i)=>{ const el=$('ph_'+k); if(!el) return; const show=i<5||!!photos[k]||!!photos[PHOTO_SLOTS[i-1][0]]; el.classList.toggle('hide',!show); }); }
 function initCheckin(){
   if(ciInit) return; ciInit=true; $('f_nat').innerHTML=natOpts(); $('ciHead').innerHTML=docHead('Guest Registration Form / ទម្រង់ចុះឈ្មោះភ្ញៀវ / 宾客登记表');
-  $('photos').innerHTML=PHOTO_SLOTS.map(([k,l])=>`<label class="photo" id="ph_${k}"><input type="file" accept="image/*" onchange="ciPhoto('${k}',this)"><span>📷</span><span>${l}</span></label>`).join('');
+  $('photos').innerHTML=PHOTO_SLOTS.map(([k,l])=>`<label class="photo" id="ph_${k}"><input type="file" accept="image/*" onchange="ciPhoto('${k}',this)"><span>📷</span><span>${l}</span></label>`).join(''); refreshSlots();
   $('policyBox').innerHTML=POLICY.slice(0,3).map(([h,r])=>`<h4>${esc(h)}</h4>`+r.map(t=>`<p>${esc(t)}</p>`).join('')).join('');
   $('purposeChips').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;purpose=b.textContent.split(' /')[0];[...$('purposeChips').children].forEach(x=>x.classList.toggle('on',x===b))});
   ['sigGuest','sigStaff'].forEach(initSig); $('sigGuest').addEventListener('pointerup',()=>setTimeout(mirrorSig,20)); $('sigGuest').addEventListener('pointerleave',()=>setTimeout(mirrorSig,20));
@@ -1160,11 +1162,11 @@ function waitBoardHTML(){
 }
 function addGuestRow(){const r=document.createElement('div');r.className='r';r.innerHTML='<input data-c="name" placeholder="Full name / ឈ្មោះ"><select data-c="nat">'+natOpts('Nationality / សញ្ជាតិ')+'</select><input data-c="passport" placeholder="Passport / ID"><button type="button" class="btn alt sm x" onclick="this.parentElement.remove()">✕</button>';$('f_extraGuests').appendChild(r);const n=$('f_nat').value,sl=r.querySelector('select[data-c="nat"]');if(n&&sl){setNat(sl,n);sl.dataset.auto=sl.value}}
 function ciPhotoMulti(inp){ const fs=[...inp.files]; inp.value=''; if(!fs.length) return;
-  const free=PHOTO_SLOTS.map(x=>x[0]).filter(k=>!photos[k]); if(!free.length) return alert('ប្រអប់រូបពេញហើយ (5) — សូមលុប/ប្ដូររូបណាមួយដោយចុចលើប្រអប់');
+  const free=PHOTO_SLOTS.map(x=>x[0]).filter(k=>!photos[k]); if(!free.length) return alert('ប្រអប់រូបពេញហើយ (15) — សូមលុប/ប្ដូររូបណាមួយដោយចុចលើប្រអប់');
   if(fs.length>free.length) alert(`ដាក់បានតែ ${free.length} រូបទៀតប៉ុណ្ណោះ`);
   fs.slice(0,free.length).forEach((f,i)=>{ const k=free[i]; compressPhoto(f,d=>{photos[k]=d;showThumb($('ph_'+k),d);updSummary()}); }); }
 function ciPhoto(k,inp){const f=inp.files[0];if(!f)return;compressPhoto(f,d=>{photos[k]=d;showThumb($('ph_'+k),d);updSummary()});inp.value=''}
-function updSummary(){ const el=$('summary'); if(!el) return;
+function updSummary(){ try{refreshSlots()}catch(e){} const el=$('summary'); if(!el) return;
   el.innerHTML=`<div class="kv"><div>ភ្ញៀវ</div><div><b>${esc($('f_name').value)||'—'}</b></div><div>បន្ទប់</div><div>${esc($('f_room').value)||'—'} ${esc($('f_roomtype').value)}</div><div>ថ្ងៃ</div><div>${fmtD($('f_ci').value)} → ${fmtD($('f_co').value)} (${nightsBetween($('f_ci').value,$('f_co').value)||0} យប់)</div><div>លិខិតឆ្លងដែន</div><div>${esc($('f_passport').value)||'—'} · ${esc($('f_nat').value)||'—'}</div><div>ភ្ញៀវស៊ីញ៉េ</div><div>${sigs.sigGuest?.dirty?'✅':'❌ មិនទាន់'}</div><div>រូប ID</div><div>${Object.keys(photos).length} រូប</div></div>`;
   const ok={secSign:$('f_agree').checked&&sigs.sigGuest?.dirty, secPhoto:Object.keys(photos).length>0, secStaff:$('f_room').value.trim()&&$('f_staff').value.trim()&&$('f_ci').value&&$('f_co').value, secGuest:$('f_name').value.trim()&&$('f_passport').value.trim()&&$('f_nat').value.trim(), secConfirm:sigs.sigStaff?.dirty};
   Object.entries(ok).forEach(([id,v])=>$(id)&&$(id).classList.toggle('okd',!!v)); }
@@ -1244,7 +1246,7 @@ function resetCheckin(stay){ try{$('dlg').close()}catch(e){} window._ciDraftId='
   $('f_agree').checked=false; $('f_nat').value=''; $('f_guests').value=1; $('f_children').value=0; $('f_roomtype').value=''; $('f_src').value=''; $('bkPick').value='';
   $('f_ci').value=todayStr(); $('f_co').value=addDays(todayStr(),1);
   purpose=''; [...$('purposeChips').children].forEach(x=>x.classList.remove('on'));
-  photos={}; document.querySelectorAll('#photos .photo img').forEach(x=>x.remove());
+  photos={}; document.querySelectorAll('#photos .photo img').forEach(x=>x.remove()); try{refreshSlots()}catch(e){}
   ['sigGuest','sigStaff'].forEach(id=>{sigs[id].dirty=false;sigs[id].c.width=0});
   go(1); renderPicked(); if(!stay) showCiDash();
 }
