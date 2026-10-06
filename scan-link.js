@@ -6,6 +6,8 @@
    v3: "📷 Scan" opens the Passport Scan app INSIDE the check-in form (staff link, no login);
        the scan is saved in the app (owner sees it there) and copied into this form.
    v3.1: nationality code (KH) → form country name (Cambodia).
+   v5: the ID / Passport photos from the scan are also put into the form's photo boxes
+       (read from A&J Print, same link key). Only empty boxes are filled.
    v4: section ② "photo ID" becomes a Scan card — no photos in the form; the ID photos stay in the
        Passport Scan app. Asks the room no. first if empty, notes "ID in Passport Scan" on the record. */
 (function () {
@@ -14,6 +16,7 @@
   var API = APP + "api";
   var LS = "aj_scankey";
   var LS_STAFF = "aj_scan_stafflink";
+  var PRINT = "https://aj-kampot-print.pages.dev/api/";
 
   // One-time tablet setup: opened via the QR in the scan app Settings (?scankey=...)
   try {
@@ -131,7 +134,7 @@
     var r = document.createElement("button");
     r.type = "button"; r.textContent = "🔄 ទាញម្តងទៀត";
     r.style.cssText = css + "background:#e5e7eb;color:#111";
-    r.onclick = function () { lastQ = ""; lookup(true); };
+    r.onclick = function () { lastQ = ""; photoQ = ""; lookup(true); };
     var c = document.createElement("button");
     c.type = "button"; c.textContent = "⚙️"; c.title = "Staff link";
     c.style.cssText = css + "background:#f3f4f6;color:#111";
@@ -143,7 +146,7 @@
       var card = document.createElement("div");
       card.id = "ajScanCard";
       card.style.cssText = "margin:8px 0;padding:12px;border:2px dashed #93c5fd;border-radius:14px;background:#eff6ff";
-      card.innerHTML = '<div style="font-size:14px;color:#1e3a8a;line-height:1.5">ចុច <b>📷 ស្កេន</b> → ថត ID / Passport ក្នុង app Scan → ដាក់<b>លេខបន្ទប់</b> → Save → ចុច <b>✓ រួចរាល់</b>។ ព័ត៌មានភ្ញៀវនឹងចូល form ដោយខ្លួនឯង។ រូបថតរក្សាទុកក្នុង app Scan (មិនបាច់ថតនៅទីនេះទៀតទេ)។</div>';
+      card.innerHTML = '<div style="font-size:14px;color:#1e3a8a;line-height:1.5">ចុច <b>📷 ស្កេន</b> → ថត ID / Passport ក្នុង app Scan → ដាក់<b>លេខបន្ទប់</b> → Save → ចុច <b>✓ រួចរាល់</b>។ ព័ត៌មានភ្ញៀវ និងរូប ID នឹងចូល form ដោយខ្លួនឯង (មិនបាច់ថតនៅទីនេះទៀតទេ)។</div>';
       card.appendChild(w);
       var h = sec.querySelector("h2");
       if (h) h.innerHTML = h.innerHTML.replace(/ថតឯកសារ ID \/ Passport[^<]*/, "ស្កេន ID / Passport — app Scan");
@@ -186,6 +189,41 @@
     }
   }
 
+
+  // v5: copy the scanned ID / Passport photos into the form's photo boxes
+  var photoQ = "";
+  function toDataUrl(blob) { return new Promise(function (res) { var fr = new FileReader(); fr.onload = function () { res(fr.result); }; fr.readAsDataURL(blob); }); }
+  function fillPhotos(r, d) {
+    var q = r + "|" + d; if (q === photoQ) return; photoQ = q;
+    if (typeof photos === "undefined" || typeof PHOTO_SLOTS === "undefined") return;
+    fetch(PRINT + "hub_room?key=" + encodeURIComponent(key()) + "&room=" + encodeURIComponent(r) + (d ? "&date=" + d : ""), { credentials: "omit" })
+      .then(function (res) { return res.json(); })
+      .then(function (j) {
+        if (!j.ok) { photoQ = ""; return; }
+        var withImg = (j.guests || []).filter(function (g) { return g.has_img == 1; });
+        if (!withImg.length) { photoQ = ""; return; }
+        var order = ["id_front"].concat(PHOTO_SLOTS.map(function (x) { return x[0]; }).filter(function (k) { return /^id_extra_/.test(k); }));
+        var n = 0;
+        return Promise.all(withImg.map(function (g) {
+          return fetch(PRINT + "hub_img?key=" + encodeURIComponent(key()) + "&id=" + g.id, { credentials: "omit" })
+            .then(function (res) { return res.ok ? res.blob() : null; }).then(function (b) { return b ? toDataUrl(b) : null; });
+        })).then(function (urls) {
+          urls.forEach(function (u) {
+            if (!u) return;
+            var dup = Object.keys(photos).some(function (k) { return photos[k] === u; }); if (dup) return;
+            var slot = order.filter(function (k) { return !photos[k]; })[0]; if (!slot) return;
+            photos[slot] = u; n++;
+            var box = $("ph_" + slot); if (box && typeof showThumb === "function") showThumb(box, u);
+          });
+          if (n) {
+            var ph = $("photos"); if (ph) { ph.style.display = ""; ph.removeAttribute("data-aj-hidden"); }
+            if (typeof updSummary === "function") updSummary();
+            var b = $("ajScanBanner"); if (b) b.textContent += " · 📷 រូប ID " + n + " បានចូល form";
+          }
+        });
+      })
+      .catch(function () { photoQ = ""; });
+  }
   var lastQ = "", busy = false;
   function lookup(manual) {
     var room = $("f_room"), ci = $("f_ci");
@@ -224,7 +262,8 @@
           });
         }, 250);
         scanned = true; noteScan(G.length);
-        banner("✅ ស្កេនរួច " + G.length + " នាក់ — ព័ត៌មានបានចូល form · រូបនៅក្នុង app Scan — សូមពិនិត្យ", true);
+        banner("✅ ស្កេនរួច " + G.length + " នាក់ — ព័ត៌មានបានចូល form — សូមពិនិត្យ", true);
+        fillPhotos(r, d);
       })
       .catch(function () { lastQ = ""; })
       .then(function () { busy = false; });
@@ -238,7 +277,7 @@
     var room = $("f_room"); if (!room) return;
     addButtons();
     var v = room.value.trim();
-    if (!v) { lastQ = ""; scanned = false; banner("", false); }
+    if (!v) { lastQ = ""; photoQ = ""; scanned = false; banner("", false); }
     if (v !== seen) { seen = v; stable = 0; return; }
     if (++stable >= 2) lookup(false);
   }, 750);
