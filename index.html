@@ -501,6 +501,7 @@ dialog::backdrop{background:#0008}
 /* Google Apps Script web-app URL (Google Sheet "A&J Hub Data" + Drive folder "A&J Hub Files").
    Paste the URL you get from Deploy → Web app between the quotes. */
 const API_URL = 'https://script.google.com/macros/s/AKfycbxXsQ6OPA1YZ3MvbmC2CcA0ZaGGRsurb-0Cw0H94Qkzu9QdoYgxIgjiit3XTG4CJs_ccA/exec';
+const API_PROXY = 'https://aj-hub-api.management-aj-18.workers.dev/'; // Cloudflare relay: calls Google from the server side and retries, so tablets/phones no longer get Google's "404"
 const OLD = {                         // old systems: READ ONLY (HTTP GET)
   checkin:  'https://aj-kampot-hub-default-rtdb.asia-southeast1.firebasedatabase.app/aj-checkin-bookings.json',
   bookings: 'https://aj-bookingboard-30-08-26-default-rtdb.asia-southeast1.firebasedatabase.app/aj-v2-bookings.json',
@@ -818,8 +819,10 @@ function showThumb(box,src){box.querySelectorAll('img').forEach(x=>x.remove());c
 /* ---------- Google backend API ---------- */
 async function api(action,payload={}){
   if(!/^https:\/\/script\.google\.com\//.test(API_URL)) throw new Error('មិនទាន់ភ្ជាប់ Google Sheet (API_URL)។ សូមដំឡើង Apps Script ជាមុនសិន។');
-  const r=await fetch(API_URL,{credentials:'omit',method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...payload}),redirect:'follow'});
-  if(!r.ok) throw new Error('Server '+r.status);
+  const body=JSON.stringify({action,...payload}); let r;
+  try{ r=await fetch(API_PROXY,{credentials:'omit',method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body}); }
+  catch(e){ r=await fetch(API_URL,{credentials:'omit',method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body,redirect:'follow'}); } // relay unreachable → go to Google directly
+  if(!r.ok){ let m='Server '+r.status; try{ const e=await r.json(); if(e&&e.error) m=e.error; }catch(_){} throw new Error(m); }
   const j=await r.json(); if(!j.ok) throw new Error(j.error||'Error');
   if(action==='board'&&j.bookings) try{ ls.set('ajhub_board_cache',JSON.stringify({at:Date.now(),bookings:j.bookings,rooms:j.rooms||[]})); }catch(e){}
   return j;
