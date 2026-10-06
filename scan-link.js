@@ -134,7 +134,7 @@
     var r = document.createElement("button");
     r.type = "button"; r.textContent = "🔄 ទាញម្តងទៀត";
     r.style.cssText = css + "background:#e5e7eb;color:#111";
-    r.onclick = function () { lastQ = ""; photoQ = ""; lookup(true); };
+    r.onclick = function () { lastQ = ""; photoQ = ""; fbQ = ""; lookup(true); };
     var c = document.createElement("button");
     c.type = "button"; c.textContent = "⚙️"; c.title = "Staff link";
     c.style.cssText = css + "background:#f3f4f6;color:#111";
@@ -191,39 +191,93 @@
 
 
   // v5: copy the scanned ID / Passport photos into the form's photo boxes
-  var photoQ = "";
+  // v5.1: the scan app stacks several photos (passport + visa) in one picture with a dark label bar
+  //       above each — split them so each goes into its own box (Passport → front, Visa → Visa box).
+  var photoQ = "", fbQ = "";
   function toDataUrl(blob) { return new Promise(function (res) { var fr = new FileReader(); fr.onload = function () { res(fr.result); }; fr.readAsDataURL(blob); }); }
-  function fillPhotos(r, d) {
+  function splitStack(blob) {
+    return new Promise(function (res) {
+      var url = URL.createObjectURL(blob), img = new Image();
+      img.onerror = function () { res([]); };
+      img.onload = function () {
+        var W = img.naturalWidth, H = img.naturalHeight, c = document.createElement("canvas");
+        c.width = W; c.height = H; var x = c.getContext("2d"); x.drawImage(img, 0, 0); URL.revokeObjectURL(url);
+        var d = x.getImageData(0, 0, W, H).data;
+        var rowMean = function (y) { var s = 0, n = 0; for (var i = y * W * 4; i < (y + 1) * W * 4; i += 16) { s += d[i] + d[i + 1] + d[i + 2]; n++; } return s / n / 3; };
+        // dark bands (label bars); bands closer than 22px are one header (dark / label text / dark)
+        var bands = [], st = -1, y;
+        for (y = 0; y < H; y++) { var dark = rowMean(y) < 25; if (dark && st < 0) st = y; if (!dark && st >= 0) { if (y - st >= 6) bands.push([st, y]); st = -1; } }
+        if (st >= 0) bands.push([st, H]);
+        var heads = [];
+        bands.forEach(function (b) { var l = heads[heads.length - 1]; if (l && b[0] - l[1] <= 22) l[1] = b[1]; else heads.push([b[0], b[1]]); });
+        var segs = [], prev = 0;
+        heads.forEach(function (h) { if (h[0] - prev > 150) segs.push([prev, h[0]]); prev = h[1]; });
+        if (H - prev > 150) segs.push([prev, H]);
+        if (segs.length < 1) segs = [[0, H]];
+        res(segs.map(function (sg) {
+          var h = sg[1] - sg[0], x0 = 0, x1 = W;
+          var colMean = function (cx) { var s = 0, n = 0; for (var yy = sg[0]; yy < sg[1]; yy += 4) { var i = (yy * W + cx) * 4; s += d[i] + d[i + 1] + d[i + 2]; n++; } return s / n / 3; };
+          while (x0 < W - 50 && colMean(x0) < 20) x0 += 2;
+          while (x1 > x0 + 50 && colMean(x1 - 1) < 20) x1 -= 2;
+          var o = document.createElement("canvas"); o.width = x1 - x0; o.height = h;
+          o.getContext("2d").drawImage(c, x0, sg[0], x1 - x0, h, 0, 0, x1 - x0, h);
+          return o.toDataURL("image/jpeg", 0.8);
+        }));
+      };
+      img.src = url;
+    });
+  }
+  function slotFor(label, i) {
+    label = String(label || "");
+    if (/visa/i.test(label)) return "id_visa";
+    if (/back|ក្រោយ/i.test(label)) return "id_back";
+    return i === 0 ? "id_front" : "";
+  }
+  function fillPhotos(r, d, fillText) {
     var q = r + "|" + d; if (q === photoQ) return; photoQ = q;
     if (typeof photos === "undefined" || typeof PHOTO_SLOTS === "undefined") return;
     fetch(PRINT + "hub_room?key=" + encodeURIComponent(key()) + "&room=" + encodeURIComponent(r) + (d ? "&date=" + d : ""), { credentials: "omit" })
       .then(function (res) { return res.json(); })
       .then(function (j) {
         if (!j.ok) { photoQ = ""; return; }
-        var withImg = (j.guests || []).filter(function (g) { return g.has_img == 1; });
-        if (!withImg.length) { photoQ = ""; return; }
-        var order = ["id_front"].concat(PHOTO_SLOTS.map(function (x) { return x[0]; }).filter(function (k) { return /^id_extra_/.test(k); }));
+        var G = j.guests || [];
+        if (!G.length) return;
+        if (fillText) {   // the scan app found nobody for this date — fill the basics from here
+          fbQ = q;
+          setVal($("f_name"), fullName(G[0])); setVal($("f_passport"), G[0].passport_no);
+          setVal($("f_phone"), G[0].phone); setVal($("f_co"), G[0].checkout_date);
+          scanned = true; noteScan(G.length);
+          banner("✅ ស្កេនរួច " + G.length + " នាក់ — ព័ត៌មានបានចូល form — សូមពិនិត្យ (សញ្ជាតិ សូមជ្រើសខ្លួនឯង)", true);
+        }
+        var withImg = G.filter(function (g) { return g.has_img == 1; });
+        var extras = PHOTO_SLOTS.map(function (x) { return x[0]; }).filter(function (k) { return /^id_extra_/.test(k); });
         var n = 0;
         return Promise.all(withImg.map(function (g) {
           return fetch(PRINT + "hub_img?key=" + encodeURIComponent(key()) + "&id=" + g.id, { credentials: "omit" })
-            .then(function (res) { return res.ok ? res.blob() : null; }).then(function (b) { return b ? toDataUrl(b) : null; });
-        })).then(function (urls) {
-          urls.forEach(function (u) {
-            if (!u) return;
-            var dup = Object.keys(photos).some(function (k) { return photos[k] === u; }); if (dup) return;
-            var slot = order.filter(function (k) { return !photos[k]; })[0]; if (!slot) return;
-            photos[slot] = u; n++;
-            var box = $("ph_" + slot); if (box && typeof showThumb === "function") showThumb(box, u);
+            .then(function (res) { return res.ok ? res.blob() : null; })
+            .then(function (b) { return b ? splitStack(b) : []; })
+            .then(function (parts) { return { g: g, parts: parts }; });
+        })).then(function (list) {
+          list.forEach(function (it, gi) {
+            var labels = String(it.g.docs || "").split(/\s*,\s*/);
+            it.parts.forEach(function (u, pi) {
+              var slot = gi === 0 ? slotFor(labels[pi], pi) : "";
+              if (!slot || photos[slot]) slot = extras.filter(function (k) { return !photos[k]; })[0];
+              if (!slot) return;
+              photos[slot] = u; n++;
+              var box = $("ph_" + slot); if (box && typeof showThumb === "function") showThumb(box, u);
+            });
           });
           if (n) {
             var ph = $("photos"); if (ph) { ph.style.display = ""; ph.removeAttribute("data-aj-hidden"); }
             if (typeof updSummary === "function") updSummary();
-            var b = $("ajScanBanner"); if (b) b.textContent += " · 📷 រូប ID " + n + " បានចូល form";
+            var b = $("ajScanBanner"); if (b) b.textContent += " · 📷 រូប " + n + " បានចូល form";
           }
         });
       })
       .catch(function () { photoQ = ""; });
   }
+
   var lastQ = "", busy = false;
   function lookup(manual) {
     var room = $("f_room"), ci = $("f_ci");
@@ -238,7 +292,7 @@
       .then(function (j) {
         if (!j.ok) { banner(j.error === "Bad key" ? "⚠️ Scan QR ចាស់ — សូមស្កេន QR ថ្មីពី Passport Scan" : "", false); return; }
         var G = j.guests || [];
-        if (!G.length) { banner("📷 មិនទាន់មានការស្កេនសម្រាប់បន្ទប់ " + r + " ថ្ងៃនេះ — ចុច 📷 ស្កេន ID / Passport", false); lastQ = ""; return; }
+        if (!G.length) { if (fbQ === r + "|" + d) { lastQ = q; return; } banner("📷 មិនទាន់មានការស្កេនសម្រាប់បន្ទប់ " + r + " ថ្ងៃនេះ — ចុច 📷 ស្កេន ID / Passport", false); lastQ = ""; fillPhotos(r, d, true); return; }
         var first = G[0];
         setVal($("f_name"), fullName(first));
         setVal($("f_passport"), first.passport_no);
@@ -263,7 +317,7 @@
         }, 250);
         scanned = true; noteScan(G.length);
         banner("✅ ស្កេនរួច " + G.length + " នាក់ — ព័ត៌មានបានចូល form — សូមពិនិត្យ", true);
-        fillPhotos(r, d);
+        fillPhotos(r, d, false);
       })
       .catch(function () { lastQ = ""; })
       .then(function () { busy = false; });
@@ -277,7 +331,7 @@
     var room = $("f_room"); if (!room) return;
     addButtons();
     var v = room.value.trim();
-    if (!v) { lastQ = ""; photoQ = ""; scanned = false; banner("", false); }
+    if (!v) { lastQ = ""; photoQ = ""; fbQ = ""; scanned = false; banner("", false); }
     if (v !== seen) { seen = v; stable = 0; return; }
     if (++stable >= 2) lookup(false);
   }, 750);
