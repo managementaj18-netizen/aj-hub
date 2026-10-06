@@ -818,7 +818,7 @@ function showThumb(box,src){box.querySelectorAll('img').forEach(x=>x.remove());c
 /* ---------- Google backend API ---------- */
 async function api(action,payload={}){
   if(!/^https:\/\/script\.google\.com\//.test(API_URL)) throw new Error('មិនទាន់ភ្ជាប់ Google Sheet (API_URL)។ សូមដំឡើង Apps Script ជាមុនសិន។');
-  const r=await fetch(API_URL,{method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...payload}),redirect:'follow'});
+  const r=await fetch(API_URL,{credentials:'omit',method:'POST',headers:{'Content-Type':'text/plain;charset=utf-8'},body:JSON.stringify({action,...payload}),redirect:'follow'});
   if(!r.ok) throw new Error('Server '+r.status);
   const j=await r.json(); if(!j.ok) throw new Error(j.error||'Error');
   if(action==='board'&&j.bookings) try{ ls.set('ajhub_board_cache',JSON.stringify({at:Date.now(),bookings:j.bookings,rooms:j.rooms||[]})); }catch(e){}
@@ -1352,7 +1352,7 @@ const bossKey=()=>{try{return sessionStorage.getItem('ajhub_key')||''}catch(e){r
 async function initBoss(){
   if(bossKey()){ return enterBoss(); }
   $('bossLogin').classList.remove('hide'); $('bossApp').classList.add('hide');
-  try{ const r=await fetch(API_URL,{cache:'no-store'}); const j=await r.json(); if(!j.passwordSet){ $('pwHelp').textContent='លើកដំបូង៖ បង្កើតពាក្យសម្ងាត់មេ (យ៉ាងតិច ៦ តួ) ហើយចងចាំវាឲ្យបាន'; $('pw2').classList.remove('hide'); window._setup=true; } }
+  try{ const r=await fetch(API_URL,{credentials:'omit',cache:'no-store'}); const j=await r.json(); if(!j.passwordSet){ $('pwHelp').textContent='លើកដំបូង៖ បង្កើតពាក្យសម្ងាត់មេ (យ៉ាងតិច ៦ តួ) ហើយចងចាំវាឲ្យបាន'; $('pw2').classList.remove('hide'); window._setup=true; } }
   catch(e){ $('loginErr').textContent=/script\.google/.test(API_URL)?'មិនអាចភ្ជាប់ Google Sheet៖ '+e.message:'មិនទាន់ភ្ជាប់ Google Sheet (API_URL)'; }
   $('pw').focus();
 }
@@ -2045,7 +2045,7 @@ function dlBkCsv(){const cols=['id','room','guest','start','nights','status','so
 function showTab(t){document.querySelectorAll('#tabs button').forEach(x=>x.classList.toggle('on',x.dataset.t===t));document.querySelectorAll('#bossApp main>section').forEach(s=>s.classList.toggle('hide',s.id!=='t-'+t));if(t==='backup')showLastBk();window.scrollTo(0,0);const b=document.querySelector(`#tabs button[data-t="${t}"]`);if(b)b.scrollIntoView({inline:'center',block:'nearest'})}
 $('tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(b)showTab(b.dataset.t)});
 async function loadSyncStatus(){
-  try{ const j=await (await fetch(API_URL,{cache:'no-store'})).json();
+  try{ const j=await (await fetch(API_URL,{credentials:'omit',cache:'no-store'})).json();
     if(!j.lastSync){ $('syncStatus').textContent='មិនទាន់ចាប់ផ្ដើម (សូមដំណើរការ installSync ក្នុង Apps Script)'; return; }
     const mins=Math.round((Date.now()-new Date(j.lastSync))/60000);
     $('syncStatus').innerHTML=`ចម្លងដោយស្វ័យប្រវត្តិរៀងរាល់ ៥ នាទី · ចុងក្រោយ ${new Date(j.lastSync).toLocaleString('en-GB',{hour:'2-digit',minute:'2-digit',day:'2-digit',month:'short'})} (${mins} នាទីមុន)${mins>20?' <span class="pill bad">យឺត</span>':' <span class="pill ok">ដំណើរការ</span>'}`;
