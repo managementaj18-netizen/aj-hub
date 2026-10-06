@@ -926,8 +926,8 @@ window.addEventListener('hashchange',route);
    ===================================================================== */
 let ciInit=false, step=1, purpose='', photos={};
 const PHOTO_SLOTS=[['id_front','ID / Passport (មុខ)'],['id_back','ID (ក្រោយ)'],['id_visa','Visa'],...Array.from({length:12},(_,i)=>['id_extra_'+(i+1),'បន្ថែម '+(i+1)])];
-/* show the first 5 boxes + filled ones + one empty extra box (up to 15 photos) */
-function refreshSlots(){ PHOTO_SLOTS.forEach(([k],i)=>{ const el=$('ph_'+k); if(!el) return; const show=i<5||!!photos[k]||!!photos[PHOTO_SLOTS[i-1][0]]; el.classList.toggle('hide',!show); }); }
+/* show the first 9 boxes (ID front/back, Visa, បន្ថែម 1–6) + filled ones + one empty extra box (up to 15 photos) */
+function refreshSlots(){ PHOTO_SLOTS.forEach(([k],i)=>{ const el=$('ph_'+k); if(!el) return; const show=i<9||!!photos[k]||!!photos[PHOTO_SLOTS[i-1][0]]; el.classList.toggle('hide',!show); }); }
 function initCheckin(){
   if(ciInit) return; ciInit=true; $('f_nat').innerHTML=natOpts(); $('ciHead').innerHTML=docHead('Guest Registration Form / ទម្រង់ចុះឈ្មោះភ្ញៀវ / 宾客登记表');
   $('photos').innerHTML=PHOTO_SLOTS.map(([k,l])=>`<label class="photo" id="ph_${k}"><input type="file" accept="image/*" onchange="ciPhoto('${k}',this)"><span>📷</span><span>${l}</span></label>`).join(''); refreshSlots();
