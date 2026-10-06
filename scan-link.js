@@ -1,10 +1,13 @@
-/* A&J Hub ⇄ A&J Passport Scan  (v3)
+/* A&J Hub ⇄ A&J Passport Scan  (v4)
    Staff scan guests in the Passport Scan app at reception (with room number).
    On the Check-in form: when a room number is entered, fill guest details from
    today's scans for that room. Fills EMPTY fields only — never overwrites typing.
    v2: also fills phone, check-out date, country; adds a "📷 Scan" button + "🔄" re-check.
    v3: "📷 Scan" opens the Passport Scan app INSIDE the check-in form (staff link, no login);
-       the scan is saved in the app (owner sees it there) and copied into this form. */
+       the scan is saved in the app (owner sees it there) and copied into this form.
+   v3.1: nationality code (KH) → form country name (Cambodia).
+   v4: section ② "photo ID" becomes a Scan card — no photos in the form; the ID photos stay in the
+       Passport Scan app. Asks the room no. first if empty, notes "ID in Passport Scan" on the record. */
 (function () {
   "use strict";
   var APP = "https://aj-kampot-scan.pages.dev/";
@@ -36,6 +39,12 @@
   // Scan panel: the Passport Scan app opened inside the form
   var panelTimer = null;
   function openPanel() {
+    var room0 = $("f_room");
+    if (room0 && !room0.value.trim()) {
+      var rn = prompt("លេខបន្ទប់? · Room no.?", "");
+      if (!rn || !rn.trim()) return;
+      room0.value = rn.trim().replace(/^room\s*/i, ""); fire(room0, "input"); fire(room0, "change");
+    }
     var link = staffLink() || askStaffLink();
     if (!link) return;
     var pn = $("ajScanPanel");
@@ -45,7 +54,7 @@
       pn.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:10px";
       pn.innerHTML = '<div style="background:#fff;border-radius:16px;width:100%;max-width:520px;height:100%;max-height:900px;display:flex;flex-direction:column;overflow:hidden">' +
         '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #eee">' +
-        '<b style="flex:1;font-size:15px">📷 ស្កេនភ្ញៀវ · ដាក់លេខបន្ទប់ឲ្យដូចក្នុង form</b>' +
+        '<b id="ajScanTitle" style="flex:1;font-size:15px">📷 ស្កេនភ្ញៀវ · ដាក់លេខបន្ទប់ឲ្យដូចក្នុង form</b>' +
         '<button type="button" id="ajScanDone" style="padding:10px 16px;border:0;border-radius:12px;background:#15803d;color:#fff;font-weight:700;font-size:14px">✓ រួចរាល់</button></div>' +
         '<iframe id="ajScanFrame" allow="camera" style="flex:1;border:0;width:100%"></iframe></div>';
       document.body.appendChild(pn);
@@ -53,6 +62,7 @@
     }
     var room = $("f_room");
     $("ajScanFrame").src = link;
+    var tt = $("ajScanTitle"); if (tt && room) tt.textContent = "📷 ស្កេនភ្ញៀវ · ដាក់បន្ទប់ " + room.value.trim() + " ក្នុង app មុនចុច Save";
     pn.style.display = "flex";
     if (room && room.value.trim()) banner("📷 កំពុងស្កេនសម្រាប់បន្ទប់ " + room.value.trim() + " …", false);
     clearInterval(panelTimer);
@@ -75,7 +85,12 @@
     if (!el || el.value) return false;
     var v = g.nat2 || g.nationality;
     if (!v) return false;
-    if (typeof window.setNat === "function") window.setNat(el, v); else el.value = v;
+    // the form's country list uses English names ("Cambodia"), the scan gives codes ("KH") → convert
+    var nm = "";
+    try { if (g.nat2) nm = new Intl.DisplayNames(["en"], { type: "region" }).of(g.nat2); } catch (e) {}
+    var opt = nm && [].slice.call(el.options || []).filter(function (o) { return o.value.toLowerCase() === nm.toLowerCase(); })[0];
+    if (opt) el.value = opt.value;
+    else if (typeof window.setNat === "function") window.setNat(el, nm || v); else el.value = nm || v;
     fire(el, "change");
     return !!el.value;
   }
@@ -88,8 +103,12 @@
       b = document.createElement("div");
       b.id = "ajScanBanner";
       b.style.cssText = "margin:8px 0;padding:10px 12px;border-radius:12px;font-size:14px;font-weight:600";
-      var room = $("f_room"); var host = room && room.closest("label, .f, div");
-      (host && host.parentNode ? host.parentNode : document.body).insertBefore(b, host ? host.nextSibling : null);
+      var card = $("ajScanCard");
+      if (card) card.appendChild(b);
+      else {
+        var room = $("f_room"); var host = room && room.closest("label, .f, div");
+        (host && host.parentNode ? host.parentNode : document.body).insertBefore(b, host ? host.nextSibling : null);
+      }
     }
     b.style.background = ok ? "#e7f6ec" : "#f3f4f6";
     b.style.color = ok ? "#15803d" : "#555";
@@ -97,33 +116,74 @@
     b.style.display = msg ? "block" : "none";
   }
 
-  // Buttons next to the room field: open the scan app / re-check now
+  // Section ② (photo ID) becomes a Scan card: no photos in the form, they stay in the Passport Scan app
   function addButtons() {
     var room = $("f_room");
     if (!room || $("ajScanBtns")) return;
-    var host = room.closest("label, .f, div");
+    var css = "padding:12px 16px;border-radius:12px;border:0;font-weight:700;font-size:15px;cursor:pointer;";
     var w = document.createElement("div");
     w.id = "ajScanBtns";
-    w.style.cssText = "display:flex;gap:8px;margin:8px 0;flex-wrap:wrap";
-    var css = "padding:10px 14px;border-radius:12px;border:0;font-weight:700;font-size:14px;cursor:pointer;";
+    w.style.cssText = "display:flex;gap:8px;margin:10px 0;flex-wrap:wrap";
     var a = document.createElement("button");
-    a.type = "button";
-    a.textContent = "📷 ស្កេន Passport / ID";
-    a.style.cssText = css + "background:#2563eb;color:#fff";
+    a.type = "button"; a.textContent = "📷 ស្កេន ID / Passport";
+    a.style.cssText = css + "background:#2563eb;color:#fff;flex:1;min-width:200px";
     a.onclick = openPanel;
     var r = document.createElement("button");
-    r.type = "button";
-    r.textContent = "🔄 ទាញពីការស្កេន";
+    r.type = "button"; r.textContent = "🔄 ទាញម្តងទៀត";
     r.style.cssText = css + "background:#e5e7eb;color:#111";
     r.onclick = function () { lastQ = ""; lookup(true); };
     var c = document.createElement("button");
-    c.type = "button";
-    c.textContent = "⚙️";
-    c.title = "Staff link";
+    c.type = "button"; c.textContent = "⚙️"; c.title = "Staff link";
     c.style.cssText = css + "background:#f3f4f6;color:#111";
     c.onclick = askStaffLink;
     w.appendChild(a); w.appendChild(r); w.appendChild(c);
-    (host && host.parentNode ? host.parentNode : document.body).insertBefore(w, host ? host.nextSibling : null);
+
+    var sec = $("secPhoto");
+    if (sec) {
+      var card = document.createElement("div");
+      card.id = "ajScanCard";
+      card.style.cssText = "margin:8px 0;padding:12px;border:2px dashed #93c5fd;border-radius:14px;background:#eff6ff";
+      card.innerHTML = '<div style="font-size:14px;color:#1e3a8a;line-height:1.5">ចុច <b>📷 ស្កេន</b> → ថត ID / Passport ក្នុង app Scan → ដាក់<b>លេខបន្ទប់</b> → Save → ចុច <b>✓ រួចរាល់</b>។ ព័ត៌មានភ្ញៀវនឹងចូល form ដោយខ្លួនឯង។ រូបថតរក្សាទុកក្នុង app Scan (មិនបាច់ថតនៅទីនេះទៀតទេ)។</div>';
+      card.appendChild(w);
+      var h = sec.querySelector("h2");
+      if (h) h.innerHTML = h.innerHTML.replace(/ថតឯកសារ ID \/ Passport[^<]*/, "ស្កេន ID / Passport — app Scan");
+      [].slice.call(sec.children).forEach(function (el) {
+        if (el.tagName === "H2" || el.classList.contains("draftBar")) return;
+        el.style.display = "none"; el.setAttribute("data-aj-hidden", "1");
+      });
+      var show = document.createElement("a");
+      show.href = "#"; show.textContent = "ថតរូបក្នុង form ដដែល (ជម្រើសចាស់)";
+      show.style.cssText = "display:inline-block;margin-top:6px;font-size:12px;color:#6b7280";
+      show.onclick = function (e) {
+        e.preventDefault();
+        [].slice.call(sec.querySelectorAll('[data-aj-hidden="1"]')).forEach(function (el) { el.style.display = ""; });
+        show.remove();
+      };
+      card.appendChild(show);
+      var b0 = $("ajScanBanner"); if (b0) card.appendChild(b0);
+      sec.insertBefore(card, h ? h.nextSibling : sec.firstChild);
+    } else {
+      var host = room.closest("label, .f, div");
+      (host && host.parentNode ? host.parentNode : document.body).insertBefore(w, host ? host.nextSibling : null);
+    }
+  }
+
+  // "No ID photo yet — save anyway?" is not needed when the ID is in the Passport Scan app
+  var scanned = false;
+  try {
+    var _confirm = window.confirm;
+    window.confirm = function (msg) {
+      if (scanned && /មិនទាន់មានរូប ID/.test(String(msg))) return true;
+      return _confirm.apply(window, arguments);
+    };
+  } catch (e) {}
+  function noteScan(n) {
+    var nt = $("f_notes"); if (!nt) return;
+    var tag = "📷 ID/Passport ក្នុង app Scan";
+    if (String(nt.value || "").indexOf(tag) === -1) {
+      nt.value = (nt.value ? nt.value.replace(/\s+$/, "") + "\n" : "") + tag + " (" + n + " នាក់)";
+      fire(nt, "input"); fire(nt, "change");
+    }
   }
 
   var lastQ = "", busy = false;
@@ -140,7 +200,7 @@
       .then(function (j) {
         if (!j.ok) { banner(j.error === "Bad key" ? "⚠️ Scan QR ចាស់ — សូមស្កេន QR ថ្មីពី Passport Scan" : "", false); return; }
         var G = j.guests || [];
-        if (!G.length) { banner("📷 មិនទាន់មានការស្កេនសម្រាប់បន្ទប់ " + r + " ថ្ងៃនេះ — ចុច 📷 ស្កេន", false); lastQ = ""; return; }
+        if (!G.length) { banner("📷 មិនទាន់មានការស្កេនសម្រាប់បន្ទប់ " + r + " ថ្ងៃនេះ — ចុច 📷 ស្កេន ID / Passport", false); lastQ = ""; return; }
         var first = G[0];
         setVal($("f_name"), fullName(first));
         setVal($("f_passport"), first.passport_no);
@@ -163,7 +223,8 @@
             setNatSel(row.querySelector('[data-c="nat"]'), g);
           });
         }, 250);
-        banner("✓ បំពេញពីការស្កេន " + G.length + " នាក់ · Filled from Passport Scan — សូមពិនិត្យ", true);
+        scanned = true; noteScan(G.length);
+        banner("✅ ស្កេនរួច " + G.length + " នាក់ — ព័ត៌មានបានចូល form · រូបនៅក្នុង app Scan — សូមពិនិត្យ", true);
       })
       .catch(function () { lastQ = ""; })
       .then(function () { busy = false; });
@@ -177,7 +238,7 @@
     var room = $("f_room"); if (!room) return;
     addButtons();
     var v = room.value.trim();
-    if (!v) { lastQ = ""; banner("", false); }
+    if (!v) { lastQ = ""; scanned = false; banner("", false); }
     if (v !== seen) { seen = v; stable = 0; return; }
     if (++stable >= 2) lookup(false);
   }, 750);
