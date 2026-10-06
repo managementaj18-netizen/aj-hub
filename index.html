@@ -741,7 +741,7 @@ const DEFS = {
           {k:'plate',t:'text',l:'ផ្លាកលេខ / Plate No.'}]}]},
       {h:'📝 ចំណាំ / Notes', fields:[
         {k:'notes',l:'ចំណាំផ្សេងៗ / Other notes',t:'textarea',full:1}]}],
-    sigs:[],
+    sigs:[{k:'staffSig',l:'ហត្ថលេខាបុគ្គលិក / Staff Signature',req:1}], signer:r=>r.staffName,
     date:r=>r.date, room:r=>[...new Set((r.rooms||[]).map(x=>x.room).filter(Boolean))].join(', '), name:r=>(r.rooms||[]).map(x=>x.name).filter(Boolean).join(', ')||r.staffName, idn:r=>(r.rooms||[]).map(x=>x.idNo).filter(Boolean).join(', '),
     extra:r=>{const R=r.rooms||[],n=x=>Number(x)||0,c=s=>R.filter(x=>String(x.status||'').includes(s)).length;return `🛬 ${c('Arrival')} · 🛏️ ${c('Staying')} · 🚪 ${c('Departure')} · 👤 ${R.reduce((s,x)=>s+n(x.adults),0)} · 🧒 ${R.reduce((s,x)=>s+n(x.kids),0)} · បុគ្គលិក ${r.staffName||''}`}
   },
@@ -1774,7 +1774,7 @@ function paperGeneric(r){
   if(d.text) h+=`<h4 class="sh">${esc(d.textTitle||'')}</h4>${d.text.map(t=>`<p>${esc(t)}</p>`).join('')}${d.agree?`<p>${r.agreed?'☑':'☐'} ${esc(d.agree)}</p>`:''}`;
   const ph=allFields(r.type).filter(f=>f.t==='photo'&&pImg(r[f.k]));
   if(ph.length) h+=`<div class="photos2" style="margin-top:12px">${ph.map(f=>`<figure class="avoid">${pImg(r[f.k])}<figcaption>${esc(lbl(f.l))}</figcaption></figure>`).join('')}</div>`;
-  h+=`</div><div class="sigrow avoid">${pCell('Name / ឈ្មោះ',`<div class="ln">${esc(fName(r)||'')}</div>`)}${sigsOf(d,r).map(s=>pCell(s.l,`<div class="sigbox">${pImg(r[s.k])}</div>`)).join('')}${pCell('Date / ថ្ងៃទី',`<div class="ln">${esc(r.ciAt?new Date(r.ciAt).toLocaleDateString('en-GB'):'')}</div>`)}</div>`;
+  h+=`</div><div class="sigrow avoid">${pCell('Name / ឈ្មោះ',`<div class="ln">${esc((d.signer?d.signer(r):fName(r))||'')}</div>`)}${sigsOf(d,r).map(s=>pCell(s.l,`<div class="sigbox">${pImg(r[s.k])}</div>`)).join('')}${pCell('Date / ថ្ងៃទី',`<div class="ln">${esc(r.ciAt?new Date(r.ciAt).toLocaleDateString('en-GB'):'')}</div>`)}</div>`;
   return h+`<div class="foot">A&amp;J Kampot Boutique · ${esc(dtLocal(r.ciAt))} ${r._id?'· '+esc(r._id):''}</div></div>`;
 }
 const paperFor=r=>r.type==='checkin'?paperCheckin(r):paperGeneric(r);
