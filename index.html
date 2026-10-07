@@ -1332,6 +1332,7 @@ function gCollect(){
 function gCalc(){const d=DEFS[G.type];if(!d||!d.calc||!$('g_net'))return;const c=d.calc(gCollectNumbersOnly());$('g_net').textContent=money(c.net);$('g_calc').textContent=`សរុប ${money(c.gross)} − កាត់ ${money(c.ded)}`}
 function gCollectNumbersOnly(){const r={};for(const f of allFields(G.type)){if(f.t==='rows'){r[f.k]=[...$('g_'+f.k).children].map(row=>{const o={};row.querySelectorAll('[data-c]').forEach(i=>o[i.dataset.c]=i.value);return o});}else if(f.t!=='photo'){r[f.k]=$('g_'+f.k)?.value}}return r}
 async function submitGeneric(){
+  if(G.type==='arrival') return arrSaveDraft();
   const d=DEFS[G.type];
   for(const f of allFields(G.type)) if(f.req && !$('g_'+f.k).value.trim()) return alert('សូមបំពេញ / Please fill: '+lbl(f.l));
   if($('g_item')&&$('g_item').value===NEW_ITEM&&!$('g_newItem').value.trim()) return alert('សូមវាយឈ្មោះមុខទំនិញថ្មី / Please type the new item name');
@@ -1350,44 +1351,81 @@ async function submitGeneric(){
       for(const rm of rooms){ const g=roomGroup(rm); const one={...data,room:rm,roomtype:g?RT_BY_GROUP[g[1]]:'',price:split(data.price),deposit:split(data.deposit),groupRooms:rooms.join(', '),groupSize:String(n),notes:(data.notes?data.notes+'\n':'')+`ក្រុម ${n} បន្ទប់ / Group: ${rooms.join(', ')}`};
         if(G.boardId&&rm!==String(G.boardRoom||'')) delete one.boardId; const x=await saveRecord('booking',one); if(x!=='ok') all=x; docs.push({...window._lastDoc}); if(x==='ok') await boardFromBooking(one,window._lastDoc.id); }
       r=all; window._lastGroup=docs; }
-    else { if(G.type==='booking'&&rooms.length===1){const g=roomGroup(rooms[0]); data.roomtype=g?RT_BY_GROUP[g[1]]:(data.roomtype||'');} window._lastGroup=null; r=await saveRecord(G.type,data); if(G.type==='booking'&&r==='ok') await boardFromBooking(data,window._lastDoc.id); if(G.type==='arrival') arrLogAdd(data,window._lastDoc&&window._lastDoc.clientId); }
+    else { if(G.type==='booking'&&rooms.length===1){const g=roomGroup(rooms[0]); data.roomtype=g?RT_BY_GROUP[g[1]]:(data.roomtype||'');} window._lastGroup=null; r=await saveRecord(G.type,data); if(G.type==='booking'&&r==='ok') await boardFromBooking(data,window._lastDoc.id); }
     $('gfBody').classList.add('hide'); $('gfDone').classList.remove('hide'); document.querySelector('#gfDone .doneMsg').innerHTML=esc(doneText(r))+(G.type==='booking'&&r==='ok'?'<br>✅ បានដាក់ចូល Booking Board → ⏳ រង់ចាំឆែកអ៊ីន'+(window._lastGroup?` (${window._lastGroup.length} បន្ទប់)`:''):'')+(G.type==='booking'&&pairAllowed()?'<br><a class="btn alt big" style="margin-top:14px;display:block;text-decoration:none" href="#f/checkin">📋 ទៅបញ្ជីរង់ចាំ Check-in</a><button class="btn big" style="margin-top:10px" onclick="ciFromLastBooking()">✍️ ភ្ញៀវមកដល់ហើយ → Check-in ឥឡូវ</button>':'')+doneTools()+backLink(); window.scrollTo(0,0);
     clearTimeout(window._rt); window._rt=setTimeout(()=>{if(!$('vForm').classList.contains('hide')&&!$('gfDone').classList.contains('hide'))resetGeneric()},20000);
   }catch(e){ alert(e.message); }
   finally{ btn.disabled=false; btn.textContent='✅ រក្សាទុក / Save / 保存'; }
 }
 function openGeneric(type){ $('gfTitle').textContent=typeMeta(type).title; document.title='A&J · '+typeMeta(type).title; $('gfDone').classList.add('hide'); $('gfBody').classList.remove('hide'); renderGeneric(type,$('gfBody')); renderArrLog(); }
-/* ---------- Arrival–Departure: list of what was already recorded (kept on this tablet) ----------
-   Morning shift saves → the rows stay listed under the form so the night shift can see
-   today's arrivals, guests and plate numbers. Kept 7 days on this tablet. */
+/* ---------- Arrival–Departure: day list → send all to the boss ----------
+   1) Each shift fills rows and taps 💾 Save → rows go into the day list on this tablet (NOT sent yet),
+      so morning, afternoon and night shift all see them.
+   2) When the day is complete, staff sign and tap 📤 Send all → ONE record goes to the boss
+      and the list is cleared from the tablet (nothing stays visible after sending).
+   Unsent lists are never dropped silently: they stay (with a red warning) until sent. */
 const ARR_LOG='ajhub_arrival_log';
-function arrLogGet(){ try{ return JSON.parse(ls.get(ARR_LOG)||'[]')||[]; }catch(e){ return []; } }
-function arrLogAdd(data,clientId){
-  const cut=addDays(todayStr(),-2);
-  const L=arrLogGet().filter(x=>(x.date||'')>=cut);
-  L.push({clientId:clientId||'',date:data.date||todayStr(),at:new Date().toISOString(),staffName:data.staffName||'',notes:data.notes||'',rooms:(data.rooms||[]).map(o=>({room:o.room||'',status:o.status||'',time:o.time||'',name:o.name||'',nat:o.nat||'',idNo:o.idNo||'',adults:o.adults||'',kids:o.kids||'',transport:o.transport||'',plate:o.plate||''}))});
-  if(!ls.set(ARR_LOG,JSON.stringify(L))) ls.set(ARR_LOG,JSON.stringify(L.slice(-30)));
-  renderArrLog();
+function arrLogGet(){ try{ return (JSON.parse(ls.get(ARR_LOG)||'[]')||[]).filter(x=>x&&x.id); }catch(e){ return []; } } // entries without id = old version, already sent to the boss
+function arrLogSet(L){ return ls.set(ARR_LOG,JSON.stringify(L)); }
+function arrSaveDraft(){
+  const staff=$('g_staffName').value.trim(), date=$('g_date').value||todayStr();
+  if(!staff) return alert('សូមបំពេញ / Please fill: បុគ្គលិក / Staff');
+  const rows=[...$('g_rooms').children].map(row=>{const o={};row.querySelectorAll('[data-c]').forEach(i=>o[i.dataset.c]=i.value.trim());return o}).filter(o=>Object.values(o).some(Boolean));
+  const notes=$('g_notes').value.trim();
+  if(!rows.length&&!notes) return alert('សូមបញ្ចូលភ្ញៀវយ៉ាងតិច ១ ជួរ / Please fill at least one guest row');
+  if(rows.some(o=>!o.room)) return alert('សូមបំពេញលេខបន្ទប់ / Please fill the Room number on every row');
+  ls.set('ajhub_staff',staff);
+  const L=arrLogGet(); L.push({id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),date,at:new Date().toISOString(),staffName:staff,notes,rooms:rows});
+  if(!arrLogSet(L)) return alert('រក្សាទុកមិនបាន (ថេប្លេតពេញ) / Could not save on this tablet');
+  $('g_rooms').innerHTML=''; addRow('rooms'); $('g_notes').value='';
+  renderArrLog(); const box=$('arrLog'); if(box) box.scrollIntoView({behavior:'smooth'});
+}
+function arrDelRow(id,i){
+  if(!confirm('លុបជួរនេះចេញពីបញ្ជី? / Remove this row?')) return;
+  let L=arrLogGet(); const e=L.find(x=>x.id===id); if(!e) return;
+  if(i<0) e.notes=''; else e.rooms.splice(i,1);
+  L=L.filter(x=>x.rooms.length||x.notes); arrLogSet(L); renderArrLog();
+}
+async function arrSendAll(date){
+  const E=arrLogGet().filter(x=>x.date===date); if(!E.length) return;
+  const staff=$('g_staffName')?.value.trim();
+  if(!staff){ alert('សូមបំពេញឈ្មោះបុគ្គលិក / Please fill Staff name'); $('g_staffName')?.focus(); return; }
+  if(!sigs['gs_staffSig']?.dirty){ alert('សូមស៊ីញ៉េខាងលើ មុនផ្ញើ / Please sign (Staff Signature) before sending'); $('gs_staffSig')?.scrollIntoView({behavior:'smooth',block:'center'}); return; }
+  const tm=s=>{const d=new Date(s);return isNaN(d)?'':d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})};
+  const rooms=E.flatMap(x=>x.rooms);
+  if(!confirm(`ផ្ញើបញ្ជីថ្ងៃ ${fmtD(date)} (${rooms.length} ជួរ) ទៅមេ? បន្ទាប់ពីផ្ញើ បញ្ជីនឹងបាត់ពីថេប្លេតនេះ។\nSend ${rooms.length} rows to the boss?`)) return;
+  const staffAll=[...new Set(E.map(x=>x.staffName).concat(staff))].join(', ');
+  const notes=E.map(x=>(x.notes?`${x.staffName} ${tm(x.at)}: ${x.notes}`:'')).filter(Boolean).join('\n');
+  const data={date,staffName:staff,staffAll,rooms,notes:(notes?notes+'\n':'')+`កត់ដោយ / Recorded by: ${staffAll}`,staffSig:sigData('gs_staffSig')};
+  const btns=document.querySelectorAll('#arrLog .sendAll'); btns.forEach(b=>{b.disabled=true;b.textContent='កំពុងផ្ញើ… / Sending…'});
+  try{
+    const r=await saveRecord('arrival',data); // safe in the tablet's send-queue even if the internet is down
+    const ids=new Set(E.map(x=>x.id)); arrLogSet(arrLogGet().filter(x=>!ids.has(x.id)));
+    $('gfBody').classList.add('hide'); $('gfDone').classList.remove('hide');
+    document.querySelector('#gfDone .doneMsg').innerHTML=esc(doneText(r))+`<br>📤 ${rooms.length} ជួរ · ${fmtD(date)} — បញ្ជីត្រូវបានសម្អាតពីថេប្លេតនេះ`+doneTools()+backLink();
+    renderArrLog(); window.scrollTo(0,0);
+    clearTimeout(window._rt); window._rt=setTimeout(()=>{if(!$('vForm').classList.contains('hide')&&!$('gfDone').classList.contains('hide'))resetGeneric()},20000);
+  }catch(e){ alert(e.message); btns.forEach(b=>{b.disabled=false;b.textContent='📤 ផ្ញើទាំងអស់ទៅមេ / Send all to boss'}); }
 }
 function renderArrLog(){
   const box=$('arrLog'); if(!box) return;
   if(location.hash!=='#f/arrival'){ box.innerHTML=''; return; }
-  const t=todayStr(), y=new Date().getHours()<12?addDays(t,-1):'', pend=getPending(); /* yesterday's list stays until 12:00 noon, then it is gone */
-  const L=arrLogGet().filter(x=>x.date===t||x.date===y).sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at));
+  if($('gSubmit')) $('gSubmit').textContent='💾 រក្សាទុកក្នុងបញ្ជី (មិនទាន់ផ្ញើ) / Save to list';
+  const t=todayStr(), L=arrLogGet();
+  const dates=[...new Set(L.map(x=>x.date))].sort();
   const n=v=>Number(v)||0, tm=s=>{const d=new Date(s);return isNaN(d)?'':d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})};
   const day=dt=>{
-    const E=L.filter(x=>x.date===dt); const R=E.flatMap(x=>x.rooms.map(o=>({...o,_st:x.staffName,_at:x.at})));
+    const E=L.filter(x=>x.date===dt).sort((a,b)=>a.at.localeCompare(b.at));
+    const R=E.flatMap(x=>x.rooms.map((o,i)=>({...o,_st:x.staffName,_at:x.at,_id:x.id,_i:i})));
     const c=k=>R.filter(o=>String(o.status).includes(k)).length;
-    const head=`<h3 style="margin:14px 0 6px">${dt===t?'📅 ថ្ងៃនេះ / Today':'📅 ម្សិលមិញ / Yesterday (បាត់ម៉ោង 12:00)'} · ${fmtD(dt)}</h3>`;
-    if(!E.length) return head+'<p class="muted">មិនទាន់មានការកត់ត្រា / Nothing recorded yet</p>';
+    const head=`<h3 style="margin:14px 0 6px">${dt===t?'📅 ថ្ងៃនេះ / Today':'⚠️ មិនទាន់ផ្ញើ / NOT SENT'} · ${fmtD(dt)}</h3>`+(dt<t?'<div class="alert warn" style="background:var(--badbg);color:var(--bad)">⚠️ បញ្ជីថ្ងៃមុន មិនទាន់ផ្ញើទៅមេ — សូមស៊ីញ៉េ ហើយចុច 📤 ផ្ញើ ឥឡូវនេះ</div>':'');
     const sum=`<div class="muted" style="margin-bottom:6px">🛬 មកដល់ ${c('Arrival')} · 🛏️ នៅស្នាក់ ${c('Staying')} · 🚪 ចេញ ${c('Departure')} · 👤 ${R.reduce((s,o)=>s+n(o.adults),0)} · 🧒 ${R.reduce((s,o)=>s+n(o.kids),0)}</div>`;
-    const rows=R.map(o=>`<tr><td><b>${esc(o.room)||'—'}</b></td><td>${esc(lbl(o.status))||'—'}</td><td><b>${esc(o.time)||'—'}</b></td><td class="wr">${esc(o.name)||'—'}</td><td>${esc(lbl(o.nat||''))||'—'}</td><td>${esc(o.idNo)||'—'}</td><td>${esc(o.adults)||'—'}</td><td>${esc(o.kids)||'—'}</td><td>${esc(lbl(o.transport||''))||'—'}</td><td><b>${esc(o.plate)||'—'}</b></td><td>${esc(o._st)}<br><small>${tm(o._at)}</small></td></tr>`).join('');
-    const notes=E.filter(x=>x.notes).map(x=>`<div class="muted">📝 ${esc(x.staffName)} ${tm(x.at)}: ${esc(x.notes)}</div>`).join('');
-    const waiting=E.filter(x=>x.clientId&&pend[x.clientId]).length;
-    return head+sum+(waiting?`<div class="alert warn">⏳ ${waiting} ហ្វម មិនទាន់ផ្ញើដល់មេ (រង់ចាំអ៊ីនធឺណិត)</div>`:'')+
-      `<div class="tw"><table class="arrT"><thead><tr><th>បន្ទប់<br><small>Room</small></th><th>ស្ថានភាព<br><small>Status</small></th><th>ម៉ោង<br><small>Time</small></th><th>ឈ្មោះ<br><small>Name</small></th><th>សញ្ជាតិ<br><small>Nat.</small></th><th>ID / Passport</th><th>👤</th><th>🧒</th><th>មធ្យោបាយ<br><small>Transport</small></th><th>ផ្លាកលេខ<br><small>Plate</small></th><th>បុគ្គលិក<br><small>Staff</small></th></tr></thead><tbody>${rows}</tbody></table></div>`+notes;
+    const rows=R.map(o=>`<tr><td><b>${esc(o.room)||'—'}</b></td><td>${esc(lbl(o.status||''))||'—'}</td><td><b>${esc(o.time)||'—'}</b></td><td class="wr">${esc(o.name)||'—'}</td><td>${esc(lbl(o.nat||''))||'—'}</td><td>${esc(o.idNo)||'—'}</td><td>${esc(o.adults)||'—'}</td><td>${esc(o.kids)||'—'}</td><td>${esc(lbl(o.transport||''))||'—'}</td><td><b>${esc(o.plate)||'—'}</b></td><td>${esc(o._st)}<br><small>${tm(o._at)}</small></td><td><button type="button" class="btn alt sm" onclick="arrDelRow('${o._id}',${o._i})">✕</button></td></tr>`).join('');
+    const notes=E.filter(x=>x.notes).map(x=>`<div class="muted">📝 ${esc(x.staffName)} ${tm(x.at)}: ${esc(x.notes)} <a href="#" onclick="arrDelRow('${x.id}',-1);return false">✕</a></div>`).join('');
+    return head+sum+(R.length?`<div class="tw"><table class="arrT"><thead><tr><th>បន្ទប់<br><small>Room</small></th><th>ស្ថានភាព<br><small>Status</small></th><th>ម៉ោង<br><small>Time</small></th><th>ឈ្មោះ<br><small>Name</small></th><th>សញ្ជាតិ<br><small>Nat.</small></th><th>ID / Passport</th><th>👤</th><th>🧒</th><th>មធ្យោបាយ<br><small>Transport</small></th><th>ផ្លាកលេខ<br><small>Plate</small></th><th>បុគ្គលិក<br><small>Staff</small></th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`:'')+notes+
+      `<button type="button" class="btn big sendAll" style="margin-top:12px;width:100%" onclick="arrSendAll('${dt}')">📤 ផ្ញើទាំងអស់ទៅមេ / Send all to boss</button>`;
   };
-  box.innerHTML=`<div class="card" style="margin-top:18px"><h2 style="margin-top:0">📋 បានកត់ត្រារួច / Already recorded</h2><p class="muted" style="margin:0">វេនព្រឹកកត់ហើយ វេនយប់មើលនៅទីនេះ — នៅរហូតដល់ម៉ោង 12:00 ថ្ងៃបន្ទាប់ · បង្ហាញតែលើថេប្លេតនេះ / Stays until 12:00 next day · this tablet only</p>${day(t)}${y?day(y):''}</div>`;
+  box.innerHTML=`<div class="card" style="margin-top:18px"><h2 style="margin-top:0">📋 បញ្ជីប្រចាំថ្ងៃ (មិនទាន់ផ្ញើ) / Day list — not sent yet</h2><p class="muted" style="margin:0">ចុច 💾 ដើម្បីដាក់ក្នុងបញ្ជី · វេនព្រឹក–វេនយប់ឃើញទាំងអស់ · ពេលគ្រប់ហើយ ស៊ីញ៉េ រួចចុច 📤 ផ្ញើ → បញ្ជីបាត់</p>${dates.length?dates.map(day).join(''):'<p class="muted">មិនទាន់មានការកត់ត្រា / Nothing in the list yet</p>'}</div>`;
 }
 function resetGeneric(){ try{$('dlg').close()}catch(e){} const t=location.hash.slice(3); if(DEFS[t]&&!DEFS[t].bossOnly) openGeneric(t); window.scrollTo(0,0); }
 
