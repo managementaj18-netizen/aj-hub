@@ -50,6 +50,7 @@ th{background:var(--brand2);font-weight:600;font-size:13px;white-space:nowrap}
 td.nw{white-space:nowrap}
 tr.click{cursor:pointer}tr.click:hover{background:#faf8f3}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:14px}
+#arrLog .arrT{width:100%;border-collapse:collapse;font-size:13px}#arrLog .arrT th,#arrLog .arrT td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;white-space:nowrap}#arrLog .arrT th small{font-weight:400;color:var(--mute)}#arrLog .arrT td.wr{white-space:normal;min-width:90px}
 .pill{display:inline-block;padding:1px 9px;border-radius:99px;font-size:12px;background:var(--brand2);color:var(--brand);white-space:nowrap}
 .pill.warn{background:var(--warnbg);color:var(--warn)}.pill.bad{background:var(--badbg);color:var(--bad)}.pill.ok{background:var(--okbg);color:var(--ok)}
 .rooms{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
@@ -358,6 +359,7 @@ dialog::backdrop{background:#0008}
     <div id="gfBody"></div>
     <div id="gfDone" class="done hide"><b>✅</b><h2>Thank you! / អរគុណ! / 谢谢!</h2><p class="muted doneMsg"></p>
       <button class="btn big" onclick="resetGeneric()">+ ហ្វមថ្មី / New form</button></div>
+    <div id="arrLog"></div>
   </main>
 </div>
 
@@ -1347,13 +1349,45 @@ async function submitGeneric(){
       for(const rm of rooms){ const g=roomGroup(rm); const one={...data,room:rm,roomtype:g?RT_BY_GROUP[g[1]]:'',price:split(data.price),deposit:split(data.deposit),groupRooms:rooms.join(', '),groupSize:String(n),notes:(data.notes?data.notes+'\n':'')+`ក្រុម ${n} បន្ទប់ / Group: ${rooms.join(', ')}`};
         if(G.boardId&&rm!==String(G.boardRoom||'')) delete one.boardId; const x=await saveRecord('booking',one); if(x!=='ok') all=x; docs.push({...window._lastDoc}); if(x==='ok') await boardFromBooking(one,window._lastDoc.id); }
       r=all; window._lastGroup=docs; }
-    else { if(G.type==='booking'&&rooms.length===1){const g=roomGroup(rooms[0]); data.roomtype=g?RT_BY_GROUP[g[1]]:(data.roomtype||'');} window._lastGroup=null; r=await saveRecord(G.type,data); if(G.type==='booking'&&r==='ok') await boardFromBooking(data,window._lastDoc.id); }
+    else { if(G.type==='booking'&&rooms.length===1){const g=roomGroup(rooms[0]); data.roomtype=g?RT_BY_GROUP[g[1]]:(data.roomtype||'');} window._lastGroup=null; r=await saveRecord(G.type,data); if(G.type==='booking'&&r==='ok') await boardFromBooking(data,window._lastDoc.id); if(G.type==='arrival') arrLogAdd(data,window._lastDoc&&window._lastDoc.clientId); }
     $('gfBody').classList.add('hide'); $('gfDone').classList.remove('hide'); document.querySelector('#gfDone .doneMsg').innerHTML=esc(doneText(r))+(G.type==='booking'&&r==='ok'?'<br>✅ បានដាក់ចូល Booking Board → ⏳ រង់ចាំឆែកអ៊ីន'+(window._lastGroup?` (${window._lastGroup.length} បន្ទប់)`:''):'')+(G.type==='booking'&&pairAllowed()?'<br><a class="btn alt big" style="margin-top:14px;display:block;text-decoration:none" href="#f/checkin">📋 ទៅបញ្ជីរង់ចាំ Check-in</a><button class="btn big" style="margin-top:10px" onclick="ciFromLastBooking()">✍️ ភ្ញៀវមកដល់ហើយ → Check-in ឥឡូវ</button>':'')+doneTools()+backLink(); window.scrollTo(0,0);
     clearTimeout(window._rt); window._rt=setTimeout(()=>{if(!$('vForm').classList.contains('hide')&&!$('gfDone').classList.contains('hide'))resetGeneric()},20000);
   }catch(e){ alert(e.message); }
   finally{ btn.disabled=false; btn.textContent='✅ រក្សាទុក / Save / 保存'; }
 }
-function openGeneric(type){ $('gfTitle').textContent=typeMeta(type).title; document.title='A&J · '+typeMeta(type).title; $('gfDone').classList.add('hide'); $('gfBody').classList.remove('hide'); renderGeneric(type,$('gfBody')); }
+function openGeneric(type){ $('gfTitle').textContent=typeMeta(type).title; document.title='A&J · '+typeMeta(type).title; $('gfDone').classList.add('hide'); $('gfBody').classList.remove('hide'); renderGeneric(type,$('gfBody')); renderArrLog(); }
+/* ---------- Arrival–Departure: list of what was already recorded (kept on this tablet) ----------
+   Morning shift saves → the rows stay listed under the form so the night shift can see
+   today's arrivals, guests and plate numbers. Kept 7 days on this tablet. */
+const ARR_LOG='ajhub_arrival_log';
+function arrLogGet(){ try{ return JSON.parse(ls.get(ARR_LOG)||'[]')||[]; }catch(e){ return []; } }
+function arrLogAdd(data,clientId){
+  const cut=addDays(todayStr(),-7);
+  const L=arrLogGet().filter(x=>(x.date||'')>=cut);
+  L.push({clientId:clientId||'',date:data.date||todayStr(),at:new Date().toISOString(),staffName:data.staffName||'',notes:data.notes||'',rooms:(data.rooms||[]).map(o=>({room:o.room||'',status:o.status||'',name:o.name||'',nat:o.nat||'',idNo:o.idNo||'',adults:o.adults||'',kids:o.kids||'',transport:o.transport||'',plate:o.plate||''}))});
+  if(!ls.set(ARR_LOG,JSON.stringify(L))) ls.set(ARR_LOG,JSON.stringify(L.slice(-30)));
+  renderArrLog();
+}
+function renderArrLog(){
+  const box=$('arrLog'); if(!box) return;
+  if(location.hash!=='#f/arrival'){ box.innerHTML=''; return; }
+  const t=todayStr(), y=addDays(t,-1), pend=getPending();
+  const L=arrLogGet().filter(x=>x.date===t||x.date===y).sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at));
+  const n=v=>Number(v)||0, tm=s=>{const d=new Date(s);return isNaN(d)?'':d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})};
+  const day=dt=>{
+    const E=L.filter(x=>x.date===dt); const R=E.flatMap(x=>x.rooms.map(o=>({...o,_st:x.staffName,_at:x.at})));
+    const c=k=>R.filter(o=>String(o.status).includes(k)).length;
+    const head=`<h3 style="margin:14px 0 6px">${dt===t?'📅 ថ្ងៃនេះ / Today':'📅 ម្សិលមិញ / Yesterday'} · ${fmtD(dt)}</h3>`;
+    if(!E.length) return head+'<p class="muted">មិនទាន់មានការកត់ត្រា / Nothing recorded yet</p>';
+    const sum=`<div class="muted" style="margin-bottom:6px">🛬 មកដល់ ${c('Arrival')} · 🛏️ នៅស្នាក់ ${c('Staying')} · 🚪 ចេញ ${c('Departure')} · 👤 ${R.reduce((s,o)=>s+n(o.adults),0)} · 🧒 ${R.reduce((s,o)=>s+n(o.kids),0)}</div>`;
+    const rows=R.map(o=>`<tr><td><b>${esc(o.room)||'—'}</b></td><td>${esc(lbl(o.status))||'—'}</td><td class="wr">${esc(o.name)||'—'}</td><td>${esc(lbl(o.nat||''))||'—'}</td><td>${esc(o.idNo)||'—'}</td><td>${esc(o.adults)||'—'}</td><td>${esc(o.kids)||'—'}</td><td>${esc(lbl(o.transport||''))||'—'}</td><td><b>${esc(o.plate)||'—'}</b></td><td>${esc(o._st)}<br><small>${tm(o._at)}</small></td></tr>`).join('');
+    const notes=E.filter(x=>x.notes).map(x=>`<div class="muted">📝 ${esc(x.staffName)} ${tm(x.at)}: ${esc(x.notes)}</div>`).join('');
+    const waiting=E.filter(x=>x.clientId&&pend[x.clientId]).length;
+    return head+sum+(waiting?`<div class="alert warn">⏳ ${waiting} ហ្វម មិនទាន់ផ្ញើដល់មេ (រង់ចាំអ៊ីនធឺណិត)</div>`:'')+
+      `<div class="tw"><table class="arrT"><thead><tr><th>បន្ទប់<br><small>Room</small></th><th>ស្ថានភាព<br><small>Status</small></th><th>ឈ្មោះ<br><small>Name</small></th><th>សញ្ជាតិ<br><small>Nat.</small></th><th>ID / Passport</th><th>👤</th><th>🧒</th><th>មធ្យោបាយ<br><small>Transport</small></th><th>ផ្លាកលេខ<br><small>Plate</small></th><th>បុគ្គលិក<br><small>Staff</small></th></tr></thead><tbody>${rows}</tbody></table></div>`+notes;
+  };
+  box.innerHTML=`<div class="card" style="margin-top:18px"><h2 style="margin-top:0">📋 បានកត់ត្រារួច / Already recorded</h2><p class="muted" style="margin:0">វេនព្រឹកកត់ហើយ វេនយប់មើលនៅទីនេះ — បង្ហាញតែលើថេប្លេតនេះ / Shows what was saved on this tablet</p>${day(t)}${day(y)}</div>`;
+}
 function resetGeneric(){ try{$('dlg').close()}catch(e){} const t=location.hash.slice(3); if(DEFS[t]&&!DEFS[t].bossOnly) openGeneric(t); window.scrollTo(0,0); }
 
 /* =====================================================================
