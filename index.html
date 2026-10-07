@@ -734,6 +734,7 @@ const DEFS = {
         {k:'rooms',l:'ភ្ញៀវម្នាក់ = មួយជួរ (បន្ទប់ដដែលមានភ្ញៀវច្រើន → ចុច + បន្ថែម) / One row per guest',t:'rows',full:1,cols:[
           {k:'room',t:'text',l:'បន្ទប់ / Room'},
           {k:'status',t:'select',l:'ស្ថានភាព / Status',opts:['🛬 មកដល់ / Arrival','🛏️ នៅស្នាក់ / Staying','🚪 ចេញ / Departure']},
+          {k:'time',t:'time',l:'ម៉ោង មក/ចេញ / Time'},
           {k:'name',t:'text',l:'ឈ្មោះភ្ញៀវ / Guest name'},
           {k:'nat',t:'nat',l:'សញ្ជាតិ / Nationality'},
           {k:'idNo',t:'text',l:'ID / Passport No.'},
@@ -1284,7 +1285,7 @@ function addRow(k){
   const f=allFields(G.type).find(x=>x.k===k); const box=$('g_'+k); const r=document.createElement('div'); r.className='r';
   if(f.cols.length>4) r.classList.add('wide');
   const wide=f.cols.length>4, cellOf=(c,h)=>wide?`<label class="cell"><small>${esc(c.l)}</small>${h}</label>`:h;
-  r.innerHTML=f.cols.map(c=>cellOf(c,c.t==='nat'?`<select data-c="${c.k}">${natOpts(c.l)}</select>`:c.t==='select'?`<select data-c="${c.k}"><option value="">${esc(c.l)}</option>${c.opts.map(o=>`<option>${esc(o)}</option>`).join('')}</select>`:`<input data-c="${c.k}" type="${c.t==='number'?'number':'text'}" placeholder="${esc(c.l)}"${c.t==='number'?' min="0" step="any" style="max-width:110px"':''}>`)).join('')+`<button type="button" class="btn alt sm x" onclick="this.closest('.r').remove();gCalc()">✕</button>`;
+  r.innerHTML=f.cols.map(c=>cellOf(c,c.t==='nat'?`<select data-c="${c.k}">${natOpts(c.l)}</select>`:c.t==='select'?`<select data-c="${c.k}"><option value="">${esc(c.l)}</option>${c.opts.map(o=>`<option>${esc(o)}</option>`).join('')}</select>`:`<input data-c="${c.k}" type="${c.t==='number'?'number':c.t==='time'?'time':'text'}" placeholder="${esc(c.l)}"${c.t==='number'?' min="0" step="any" style="max-width:110px"':''}>`)).join('')+`<button type="button" class="btn alt sm x" onclick="this.closest('.r').remove();gCalc()">✕</button>`;
   box.appendChild(r); r.addEventListener('input',gCalc);
 }
 const sigsOf=(d,r)=>[...(r&&r.sig&&!d.sigs.some(s=>s.k==='sig')?[{k:'sig',l:'ហត្ថលេខាភ្ញៀវ / Guest Signature'}]:[]),...d.sigs];
@@ -1362,31 +1363,31 @@ function openGeneric(type){ $('gfTitle').textContent=typeMeta(type).title; docum
 const ARR_LOG='ajhub_arrival_log';
 function arrLogGet(){ try{ return JSON.parse(ls.get(ARR_LOG)||'[]')||[]; }catch(e){ return []; } }
 function arrLogAdd(data,clientId){
-  const cut=addDays(todayStr(),-7);
+  const cut=addDays(todayStr(),-2);
   const L=arrLogGet().filter(x=>(x.date||'')>=cut);
-  L.push({clientId:clientId||'',date:data.date||todayStr(),at:new Date().toISOString(),staffName:data.staffName||'',notes:data.notes||'',rooms:(data.rooms||[]).map(o=>({room:o.room||'',status:o.status||'',name:o.name||'',nat:o.nat||'',idNo:o.idNo||'',adults:o.adults||'',kids:o.kids||'',transport:o.transport||'',plate:o.plate||''}))});
+  L.push({clientId:clientId||'',date:data.date||todayStr(),at:new Date().toISOString(),staffName:data.staffName||'',notes:data.notes||'',rooms:(data.rooms||[]).map(o=>({room:o.room||'',status:o.status||'',time:o.time||'',name:o.name||'',nat:o.nat||'',idNo:o.idNo||'',adults:o.adults||'',kids:o.kids||'',transport:o.transport||'',plate:o.plate||''}))});
   if(!ls.set(ARR_LOG,JSON.stringify(L))) ls.set(ARR_LOG,JSON.stringify(L.slice(-30)));
   renderArrLog();
 }
 function renderArrLog(){
   const box=$('arrLog'); if(!box) return;
   if(location.hash!=='#f/arrival'){ box.innerHTML=''; return; }
-  const t=todayStr(), y=addDays(t,-1), pend=getPending();
+  const t=todayStr(), y=new Date().getHours()<12?addDays(t,-1):'', pend=getPending(); /* yesterday's list stays until 12:00 noon, then it is gone */
   const L=arrLogGet().filter(x=>x.date===t||x.date===y).sort((a,b)=>(b.date+b.at).localeCompare(a.date+a.at));
   const n=v=>Number(v)||0, tm=s=>{const d=new Date(s);return isNaN(d)?'':d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})};
   const day=dt=>{
     const E=L.filter(x=>x.date===dt); const R=E.flatMap(x=>x.rooms.map(o=>({...o,_st:x.staffName,_at:x.at})));
     const c=k=>R.filter(o=>String(o.status).includes(k)).length;
-    const head=`<h3 style="margin:14px 0 6px">${dt===t?'📅 ថ្ងៃនេះ / Today':'📅 ម្សិលមិញ / Yesterday'} · ${fmtD(dt)}</h3>`;
+    const head=`<h3 style="margin:14px 0 6px">${dt===t?'📅 ថ្ងៃនេះ / Today':'📅 ម្សិលមិញ / Yesterday (បាត់ម៉ោង 12:00)'} · ${fmtD(dt)}</h3>`;
     if(!E.length) return head+'<p class="muted">មិនទាន់មានការកត់ត្រា / Nothing recorded yet</p>';
     const sum=`<div class="muted" style="margin-bottom:6px">🛬 មកដល់ ${c('Arrival')} · 🛏️ នៅស្នាក់ ${c('Staying')} · 🚪 ចេញ ${c('Departure')} · 👤 ${R.reduce((s,o)=>s+n(o.adults),0)} · 🧒 ${R.reduce((s,o)=>s+n(o.kids),0)}</div>`;
-    const rows=R.map(o=>`<tr><td><b>${esc(o.room)||'—'}</b></td><td>${esc(lbl(o.status))||'—'}</td><td class="wr">${esc(o.name)||'—'}</td><td>${esc(lbl(o.nat||''))||'—'}</td><td>${esc(o.idNo)||'—'}</td><td>${esc(o.adults)||'—'}</td><td>${esc(o.kids)||'—'}</td><td>${esc(lbl(o.transport||''))||'—'}</td><td><b>${esc(o.plate)||'—'}</b></td><td>${esc(o._st)}<br><small>${tm(o._at)}</small></td></tr>`).join('');
+    const rows=R.map(o=>`<tr><td><b>${esc(o.room)||'—'}</b></td><td>${esc(lbl(o.status))||'—'}</td><td><b>${esc(o.time)||'—'}</b></td><td class="wr">${esc(o.name)||'—'}</td><td>${esc(lbl(o.nat||''))||'—'}</td><td>${esc(o.idNo)||'—'}</td><td>${esc(o.adults)||'—'}</td><td>${esc(o.kids)||'—'}</td><td>${esc(lbl(o.transport||''))||'—'}</td><td><b>${esc(o.plate)||'—'}</b></td><td>${esc(o._st)}<br><small>${tm(o._at)}</small></td></tr>`).join('');
     const notes=E.filter(x=>x.notes).map(x=>`<div class="muted">📝 ${esc(x.staffName)} ${tm(x.at)}: ${esc(x.notes)}</div>`).join('');
     const waiting=E.filter(x=>x.clientId&&pend[x.clientId]).length;
     return head+sum+(waiting?`<div class="alert warn">⏳ ${waiting} ហ្វម មិនទាន់ផ្ញើដល់មេ (រង់ចាំអ៊ីនធឺណិត)</div>`:'')+
-      `<div class="tw"><table class="arrT"><thead><tr><th>បន្ទប់<br><small>Room</small></th><th>ស្ថានភាព<br><small>Status</small></th><th>ឈ្មោះ<br><small>Name</small></th><th>សញ្ជាតិ<br><small>Nat.</small></th><th>ID / Passport</th><th>👤</th><th>🧒</th><th>មធ្យោបាយ<br><small>Transport</small></th><th>ផ្លាកលេខ<br><small>Plate</small></th><th>បុគ្គលិក<br><small>Staff</small></th></tr></thead><tbody>${rows}</tbody></table></div>`+notes;
+      `<div class="tw"><table class="arrT"><thead><tr><th>បន្ទប់<br><small>Room</small></th><th>ស្ថានភាព<br><small>Status</small></th><th>ម៉ោង<br><small>Time</small></th><th>ឈ្មោះ<br><small>Name</small></th><th>សញ្ជាតិ<br><small>Nat.</small></th><th>ID / Passport</th><th>👤</th><th>🧒</th><th>មធ្យោបាយ<br><small>Transport</small></th><th>ផ្លាកលេខ<br><small>Plate</small></th><th>បុគ្គលិក<br><small>Staff</small></th></tr></thead><tbody>${rows}</tbody></table></div>`+notes;
   };
-  box.innerHTML=`<div class="card" style="margin-top:18px"><h2 style="margin-top:0">📋 បានកត់ត្រារួច / Already recorded</h2><p class="muted" style="margin:0">វេនព្រឹកកត់ហើយ វេនយប់មើលនៅទីនេះ — បង្ហាញតែលើថេប្លេតនេះ / Shows what was saved on this tablet</p>${day(t)}${day(y)}</div>`;
+  box.innerHTML=`<div class="card" style="margin-top:18px"><h2 style="margin-top:0">📋 បានកត់ត្រារួច / Already recorded</h2><p class="muted" style="margin:0">វេនព្រឹកកត់ហើយ វេនយប់មើលនៅទីនេះ — នៅរហូតដល់ម៉ោង 12:00 ថ្ងៃបន្ទាប់ · បង្ហាញតែលើថេប្លេតនេះ / Stays until 12:00 next day · this tablet only</p>${day(t)}${y?day(y):''}</div>`;
 }
 function resetGeneric(){ try{$('dlg').close()}catch(e){} const t=location.hash.slice(3); if(DEFS[t]&&!DEFS[t].bossOnly) openGeneric(t); window.scrollTo(0,0); }
 
