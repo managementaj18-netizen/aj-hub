@@ -1388,6 +1388,31 @@ function arrDelRow(id,i){
   if(i<0) e.notes=''; else e.rooms.splice(i,1);
   L=L.filter(x=>x.rooms.length||x.notes); arrLogSet(L); renderArrLog();
 }
+/* ✏️ edit one row of the unsent day list (fix typos before sending to the boss) */
+function arrEditRow(id,i){
+  const L=arrLogGet(), e=L.find(x=>x.id===id); if(!e||!e.rooms[i]) return; const o=e.rooms[i];
+  const cols=allFields('arrival').find(x=>x.k==='rooms').cols;
+  const inp=c=>c.t==='nat'?`<select id="ae_${c.k}">${natOpts(c.l)}</select>`
+    :c.t==='select'?`<select id="ae_${c.k}"><option value="">—</option>${c.opts.map(x=>`<option>${esc(x)}</option>`).join('')}</select>`
+    :`<input id="ae_${c.k}" type="${c.t==='number'?'number':c.t==='time'?'time':'text'}"${c.t==='number'?' min="0" step="any"':''}>`;
+  $('dT').textContent='✏️ កែជួរ / Edit row'; setDocBtns(null);
+  $('dB').innerHTML=`<div class="fg">${cols.map(c=>`<label>${esc(c.l)}${inp(c)}</label>`).join('')}
+    <label class="full">បុគ្គលិក / Staff<input id="ae_staff"></label></div>
+    <div class="nav2"><button class="btn alt" onclick="closeDlg()">បិទ / Cancel</button><button class="btn" onclick="arrEditSave('${esc(id)}',${i})">💾 រក្សាទុក / Save</button></div>`;
+  cols.forEach(c=>{ const el=$('ae_'+c.k); if(!el) return; if(c.t==='nat') setNat(el,o[c.k]); else el.value=o[c.k]||''; });
+  $('ae_staff').value=e.staffName||'';
+  $('dlg').showModal();
+}
+function arrEditSave(id,i){
+  const L=arrLogGet(), e=L.find(x=>x.id===id); if(!e||!e.rooms[i]) return closeDlg();
+  const cols=allFields('arrival').find(x=>x.k==='rooms').cols, o={};
+  cols.forEach(c=>{ const el=$('ae_'+c.k); o[c.k]=el?el.value.trim():''; });
+  if(!o.room) return alert('សូមបំពេញលេខបន្ទប់ / Please fill the Room number');
+  e.rooms[i]=o; const st=$('ae_staff').value.trim(); if(st) e.staffName=st;
+  if(!arrLogSet(L)) return alert('រក្សាទុកមិនបាន (ថេប្លេតពេញ) / Could not save on this tablet');
+  closeDlg(); renderArrLog();
+}
+function arrEditNote(id){ const L=arrLogGet(), e=L.find(x=>x.id===id); if(!e) return; const v=prompt('កែចំណាំ / Edit note',e.notes||''); if(v===null) return; e.notes=v.trim(); arrLogSet(L.filter(x=>x.rooms.length||x.notes)); renderArrLog(); }
 async function arrSendAll(date){
   const E=arrLogGet().filter(x=>x.date===date); if(!E.length) return;
   const staff=$('g_staffName')?.value.trim();
@@ -1422,8 +1447,8 @@ function renderArrLog(){
     const c=k=>R.filter(o=>String(o.status).includes(k)).length;
     const head=`<h3 style="margin:14px 0 6px">${dt===t?'📅 ថ្ងៃនេះ / Today':'⚠️ មិនទាន់ផ្ញើ / NOT SENT'} · ${fmtD(dt)}</h3>`+(dt<t?'<div class="alert warn" style="background:var(--badbg);color:var(--bad)">⚠️ បញ្ជីថ្ងៃមុន មិនទាន់ផ្ញើទៅមេ — សូមស៊ីញ៉េ ហើយចុច 📤 ផ្ញើ ឥឡូវនេះ</div>':'');
     const sum=`<div class="muted" style="margin-bottom:6px">🛬 មកដល់ ${c('Arrival')} · 🛏️ នៅស្នាក់ ${c('Staying')} · 🚪 ចេញ ${c('Departure')} · 👤 ${R.reduce((s,o)=>s+n(o.adults),0)} · 🧒 ${R.reduce((s,o)=>s+n(o.kids),0)}</div>`;
-    const rows=R.map(o=>`<tr><td><b>${esc(o.room)||'—'}</b></td><td>${esc(lbl(o.status||''))||'—'}</td><td><b>${esc(o.time)||'—'}</b></td><td class="wr">${esc(o.name)||'—'}</td><td>${esc(lbl(o.nat||''))||'—'}</td><td>${esc(o.idNo)||'—'}</td><td>${esc(o.adults)||'—'}</td><td>${esc(o.kids)||'—'}</td><td>${esc(lbl(o.transport||''))||'—'}</td><td><b>${esc(o.plate)||'—'}</b></td><td>${esc(o._st)}<br><small>${tm(o._at)}</small></td><td><button type="button" class="btn alt sm" onclick="arrDelRow('${o._id}',${o._i})">✕</button></td></tr>`).join('');
-    const notes=E.filter(x=>x.notes).map(x=>`<div class="muted">📝 ${esc(x.staffName)} ${tm(x.at)}: ${esc(x.notes)} <a href="#" onclick="arrDelRow('${x.id}',-1);return false">✕</a></div>`).join('');
+    const rows=R.map(o=>`<tr><td><b>${esc(o.room)||'—'}</b></td><td>${esc(lbl(o.status||''))||'—'}</td><td><b>${esc(o.time)||'—'}</b></td><td class="wr">${esc(o.name)||'—'}</td><td>${esc(lbl(o.nat||''))||'—'}</td><td>${esc(o.idNo)||'—'}</td><td>${esc(o.adults)||'—'}</td><td>${esc(o.kids)||'—'}</td><td>${esc(lbl(o.transport||''))||'—'}</td><td><b>${esc(o.plate)||'—'}</b></td><td>${esc(o._st)}<br><small>${tm(o._at)}</small></td><td style="white-space:nowrap"><button type="button" class="btn alt sm" onclick="arrEditRow('${o._id}',${o._i})">✏️</button> <button type="button" class="btn alt sm" onclick="arrDelRow('${o._id}',${o._i})">✕</button></td></tr>`).join('');
+    const notes=E.filter(x=>x.notes).map(x=>`<div class="muted">📝 ${esc(x.staffName)} ${tm(x.at)}: ${esc(x.notes)} <a href="#" onclick="arrEditNote('${x.id}');return false">✏️</a> <a href="#" onclick="arrDelRow('${x.id}',-1);return false">✕</a></div>`).join('');
     return head+sum+(R.length?`<div class="tw"><table class="arrT"><thead><tr><th>បន្ទប់<br><small>Room</small></th><th>ស្ថានភាព<br><small>Status</small></th><th>ម៉ោង<br><small>Time</small></th><th>ឈ្មោះ<br><small>Name</small></th><th>សញ្ជាតិ<br><small>Nat.</small></th><th>ID / Passport</th><th>👤</th><th>🧒</th><th>មធ្យោបាយ<br><small>Transport</small></th><th>ផ្លាកលេខ<br><small>Plate</small></th><th>បុគ្គលិក<br><small>Staff</small></th><th></th></tr></thead><tbody>${rows}</tbody></table></div>`:'')+notes+
       `<button type="button" class="btn big sendAll" style="margin-top:12px;width:100%" onclick="arrSendAll('${dt}')">📤 ផ្ញើទាំងអស់ទៅមេ / Send all to boss</button>`;
   };
