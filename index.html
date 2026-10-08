@@ -785,7 +785,9 @@ const typeMeta = t => t==='checkin'?CHECKIN_META:t==='view'?VIEW_META:t==='decl'
    ===================================================================== */
 const $ = id => document.getElementById(id);
 const esc = s => String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const ls = {get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v);return true}catch(e){return false}}};
+/* phones: in-app browsers / full storage can refuse localStorage → keep a copy in memory so Save still works for this visit */
+const _mem={};
+const ls = {get(k){if(k in _mem)return _mem[k]; try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v);delete _mem[k];return true}catch(e){_mem[k]=v;return false}}};
 const ymd = d => d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 const todayStr = () => ymd(new Date());
 const addDays = (s,n) => {const d=new Date(s+'T00:00:00');d.setDate(d.getDate()+Number(n||0));return ymd(d)};
@@ -1776,7 +1778,7 @@ function viewBk(id){ const b=BOARD.bookings.find(x=>x.bkId===id); if(!b) return;
     <div>ចូល</div><div>${fmtD(b.start)}${b.checkinAt?' · '+esc(b.checkinAt):''}</div><div>ចេញ</div><div>${fmtD(bkEnd(b))} (${b.nights} យប់)</div>
     ${(b.extensions||[]).length?`<div>⏰ ពន្យារ</div><div>${b.extensions.map(x=>fmtD(x.from)+' → '+fmtD(x.to)).join('<br>')}</div>`:''}
     ${b.guests?`<div>ចំនួនភ្ញៀវ</div><div>${esc(b.guests)}${Number(b.children)?' + កុមារ '+esc(b.children):''}</div>`:''}${b.source?`<div>ប្រភព</div><div>${esc(b.source)}</div>`:''}${b.note?`<div>ចំណាំ</div><div>${esc(b.note)}</div>`:''}</div>
-    <div class="nav2"><button class="btn alt" onclick="closeDlg()">បិទ</button></div>`; $('dlg').showModal(); }
+    <div class="nav2"><button class="btn alt" onclick="closeDlg()">បិទ</button>${b.status==='checkedin'?`<button class="btn" onclick="doCheckout('${esc(b.bkId)}')">🚪 Check-out</button>`:''}</div>`; $('dlg').showModal(); }
 /* staff area */
 let staffInit=false;
 function initStaff(){
