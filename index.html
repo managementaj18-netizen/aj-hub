@@ -557,7 +557,7 @@ const DEFS = {
         {k:'ref',l:'Booking Ref'},
         {k:'notes',l:'ចំណាំ / Notes / 备注',t:'textarea',full:1},
         {k:'staffName',l:'បុគ្គលិកបង្កើត Booking / Staff',req:1}]}],
-    sigs:[{k:'staffSig',l:'បុគ្គលិកបង្កើត Booking ស៊ីញ៉េ / Booking created by (staff)'}], /* no guest policy/signature: the guest signs at Check-in */
+    sigs:[{k:'staffSig',l:'បុគ្គលិកបង្កើត Booking ស៊ីញ៉េ / Booking created by (staff)'}], /* no guest policy/signature: the guest signs at Check-in */ signer:r=>r.staffName,
     onRender:()=>{ G.host.querySelector('h2').insertAdjacentHTML('beforebegin',`<div class="alert ok" style="margin-top:10px"><b>📋 Paste ពី Telegram / Facebook</b><textarea id="pasteBox" rows="3" style="margin:6px 0" placeholder="ឧ: Name: John Smith, Room: 201, 202, Check-in: 15/06/2026, Check-out: 17/06/2026, Source: Agoda, Ref: 12345678, Phone: 012 345 678"></textarea><button type="button" class="btn sm" onclick="autoFill()">⚡ Auto-Fill</button></div>`); },
     date:r=>r.ci, room:r=>r.room, name:r=>r.name, idn:r=>r.phone, extra:r=>fmtD(r.ci)+' → '+fmtD(r.co)+(r.deposit?' · កក់ '+money(r.deposit):'')
   },
@@ -687,7 +687,7 @@ const DEFS = {
       'មិនអនុញ្ញាតយកម្ហូប ឬផ្លែឈើមានក្លិនខ្លាំង (ទុរេន) / No food or strong-smelling fruit (durian).',
       'ភ្ញៀវយល់ព្រមដោយការចុះហត្ថលេខា / Guest agrees by signing below.'],
     agree:'ខ្ញុំយល់ព្រម / I agree / 本人同意',
-    sigs:[{k:'sig',l:'ហត្ថលេខាភ្ញៀវ / Guest Signature',req:1},{k:'staffSig',l:'ហត្ថលេខាបុគ្គលិក / Staff Signature'}],
+    sigs:[{k:'sig',l:'ហត្ថលេខាភ្ញៀវ / Guest Signature',req:1},{k:'staffSig',l:'ហត្ថលេខាបុគ្គលិក / Staff Signature'}], signer:r=>r.staffName,
     date:r=>String(r.dropoff||'').slice(0,10), room:r=>r.room||'', name:r=>r.name, idn:r=>r.phone, extra:r=>`${r.pieces||1} × ${lbl(r.luggageType||'')} · យក ${r.pickup?String(r.pickup).replace('T',' '):'—'}`
   },
   stock: {
@@ -1849,7 +1849,7 @@ function paperGeneric(r){
   if(d.text) h+=`<h4 class="sh">${esc(d.textTitle||'')}</h4>${d.text.map(t=>`<p>${esc(t)}</p>`).join('')}${d.agree?`<p>${r.agreed?'☑':'☐'} ${esc(d.agree)}</p>`:''}`;
   const ph=allFields(r.type).filter(f=>f.t==='photo'&&pImg(r[f.k]));
   if(ph.length) h+=`<div class="photos2" style="margin-top:12px">${ph.map(f=>`<figure class="avoid">${pImg(r[f.k])}<figcaption>${esc(lbl(f.l))}</figcaption></figure>`).join('')}</div>`;
-  h+=`</div><div class="sigrow avoid">${pCell('Name / ឈ្មោះ',`<div class="ln">${esc((d.signer?d.signer(r):fName(r))||'')}</div>`)}${sigsOf(d,r).map(s=>pCell(s.l,`<div class="sigbox">${pImg(r[s.k])}</div>`)).join('')}${pCell('Date / ថ្ងៃទី',`<div class="ln">${esc(r.ciAt?new Date(r.ciAt).toLocaleDateString('en-GB'):'')}</div>`)}</div>`;
+  h+=`</div><div class="sigrow avoid">${pCell(d.signer?'Staff name / ឈ្មោះបុគ្គលិក':'Name / ឈ្មោះ',`<div class="ln">${esc((d.signer?d.signer(r):fName(r))||'')}</div>`)}${sigsOf(d,r).map(s=>pCell(s.l,`<div class="sigbox">${pImg(r[s.k])}</div>`)).join('')}${pCell('Date / ថ្ងៃទី',`<div class="ln">${esc(r.ciAt?new Date(r.ciAt).toLocaleDateString('en-GB'):'')}</div>`)}</div>`;
   return h+`<div class="foot">A&amp;J Kampot Boutique · ${esc(dtLocal(r.ciAt))} ${r._id?'· '+esc(r._id):''}</div></div>`;
 }
 const paperFor=r=>r.type==='checkin'?paperCheckin(r):paperGeneric(r);
