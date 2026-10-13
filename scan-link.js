@@ -241,6 +241,8 @@
       .then(function (j) {
         if (!j.ok) { photoQ = ""; return; }
         var G = j.guests || [];
+        if (d) G = G.filter(function (g) { return !g.checkout_date || g.checkout_date > d; });
+        var SP = window.__ajScanPass; if (SP && SP.q === q && SP.list.length) G = G.filter(function (g) { return SP.list.indexOf(String(g.passport_no || "").replace(/\s/g, "").toUpperCase()) >= 0; });
         if (!G.length) return;
         if (fillText) {   // the scan app found nobody for this date — fill the basics from here
           fbQ = q;
@@ -292,6 +294,7 @@
       .then(function (j) {
         if (!j.ok) { banner(j.error === "Bad key" ? "⚠️ Scan QR ចាស់ — សូមស្កេន QR ថ្មីពី Passport Scan" : "", false); return; }
         var G = j.guests || [];
+        window.__ajScanPass = { q: r + "|" + d, list: G.map(function (g) { return String(g.passport_no || "").replace(/\s/g, "").toUpperCase(); }) };
         if (!G.length) { if (fbQ === r + "|" + d) { lastQ = q; return; } banner("📷 មិនទាន់មានការស្កេនសម្រាប់បន្ទប់ " + r + " ថ្ងៃនេះ — ចុច 📷 ស្កេន ID / Passport", false); lastQ = ""; fillPhotos(r, d, true); return; }
         var first = G[0];
         setVal($("f_name"), fullName(first));
