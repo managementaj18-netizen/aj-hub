@@ -59,7 +59,7 @@
     var C = cacheObj() || {};
     var figs = G.map(function (g, i) {
       var name = [g.given_names, g.surname].filter(Boolean).join(" ");
-      var cap = (i + 1) + ". " + E(name || "—") + (g.name_km ? " (" + E(g.name_km) + ")" : "") +
+      var cap = (i + 1) + ". " + E(name || "—") + (g.name_km && !/script|printed|\(|\)/i.test(g.name_km) ? " (" + E(g.name_km) + ")" : "") +
         (g.passport_no ? " · " + E(g.passport_no) : "") + (g.nationality ? " · " + E(g.nationality) : "") +
         " · " + fmt(g.checkin_date) + (g.checkout_date ? " → " + fmt(g.checkout_date) : "");
       var img = Number(g.has_img) ? '<img data-drive="scan_' + g.id + '" src="' + (C["scan_" + g.id] || "") + '" alt="" style="width:100%;height:auto;max-height:460px;object-fit:contain">' : '<div class="muted" style="padding:24px;text-align:center">គ្មានរូប · no image</div>';
