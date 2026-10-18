@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="km"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#111111">
+<title>A&J Laundry</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f4f2;--card:#fff;--ink:#161616;--mute:#6d6d6a;--line:#e2e2de;--ac:#111;--ok:#1f7a3a;--okbg:#e3f4e8;--warn:#a15c07;--warnbg:#fdf2dc;--bad:#b42318;--badbg:#fde8e6;--blue:#1d4ed8;--bluebg:#e0e9ff}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Kantumruy Pro",system-ui,sans-serif;font-size:15px;line-height:1.45}
+header{background:#111;color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+header b{font-size:18px;flex:1}header small{opacity:.7;font-weight:400}
+main{max-width:720px;margin:0 auto;padding:14px 14px calc(88px + env(safe-area-inset-bottom))}
+nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;padding:6px 6px calc(8px + env(safe-area-inset-bottom));z-index:6}
+nav button{flex:1;border:0;background:none;font:inherit;font-size:12px;color:var(--mute);padding:6px 2px;cursor:pointer}
+nav button span{display:block;font-size:22px;line-height:1.1}nav button.on{color:var(--ink);font-weight:700}
+.card{background:var(--card);border-radius:16px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px #0001}
+h2{font-size:17px;margin:0 0 10px}h3{font-size:15px;margin:14px 0 6px}
+label{display:block;font-size:12px;color:var(--mute);margin-bottom:10px}
+input,select,textarea{width:100%;font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink);margin-top:3px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+button.b{font:inherit;font-weight:600;border:0;border-radius:12px;padding:12px 16px;background:var(--ac);color:#fff;cursor:pointer;min-height:46px}
+button.b.alt{background:#fff;color:var(--ink);border:1px solid var(--line)}button.b.bad{background:var(--badbg);color:var(--bad)}button.b.sm{padding:8px 12px;min-height:36px;font-size:13px}
+button.b.full{width:100%}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.pill{display:inline-block;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:600}
+.s-received{background:var(--warnbg);color:var(--warn)}.s-washing{background:var(--bluebg);color:var(--blue)}.s-ready{background:var(--okbg);color:var(--ok)}.s-delivered{background:#eee;color:#555}
+.paid{background:var(--okbg);color:var(--ok)}.unpaid{background:var(--badbg);color:var(--bad)}
+.ord{display:block;width:100%;text-align:left;border:0;background:var(--card);border-radius:14px;padding:12px;margin-bottom:8px;box-shadow:0 1px 3px #0001;font:inherit;cursor:pointer}
+.ord small{color:var(--mute)}
+.line{display:grid;grid-template-columns:1fr 70px 70px 28px;gap:6px;align-items:center;margin-bottom:6px}
+.line input,.line select{margin:0;padding:9px 8px;font-size:15px}.line .x{border:0;background:none;font-size:18px;color:var(--bad);cursor:pointer}
+.tot{font-size:20px;font-weight:700;text-align:right}
+.chips{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}.chips button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 13px;font:inherit;font-size:13px;white-space:nowrap}.chips button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}.stat{background:var(--card);border-radius:14px;padding:12px}.stat b{font-size:22px;display:block}.stat span{font-size:12px;color:var(--mute)}
+.muted{color:var(--mute)}.hide{display:none!important}
+dialog{border:0;border-radius:18px;padding:0;max-width:440px;width:calc(100% - 24px);max-height:92vh;overflow:auto}dialog::backdrop{background:#0007}
+.dbody{padding:16px}
+.rc{font-family:system-ui,"Kantumruy Pro",sans-serif;font-size:13px}.rc h1{font-size:18px;margin:0;text-align:center}.rc .c{text-align:center;color:#555}
+.rc table{width:100%;border-collapse:collapse;margin:8px 0}.rc td,.rc th{padding:4px 2px;border-bottom:1px dashed #bbb;text-align:left}.rc td:last-child,.rc th:last-child{text-align:right}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#111;color:#fff;padding:10px 16px;border-radius:12px;z-index:50}
+@media print{header,nav,main,.toast,.noprint{display:none!important}body{background:#fff}dialog{position:static;box-shadow:none;max-width:80mm;margin:0;width:auto}dialog::backdrop{display:none}@page{margin:6mm}}
+</style></head><body>
+<header><b id="biz">A&amp;J Laundry <small>· បោកគក់</small></b><span class="pill" id="ver" style="background:#ffffff26"></span></header>
+<main id="app"></main>
+<nav id="nav"></nav>
+<dialog id="dlg"><div class="dbody" id="dbody"></div></dialog>
+<script>
+(function(){"use strict";
+var $=function(i){return document.getElementById(i)};
+var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]})};
+var K_ORD="ajl_orders",K_SET="ajl_settings",mem={};
+function load(k,d){try{var v=localStorage.getItem(k);if(v!=null)return JSON.parse(v)}catch(e){} return k in mem?JSON.parse(mem[k]):d}
+function save(k,v){var s=JSON.stringify(v);try{localStorage.setItem(k,s);delete mem[k];return true}catch(e){mem[k]=s;toast("⚠️ ទុកក្នុងឧបករណ៍មិនបាន · Storage blocked — data will be lost when you close");return false}}
+var DEF={name:"A&J Laundry",items:[{n:"បោក+បត់ ក្នុងមួយគីឡូ / Wash & fold per kg",p:1.5,u:"kg"},{n:"អាវ / Shirt",p:0.5,u:"pc"},{n:"ខោ / Trousers",p:0.7,u:"pc"},{n:"រ៉ូប / Dress",p:1.2,u:"pc"},{n:"ក្រណាត់គ្រែ / Bed sheet",p:1.5,u:"pc"},{n:"កន្សែង / Towel",p:0.5,u:"pc"}]};
+var S=load(K_SET,DEF),O=load(K_ORD,[]);
+var ST={received:"ទទួលរួច · Received",washing:"កំពុងបោក · Washing",ready:"រួចរាល់ · Ready",delivered:"បានប្រគល់ · Delivered"};
+var FLOW=["received","washing","ready","delivered"];
+var tab="new",flt="active",q="",draft=null;
+var money=function(n){return"$"+(Math.round((+n||0)*100)/100).toFixed(2)};
+var ymd=function(d){d=d||new Date();return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")};
+var fd=function(s){if(!s)return"";var d=new Date(s);return isNaN(d)?s:d.toLocaleString("en-GB",{day:"2-digit",month:"short",hour:"2-digit",minute:"2-digit"})};
+function toast(m){var t=document.createElement("div");t.className="toast";t.textContent=m;document.body.appendChild(t);setTimeout(function(){t.remove()},2600)}
+function total(o){return o.lines.reduce(function(s,l){return s+(+l.q||0)*(+l.p||0)},0)}
+function nextNo(){var p="L"+ymd().replace(/-/g,"").slice(2),n=O.filter(function(o){return o.no.indexOf(p)===0}).length+1;return p+"-"+String(n).padStart(3,"0")}
+function newDraft(){return{name:"",phone:"",room:"",idno:"",note:"",due:"",paid:false,lines:[{n:S.items[0]?S.items[0].n:"",q:1,p:S.items[0]?S.items[0].p:0}]}}
+draft=newDraft();
+
+function nav(){var t=[["new","➕","ថ្មី · New"],["orders","🧺","បញ្ជី · Orders"],["report","📊","របាយការណ៍ · Report"],["set","⚙️","កំណត់ · Settings"]];
+ $("nav").innerHTML=t.map(function(x){return'<button class="'+(tab===x[0]?"on":"")+'" data-t="'+x[0]+'"><span>'+x[1]+"</span>"+x[2]+"</button>"}).join("");
+ $("nav").onclick=function(e){var b=e.target.closest("button");if(b){tab=b.dataset.t;render()}}}
+
+function lineHtml(l,i){var opts=S.items.map(function(it){return'<option value="'+esc(it.n)+'"'+(it.n===l.n?" selected":"")+">"+esc(it.n)+"</option>"}).join("");
+ if(l.n&&!S.items.some(function(it){return it.n===l.n}))opts='<option selected>'+esc(l.n)+"</option>"+opts;
+ return'<div class="line" data-i="'+i+'"><select data-f="n">'+opts+'</select><input data-f="q" type="number" min="0" step="any" inputmode="decimal" value="'+esc(l.q)+'" aria-label="qty"><input data-f="p" type="number" min="0" step="any" inputmode="decimal" value="'+esc(l.p)+'" aria-label="price"><button class="x" data-x="'+i+'" type="button">✕</button></div>'}
+
+function vNew(){var d=draft;
+ return'<div class="card"><h2>ទទួលអីវ៉ាន់ថ្មី · New order</h2>'+
+ '<div class="g2"><label>ឈ្មោះ · Name *<input id="f_name" value="'+esc(d.name)+'" autocomplete="off"></label><label>ទូរស័ព្ទ · Phone<input id="f_phone" type="tel" value="'+esc(d.phone)+'"></label></div>'+
+ '<div class="g2"><label>បន្ទប់/អាសយដ្ឋាន · Room / address<input id="f_room" value="'+esc(d.room)+'"></label><label>ថ្ងៃយក · Pick-up<input id="f_due" type="datetime-local" value="'+esc(d.due)+'"></label></div>'+
+ '<label>ID / Passport (ជម្រើស · optional)<input id="f_idno" value="'+esc(d.idno)+'" autocomplete="off"></label>'+
+ '<h3>អីវ៉ាន់ · Items <small class="muted">(ឈ្មោះ · ចំនួន · តម្លៃ)</small></h3><div id="lines">'+d.lines.map(lineHtml).join("")+'</div>'+
+ '<button class="b alt sm" id="addl" type="button">+ បន្ថែម · Add item</button>'+
+ '<label style="margin-top:12px">ចំណាំ · Note<textarea id="f_note" rows="2">'+esc(d.note)+'</textarea></label>'+
+ '<div class="row"><label style="margin:0"><input type="checkbox" id="f_paid" style="width:auto;margin-right:6px"'+(d.paid?" checked":"")+'>បានបង់ · Paid</label><span class="sp"></span><div class="tot" id="tot">'+money(total(d))+'</div></div>'+
+ '<button class="b full" id="save" style="margin-top:12px">💾 រក្សាទុក · Save &amp; receipt</button></div>'}
+
+function filtered(){var qq=q.trim().toLowerCase();return O.slice().sort(function(a,b){return b.at.localeCompare(a.at)}).filter(function(o){
+ if(flt==="active"&&o.status==="delivered")return false;if(flt!=="active"&&flt!=="all"&&o.status!==flt)return false;
+ return!qq||[o.no,o.name,o.phone,o.room].join(" ").toLowerCase().indexOf(qq)>=0})}
+function vOrders(){var f=[["active","កំពុងដំណើរការ · Active"],["all","ទាំងអស់ · All"]].concat(FLOW.map(function(s){return[s,ST[s].split(" · ")[1]]}));
+ var L=filtered();
+ return'<input id="q" placeholder="🔎 ស្វែងរក · Search name / phone / room / no." value="'+esc(q)+'"><div class="chips" style="margin-top:8px">'+f.map(function(x){return'<button data-f="'+x[0]+'" class="'+(flt===x[0]?"on":"")+'">'+esc(x[1])+"</button>"}).join("")+"</div>"+
+ (L.length?L.map(function(o){return'<button class="ord" data-id="'+o.id+'"><div class="row"><b>'+esc(o.name)+'</b><span class="sp"></span><span class="pill s-'+o.status+'">'+esc(ST[o.status].split(" · ")[0])+'</span></div><small>'+esc(o.no)+" · "+esc(o.room||"")+" · "+fd(o.at)+'</small><div class="row"><b>'+money(total(o))+'</b><span class="pill '+(o.paid?"paid":"unpaid")+'">'+(o.paid?"បានបង់":"មិនទាន់បង់")+"</span></div></button>"}).join(""):'<p class="muted" style="text-align:center;padding:30px 0">មិនទាន់មាន · Nothing yet</p>')}
+
+function vReport(){var t=ymd(),m=t.slice(0,7);
+ var S1=function(f){var L=O.filter(f);return{n:L.length,paid:L.filter(function(o){return o.paid}).reduce(function(s,o){return s+total(o)},0),un:L.filter(function(o){return!o.paid}).reduce(function(s,o){return s+total(o)},0)}};
+ var d=S1(function(o){return o.at.slice(0,10)===t}),mo=S1(function(o){return o.at.slice(0,7)===m}),all=O.filter(function(o){return o.status!=="delivered"}).length;
+ var card=function(h,x){return'<div class="card"><h2>'+h+'</h2><div class="stats" style="margin:0"><div class="stat"><b>'+x.n+'</b><span>ការបញ្ជា · Orders</span></div><div class="stat"><b>'+money(x.paid)+'</b><span>បានបង់ · Paid</span></div><div class="stat"><b>'+money(x.un)+'</b><span>មិនទាន់បង់ · Unpaid</span></div></div></div>'};
+ return card("📅 ថ្ងៃនេះ · Today",d)+card("🗓 ខែនេះ · This month",mo)+'<div class="card"><b>'+all+'</b> អីវ៉ាន់មិនទាន់ប្រគល់ · not yet delivered</div>'}
+
+function vSet(){return'<div class="card"><h2>ព័ត៌មានអាជីវកម្ម · Business</h2><label>ឈ្មោះ · Name<input id="s_name" value="'+esc(S.name)+'"></label>'+
+ '<h3>តម្លៃ · Price list</h3><div id="plist">'+S.items.map(function(it,i){return'<div class="line" data-i="'+i+'" style="grid-template-columns:1fr 80px 28px"><input data-f="n" value="'+esc(it.n)+'"><input data-f="p" type="number" min="0" step="any" value="'+esc(it.p)+'"><button class="x" data-x="'+i+'" type="button">✕</button></div>'}).join("")+'</div>'+
+ '<div class="row"><button class="b alt sm" id="addp" type="button">+ បន្ថែម · Add</button><span class="sp"></span><button class="b sm" id="savep">💾 រក្សាទុក · Save</button></div></div>'+
+ '<div class="card"><h2>ទិន្នន័យ · Data</h2><p class="muted" style="margin-top:0">ទិន្នន័យទុកក្នុងឧបករណ៍នេះ។ សូមទាញយក Backup ជាប្រចាំ។ · Data is stored on this device. Download a backup regularly.</p><div class="row"><button class="b alt sm" id="csv">⬇ Excel (CSV)</button><button class="b alt sm" id="bak">⬇ Backup</button><label class="b alt sm" style="margin:0;cursor:pointer">⬆ Restore<input id="rst" type="file" accept=".json" style="display:none"></label></div></div>'}
+
+function render(){nav();var a=$("app");
+ if(tab==="new")a.innerHTML=vNew();else if(tab==="orders")a.innerHTML=vOrders();else if(tab==="report")a.innerHTML=vReport();else a.innerHTML=vSet();
+ $("biz").innerHTML=esc(S.name)+" <small>· បោកគក់</small>";bind();window.scrollTo(0,0)}
+
+function readDraft(){var d=draft;if($("f_name")){d.name=$("f_name").value;d.phone=$("f_phone").value;d.room=$("f_room").value;d.due=$("f_due").value;d.idno=$("f_idno").value;d.note=$("f_note").value;d.paid=$("f_paid").checked}}
+function bind(){
+ if(tab==="new"){
+  var up=function(){$("tot").textContent=money(total(draft))};
+  $("lines").addEventListener("input",function(e){var r=e.target.closest(".line");if(!r)return;var l=draft.lines[+r.dataset.i],f=e.target.dataset.f;l[f]=f==="n"?e.target.value:e.target.value;up()});
+  $("lines").addEventListener("change",function(e){var r=e.target.closest(".line");if(!r||e.target.dataset.f!=="n")return;var l=draft.lines[+r.dataset.i],it=S.items.filter(function(x){return x.n===e.target.value})[0];if(it){l.p=it.p;r.querySelector('[data-f="p"]').value=it.p}up()});
+  $("lines").addEventListener("click",function(e){var x=e.target.closest(".x");if(!x)return;readDraft();draft.lines.splice(+x.dataset.x,1);if(!draft.lines.length)draft.lines.push({n:"",q:1,p:0});render()});
+  $("addl").onclick=function(){readDraft();var it=S.items[0]||{n:"",p:0};draft.lines.push({n:it.n,q:1,p:it.p});render()};
+  $("save").onclick=saveOrder;
+ }else if(tab==="orders"){
+  $("q").oninput=function(e){q=e.target.value;var p=e.target.selectionStart;render();var n=$("q");n.focus();n.setSelectionRange(p,p)};
+  document.querySelectorAll(".chips button").forEach(function(b){b.onclick=function(){flt=b.dataset.f;render()}});
+  document.querySelectorAll(".ord").forEach(function(b){b.onclick=function(){openOrder(b.dataset.id)}});
+ }else if(tab==="set"){
+  $("plist").addEventListener("click",function(e){var x=e.target.closest(".x");if(!x)return;readP();S.items.splice(+x.dataset.x,1);render()});
+  $("addp").onclick=function(){readP();S.items.push({n:"",p:0});render()};
+  $("savep").onclick=function(){readP();S.name=$("s_name").value.trim()||DEF.name;S.items=S.items.filter(function(i){return i.n.trim()});save(K_SET,S);toast("✓ រក្សាទុករួច · Saved");render()};
+  $("csv").onclick=exportCsv;$("bak").onclick=function(){dl("ajl-backup-"+ymd()+".json",JSON.stringify({settings:S,orders:O}),"application/json")};
+  $("rst").onchange=function(e){var f=e.target.files[0];if(!f)return;var r=new FileReader();r.onload=function(){try{var j=JSON.parse(r.result);if(!Array.isArray(j.orders))throw 0;if(!confirm("ជំនួសទិន្នន័យទាំងអស់? · Replace ALL data?"))return;S=j.settings||DEF;O=j.orders;save(K_SET,S);save(K_ORD,O);toast("✓ Restored");render()}catch(x){alert("ឯកសារមិនត្រឹមត្រូវ · Invalid file")}};r.readAsText(f)};
+ }}
+function readP(){document.querySelectorAll("#plist .line").forEach(function(r){var it=S.items[+r.dataset.i];if(!it)return;it.n=r.querySelector('[data-f="n"]').value;it.p=+r.querySelector('[data-f="p"]').value||0});var n=$("s_name");if(n)S.name=n.value}
+function saveOrder(){readDraft();var d=draft;
+ if(!d.name.trim()){toast("សូមបំពេញឈ្មោះ · Enter the name");$("f_name").focus();return}
+ var lines=d.lines.filter(function(l){return l.n&&(+l.q)>0});if(!lines.length){toast("សូមបន្ថែមអីវ៉ាន់ · Add at least one item");return}
+ var o={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),no:nextNo(),at:new Date().toISOString(),status:"received",name:d.name.trim(),phone:d.phone.trim(),room:d.room.trim(),idno:d.idno.trim(),note:d.note.trim(),due:d.due,paid:d.paid,lines:lines.map(function(l){return{n:l.n,q:+l.q,p:+l.p||0}})};
+ O.push(o);save(K_ORD,O);draft=newDraft();tab="orders";flt="active";render();openOrder(o.id,true)}
+
+function receipt(o){return'<div class="rc"><h1>'+esc(S.name)+'</h1><div class="c">វិក្កយបត្រ · Receipt</div><div class="c"><b>'+esc(o.no)+"</b> · "+fd(o.at)+"</div><hr>"+
+ "<div><b>"+esc(o.name)+"</b>"+(o.phone?" · "+esc(o.phone):"")+(o.room?"<br>"+esc(o.room):"")+(o.due?"<br>យក · Pick-up: "+fd(o.due):"")+"</div>"+
+ "<table><tr><th>អីវ៉ាន់</th><th>ចំនួន</th><th>$</th></tr>"+o.lines.map(function(l){return"<tr><td>"+esc(l.n)+"</td><td>"+l.q+" × "+money(l.p)+"</td><td>"+money(l.q*l.p)+"</td></tr>"}).join("")+"</table>"+
+ '<div style="text-align:right;font-size:16px"><b>សរុប · Total: '+money(total(o))+"</b></div><div style=\"text-align:right\">"+(o.paid?"✓ បានបង់ · PAID":"មិនទាន់បង់ · UNPAID")+"</div>"+(o.note?"<div>📝 "+esc(o.note)+"</div>":"")+'<div class="c" style="margin-top:8px">សូមអរគុណ · Thank you</div></div>'}
+function openOrder(id,isNew){var o=O.filter(function(x){return x.id===id})[0];if(!o)return;
+ var i=FLOW.indexOf(o.status),nx=FLOW[i+1];
+ $("dbody").innerHTML=(isNew?'<div class="noprint pill paid" style="margin-bottom:8px">✓ រក្សាទុករួច · Saved</div>':"")+receipt(o)+
+ '<div class="noprint" style="margin-top:12px"><div class="row"><span class="pill s-'+o.status+'">'+esc(ST[o.status])+'</span></div>'+
+ '<div class="row" style="margin-top:8px">'+(nx?'<button class="b sm" id="d_next">→ '+esc(ST[nx].split(" · ")[0])+"</button>":"")+'<button class="b alt sm" id="d_paid">'+(o.paid?"↩ មិនទាន់បង់":"💵 បានបង់")+'</button></div>'+
+ '<div class="row" style="margin-top:8px"><button class="b alt sm" id="d_print">🖨️ បោះពុម្ព/PDF</button><button class="b bad sm" id="d_del">🗑 លុប</button><span class="sp"></span><button class="b alt sm" id="d_close">បិទ</button></div></div>';
+ $("dlg").showModal();
+ $("d_close").onclick=function(){$("dlg").close()};
+ $("d_print").onclick=function(){var t=document.title;document.title=o.no+" "+o.name;window.print();setTimeout(function(){document.title=t},800)};
+ $("d_paid").onclick=function(){o.paid=!o.paid;save(K_ORD,O);$("dlg").close();render();openOrder(id)};
+ if(nx)$("d_next").onclick=function(){o.status=nx;save(K_ORD,O);$("dlg").close();render();openOrder(id)};
+ $("d_del").onclick=function(){if(!confirm("លុបការបញ្ជានេះ? · Delete this order?"))return;O=O.filter(function(x){return x.id!==id});save(K_ORD,O);$("dlg").close();render()}}
+function dl(n,t,m){var a=document.createElement("a");a.href=URL.createObjectURL(new Blob([t],{type:m}));a.download=n;document.body.appendChild(a);a.click();setTimeout(function(){URL.revokeObjectURL(a.href);a.remove()},800)}
+function exportCsv(){var r=[["No","Date","Name","Phone","Room","ID","Status","Paid","Total","Items","Note"]];O.forEach(function(o){r.push([o.no,o.at.slice(0,16).replace("T"," "),o.name,o.phone,o.room,o.idno,o.status,o.paid?"yes":"no",total(o).toFixed(2),o.lines.map(function(l){return l.n+" x"+l.q}).join("; "),o.note])});
+ dl("ajl-orders-"+ymd()+".csv","﻿"+r.map(function(x){return x.map(function(c){return'"'+String(c==null?"":c).replace(/"/g,'""')+'"'}).join(",")}).join("\n"),"text/csv")}
+render();
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
+})();
+</script></body></html>
