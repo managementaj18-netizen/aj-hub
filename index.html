@@ -1504,6 +1504,7 @@ async function loadBoss(){
   const syn=S.synced||{}; const liveIds=new Set();
   S.oldForms.forEach(r=>{ const k=String(r.id||''); r._backed=!!syn[k]; liveIds.add(k); });
   Object.values(syn).forEach(r=>{ if(!liveIds.has(String(r._oldId))) S.oldForms.push({...r,_id:'bk/'+r._oldId,_origin:'old',_fromBackup:true}); });
+  applyEdits();
   S.bk=BOARD.bookings.length?BOARD.bookings:(S.oldBk||[]); linkBoardToForms();
   if(!window._bkSynced&&BOARD.bookings.length){ window._bkSynced=true; syncBookingsToBoard().catch(()=>{}); }
   loadSyncStatus();
@@ -1552,7 +1553,7 @@ function renderForms(){
   const cnt=TABLET_TYPES.map(t=>`${typeMeta(t).short} ${allForms().filter(r=>r.type===t).length}`).join(' · ');
   $('ciCount').textContent=`បង្ហាញ ${list.length} · ${cnt}`;
   $('tCi').innerHTML='<tr><th>ថ្ងៃ</th><th>ប្រភេទ</th><th>បន្ទប់</th><th>ឈ្មោះ</th><th>ID / លេខ</th><th>ព័ត៌មាន</th><th>ស៊ីញ៉េ</th></tr>'+
-    (list.length?list.map(r=>`<tr class="click" onclick="openRecord('${r._id}')"><td class="nw">${fmtD(fDate(r))}</td><td>${typePill(r)}</td><td><b>${esc(fRoom(r))}</b></td><td>${esc(fName(r))}</td><td>${esc(fIdn(r))}</td><td>${esc(fExtra(r))}</td><td>${r.sigData||r.bookingSigData||r.sig?'✅':'<span class="pill bad">គ្មាន</span>'}</td></tr>`).join(''):'<tr><td colspan="7" class="muted">គ្មាន</td></tr>');
+    (list.length?list.map(r=>`<tr class="click" onclick="openRecord('${r._id}')"><td class="nw">${fmtD(fDate(r))}</td><td>${typePill(r)}</td><td><b>${esc(fRoom(r))}</b></td><td>${esc(fName(r))}${r._edited?' <span class="pill" title="កែរួច / Fixed">✏️</span>':''}</td><td>${esc(fIdn(r))}</td><td>${esc(fExtra(r))}</td><td>${r.sigData||r.bookingSigData||r.sig?'✅':'<span class="pill bad">គ្មាន</span>'}</td></tr>`).join(''):'<tr><td colspan="7" class="muted">គ្មាន</td></tr>');
 }
 const imgCache={};
 function imgsHTML(list){const a=list.filter(([s])=>typeof s==='string'&&(s.startsWith('data:image')||s.startsWith('drive:')));
@@ -1603,6 +1604,7 @@ function openCheckin(c){
   const bk=c.bookingId?S.forms.find(x=>x._id===c.bookingId):null;
   const note=(bk?`<p><button class="btn alt sm" onclick="openRecord('${esc(bk._id)}')">📝 មើលហ្វម Booking ដែលភ្ញៀវបានស៊ីញ៉េ</button></p>`:'')+(c._fromBackup?'<div class="alert warn">ហ្វមនេះលែងមាននៅក្នុងប្រព័ន្ធ Check-in ចាស់ហើយ។ នេះជាច្បាប់ចម្លងដែលបានរក្សាទុកក្នុង Google Sheet របស់មេ។</div>':(c._backed?'<p class="muted">🛡️ មានច្បាប់ចម្លងទុកក្នុង Google Sheet របស់មេ</p>':''));
   $('dB').innerHTML=(note?`<div class="noprint">${note}</div>`:'')+paperCheckin(c);
+  window._ciRec=c;
   setDocBtns({id:docId(c),type:'checkin',month:String(c.ci||'').slice(0,7),title:docTitle(c)});
   $('dlg').showModal(); hydrateImages();
 }
@@ -1910,10 +1912,58 @@ function setDocBtns(meta){
     (boss?`<button class="btn alt sm" id="drvBtn" onclick="drivePdf()" title="Google Drive">☁️ Drive</button>`:'')+
     (navigator.canShare?`<button class="btn alt sm" onclick="sharePdf()" title="Share">📤</button>`:'')+
     (have?`<a class="btn alt sm" target="_blank" rel="noopener" href="https://drive.google.com/file/d/${esc(have)}/view">📄</a>`:'')+
-    (boss&&canDel(meta.id)?`<button class="btn alt sm" style="color:var(--bad)" onclick="delRecord('${esc(meta.id)}')" title="Delete">🗑 លុប</button>`:''):'';
+    (boss&&meta.type==='checkin'&&window._ciRec?`<button class="btn sm" onclick="editCheckin()" title="Fix">✏️ កែ / Fix</button>`:'')+(boss&&canDel(meta.id)?`<button class="btn alt sm" style="color:var(--bad)" onclick="delRecord('${esc(meta.id)}')" title="Delete">🗑 លុប</button>`:''):'';
 }
 function docEl(){ return $('dB').querySelector('.paper')||$('dB'); }
 function printDoc(){ document.body.classList.add('pdlg'); const off=()=>{document.body.classList.remove('pdlg');window.removeEventListener('afterprint',off)}; window.addEventListener('afterprint',off); setTimeout(()=>window.print(),50); }
+/* ---------- boss: ✏️ fix a check-in ----------
+   Saves a corrected copy (editOf = original). The original row stays in the Google Sheet as history;
+   the Hub shows only the newest version. boardId is kept as boardRef so the Booking Board status is never changed. */
+const CI_EDIT=[['name','ឈ្មោះ / Name'],['passport','លេខលិខិតឆ្លងដែន / អត្តសញ្ញាណប័ណ្ណ · ID No.'],['nat','សញ្ជាតិ / Nationality','nat'],['phone','ទូរស័ព្ទ / Phone'],['email','Email'],['address','អាសយដ្ឋាន / Address'],
+  ['room','បន្ទប់ / Room'],['roomtype','ប្រភេទបន្ទប់ / Room type'],['ci','ថ្ងៃចូល / Check-in','date'],['co','ថ្ងៃចេញ / Check-out','date'],['guests','ភ្ញៀវ / Guests','number'],['children','កុមារ / Children','number'],
+  ['src','ប្រភព / Source'],['ref','Ref'],['staff','បុគ្គលិក / Staff'],['notes','ចំណាំ / Notes','area']];
+let _ciEdit=null,_ciEditPh={};
+function applyEdits(){
+  const H=new Set(S.forms.map(r=>r.editOf).filter(Boolean).map(String)); if(!H.size) return;
+  S.forms=S.forms.filter(r=>!H.has(String(r._id))); S.oldForms=(S.oldForms||[]).filter(r=>!H.has(docId(r)));
+  S.forms.forEach(r=>{ if(r.editOf){ r._edited=true; if(r.boardRef&&!r.boardId) r.boardId=r.boardRef; } });
+}
+function ciPhotoObj(v){ if(v&&typeof v==='object') return {...v}; const o={}; String(v||'').replace(/([A-Za-z0-9_]+)\s*:\s*(\S+)/g,(m,k,u)=>{o[k]=u}); return o; }
+function ceRow(o){ return `<div class="r"><input data-c="name" placeholder="Full name / ឈ្មោះ" value="${esc(o.name||'')}"><select data-c="nat" data-v="${esc(o.nat||'')}">${natOpts('Nationality / សញ្ជាតិ')}</select><input data-c="passport" placeholder="Passport / ID" value="${esc(o.passport||'')}"><button type="button" class="btn alt sm x" onclick="this.parentElement.remove()">✕</button></div>`; }
+function ceAddPhotos(inp){ [...inp.files].forEach(f=>compressPhoto(f,d=>{ const k='id_fix_'+Date.now().toString(36)+Math.random().toString(36).slice(2,4); _ciEditPh[k]=d;
+  $('ce_ph').insertAdjacentHTML('beforeend',`<img src="${d}" style="height:70px;border-radius:6px;margin:4px 4px 0 0">`); })); inp.value=''; }
+function editCheckin(){
+  const c=window._ciRec; if(!c) return; _ciEdit=c; _ciEditPh={};
+  const val=k=>k==='room'?(c.room||c.key||''):k==='co'?(c.co||ciCo(c)||''):(c[k]==null?'':String(c[k]));
+  const inp=([k,l,t])=>t==='area'?`<label class="full">${l}<textarea id="ce_${k}" rows="2">${esc(val(k))}</textarea></label>`
+    :t==='nat'?`<label>${l}<select id="ce_${k}">${natOpts(l)}</select></label>`
+    :`<label>${l}<input id="ce_${k}" type="${t||'text'}"${t==='number'?' min="0"':''} value="${esc(val(k))}"></label>`;
+  $('dT').textContent='✏️ កែ Check-in · '+(c.name||''); setDocBtns(null);
+  $('dB').innerHTML=`<div class="alert">✏️ កែព័ត៌មានដែលខុស ឬខ្វះ ហើយចុច <b>រក្សាទុក</b>។ ហ្វមដើមនៅតែរក្សាទុកក្នុង Google Sheet ជាប្រវត្តិ ហើយប្រព័ន្ធបង្កើត PDF ថ្មី។ ហត្ថលេខា និងរូបថតចាស់នៅដដែល។</div>
+    <div class="fg">${CI_EDIT.map(inp).join('')}</div>
+    <h3 style="margin:16px 0 6px">👥 ភ្ញៀវផ្សេងទៀតក្នុងបន្ទប់ / Other guests</h3><div class="rowsbox" id="ce_ex">${(Array.isArray(c.extraGuests)?c.extraGuests:[]).map(ceRow).join('')}</div>
+    <button type="button" class="btn alt sm" onclick="$('ce_ex').insertAdjacentHTML('beforeend',ceRow({}));natScan($('ce_ex'))">+ Add guest / បន្ថែមភ្ញៀវ</button>
+    <h3 style="margin:16px 0 6px">📷 បន្ថែមរូបលិខិត / Add ID photos</h3><input type="file" accept="image/*" multiple onchange="ceAddPhotos(this)"><div id="ce_ph"></div>
+    <div class="nav2"><button class="btn alt" onclick="openCheckin(_ciEdit)">បោះបង់ / Cancel</button><button class="btn" id="ce_save" onclick="saveCiEdit()">💾 រក្សាទុក / Save</button></div>`;
+  setNat($('ce_nat'),c.nat||''); $('ce_ex').querySelectorAll('select[data-c="nat"]').forEach(sl=>setNat(sl,sl.dataset.v||'')); natScan($('dB'));
+}
+async function saveCiEdit(){
+  const c=_ciEdit; if(!c) return; const g=k=>{const el=$('ce_'+k); return el?el.value.trim():''};
+  const data={}; Object.entries(c).forEach(([k,v])=>{ if(!/^_/.test(k)&&!['savedAt','Saved at','ID','JSON','type','device'].includes(k)) data[k]=v; });
+  CI_EDIT.forEach(([k])=>data[k]=g(k));
+  if(!data.name||!data.room) return alert('សូមបំពេញឈ្មោះ និងបន្ទប់ / Please fill Name and Room');
+  if(data.ci&&data.co) data.nights=String(nightsBetween(data.ci,data.co)||data.nights||'');
+  data.extraGuests=[...$('ce_ex').children].map(r=>{const o={};r.querySelectorAll('[data-c]').forEach(i=>o[i.dataset.c]=i.value.trim());return o}).filter(o=>o.name);
+  data.idPhotos={...ciPhotoObj(c.idPhotos),..._ciEditPh};
+  if(data.boardId){ data.boardRef=data.boardId; delete data.boardId; }
+  data.editOf=docId(c); data.editedAt=new Date().toISOString(); data.editedBy=whoAmI(); data.ciAt=c.ciAt||data.editedAt; data.type='checkin'; data.device=device();
+  const btn=$('ce_save'); btn.disabled=true; btn.textContent='កំពុងរក្សាទុក…';
+  try{
+    const j=await api('submit',{type:'checkin',data,clientId:'fix-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,6),key:boardKey()});
+    if(j.pdfToken&&!j.duplicate) autoPdf('checkin',data,j.id,j.pdfToken);
+    const rec={...data,_id:j.id,_origin:'new'}; S.forms.push(rec); applyEdits(); renderAll(); openCheckin(rec);
+  }catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); btn.disabled=false; btn.textContent='💾 រក្សាទុក / Save'; }
+}
 let _h2p=null;
 function loadH2P(){ return _h2p||(_h2p=new Promise((res,rej)=>{ if(window.html2pdf) return res(); const s=document.createElement('script'); s.src='https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js'; s.onload=()=>res(); s.onerror=()=>{_h2p=null;rej(new Error('PDF library failed to load (internet?)'))}; document.head.appendChild(s); })); }
 async function waitImgs(el){ await Promise.all([...el.querySelectorAll('img')].map(i=>i.complete&&i.naturalWidth?0:new Promise(r=>{i.addEventListener('load',r);i.addEventListener('error',r);setTimeout(r,8000)}))); }
@@ -1985,7 +2035,7 @@ async function saveExtend(id){
 }
 /* boss: show board extensions on the matching check-in record (In-house report, PDF) */
 function linkBoardToForms(){ const by={}; BOARD.bookings.forEach(b=>{if(b.checkinId)by[b.checkinId]=b});
-  S.forms.forEach(r=>{ if(r.type!=='checkin') return; const b=by[r._id]; if(b&&b.extensions&&b.extensions.length) r.extensions=b.extensions; }); }
+  S.forms.forEach(r=>{ if(r.type!=='checkin') return; const b=by[r._id]||(r.editOf&&by[r.editOf])||(r.boardId&&BOARD.bookings.find(x=>x.bkId===r.boardId)); if(b&&b.extensions&&b.extensions.length) r.extensions=b.extensions; }); }
 
 /* ---------- In-house report (printable) ---------- */
 function openInhouse(){
