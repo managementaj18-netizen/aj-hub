@@ -2,7 +2,7 @@
 <html lang="km"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <meta name="theme-color" content="#3d4752">
-<title>A&J Laundry</title>
+<title>Sorama Laundry</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
@@ -43,7 +43,7 @@ dialog{border:0;border-radius:18px;padding:0;max-width:440px;width:calc(100% - 2
 .toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--hd);color:#fff;padding:10px 16px;border-radius:12px;z-index:50}
 @media print{header,nav,main,.toast,.noprint{display:none!important}body{background:#fff}dialog{position:static;box-shadow:none;max-width:80mm;margin:0;width:auto}dialog::backdrop{display:none}@page{margin:6mm}}
 </style></head><body>
-<header><b id="biz">A&amp;J Laundry <small>· បោកគក់</small></b></header>
+<header><b id="biz">Sorama Laundry <small>· បោកគក់</small></b></header>
 <main id="app"></main>
 <nav id="nav"></nav>
 <dialog id="dlg"><div class="dbody" id="dbody"></div></dialog>
@@ -54,8 +54,9 @@ var esc=function(s){return String(s==null?"":s).replace(/[&<>"']/g,function(c){r
 var K_ORD="ajl_orders",K_SET="ajl_settings",mem={};
 function load(k,d){try{var v=localStorage.getItem(k);if(v!=null)return JSON.parse(v)}catch(e){} return k in mem?JSON.parse(mem[k]):d}
 function save(k,v){var s=JSON.stringify(v);try{localStorage.setItem(k,s);delete mem[k];return true}catch(e){mem[k]=s;toast("⚠️ ទុកក្នុងឧបករណ៍មិនបាន · Storage blocked — data will be lost when you close");return false}}
-var DEF={name:"A&J Laundry",items:[{n:"បោក+បត់ ក្នុងមួយគីឡូ / Wash & fold per kg",p:1.5,u:"kg"},{n:"អាវ / Shirt",p:0.5,u:"pc"},{n:"ខោ / Trousers",p:0.7,u:"pc"},{n:"រ៉ូប / Dress",p:1.2,u:"pc"},{n:"ក្រណាត់គ្រែ / Bed sheet",p:1.5,u:"pc"},{n:"កន្សែង / Towel",p:0.5,u:"pc"}]};
+var DEF={name:"Sorama Laundry",items:[{n:"បោក+បត់ ក្នុងមួយគីឡូ / Wash & fold per kg",p:1.5,u:"kg"},{n:"អាវ / Shirt",p:0.5,u:"pc"},{n:"ខោ / Trousers",p:0.7,u:"pc"},{n:"រ៉ូប / Dress",p:1.2,u:"pc"},{n:"ក្រណាត់គ្រែ / Bed sheet",p:1.5,u:"pc"},{n:"កន្សែង / Towel",p:0.5,u:"pc"}]};
 var S=load(K_SET,DEF),O=load(K_ORD,[]);
+if(S.name==="A&J Laundry"){S.name=DEF.name;save(K_SET,S)}
 var ST={received:"ទទួលរួច · Received",washing:"កំពុងបោក · Washing",ready:"រួចរាល់ · Ready",delivered:"បានប្រគល់ · Delivered"};
 var FLOW=["received","washing","ready","delivered"];
 var tab="new",flt="active",q="",draft=null;
@@ -137,7 +138,7 @@ function saveOrder(){readDraft();var d=draft;
  var o={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),no:nextNo(),at:new Date().toISOString(),status:"received",name:d.name.trim(),phone:d.phone.trim(),room:d.room.trim(),idno:d.idno.trim(),note:d.note.trim(),due:d.due,paid:d.paid,lines:lines.map(function(l){return{n:l.n,q:+l.q,p:+l.p||0}})};
  O.push(o);save(K_ORD,O);draft=newDraft();tab="orders";flt="active";render();openOrder(o.id,true)}
 
-function receipt(o){return'<div class="rc"><h1>'+esc(S.name)+'</h1><div class="c">វិក្កយបត្រ · Receipt</div><div class="c"><b>'+esc(o.no)+"</b> · "+fd(o.at)+"</div><hr>"+
+function receipt(o){return'<div class="rc"><h1>'+esc(S.name)+'</h1><div class="c">វិក្កយបត្រ · Receipt · by Sorama</div><div class="c"><b>'+esc(o.no)+"</b> · "+fd(o.at)+"</div><hr>"+
  "<div><b>"+esc(o.name)+"</b>"+(o.phone?" · "+esc(o.phone):"")+(o.room?"<br>"+esc(o.room):"")+(o.due?"<br>យក · Pick-up: "+fd(o.due):"")+"</div>"+
  "<table><tr><th>អីវ៉ាន់</th><th>ចំនួន</th><th>$</th></tr>"+o.lines.map(function(l){return"<tr><td>"+esc(l.n)+"</td><td>"+l.q+" × "+money(l.p)+"</td><td>"+money(l.q*l.p)+"</td></tr>"}).join("")+"</table>"+
  '<div style="text-align:right;font-size:16px"><b>សរុប · Total: '+money(total(o))+"</b></div><div style=\"text-align:right\">"+(o.paid?"✓ បានបង់ · PAID":"មិនទាន់បង់ · UNPAID")+"</div>"+(o.note?"<div>📝 "+esc(o.note)+"</div>":"")+'<div class="c" style="margin-top:8px">សូមអរគុណ · Thank you</div></div>'}
