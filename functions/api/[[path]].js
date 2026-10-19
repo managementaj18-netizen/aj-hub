@@ -5,6 +5,9 @@ const SCHEMA=[
 "CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY,v TEXT)",
 "CREATE TABLE IF NOT EXISTS customers(id TEXT PRIMARY KEY,upd INTEGER,del INTEGER DEFAULT 0,data TEXT)",
 "CREATE TABLE IF NOT EXISTS orders(id TEXT PRIMARY KEY,at TEXT,staff_id TEXT,upd INTEGER,del INTEGER DEFAULT 0,data TEXT)",
+"CREATE TABLE IF NOT EXISTS scans(id TEXT PRIMARY KEY,user_id TEXT,uname TEXT,created INTEGER,upd INTEGER,del INTEGER DEFAULT 0,type TEXT,fields TEXT,text TEXT,npages INTEGER DEFAULT 0,thumb TEXT)",
+"CREATE TABLE IF NOT EXISTS scan_pages(scan_id TEXT,idx INTEGER,data TEXT,PRIMARY KEY(scan_id,idx))",
+"CREATE INDEX IF NOT EXISTS scans_upd ON scans(upd)",
 "CREATE TABLE IF NOT EXISTS fails(name TEXT PRIMARY KEY,n INTEGER,ts INTEGER)",
 "CREATE INDEX IF NOT EXISTS orders_upd ON orders(upd)"
 ];
@@ -82,6 +85,7 @@ export async function onRequest(ctx){
 
     if(route==="settings"&&m==="PUT"){if(!owner)return J({error:"forbidden"},403);
       if(body.name!=null)await setSetting(db,"name",clip(body.name,100));
+      if(body.scanRetention!=null)await setSetting(db,"scanRetention",Math.max(0,Math.min(3650,Math.floor(num(body.scanRetention)))));
       if(Array.isArray(body.items))await setSetting(db,"items",body.items.slice(0,300).map(i=>({id:clip(i.id,40),n:clip(i.n,120),cat:clip(i.cat,20),p:num(i.p),u:clip(i.u,10)})));
       if(body.contact)await setSetting(db,"contact",{tg:clip(body.contact.tg,80),wa:clip(body.contact.wa,30),phone:clip(body.contact.phone,30),addr:clip(body.contact.addr,300),tax:clip(body.contact.tax,60)});
       return J({ok:true})}
@@ -126,6 +130,34 @@ export async function onRequest(ctx){
         await db.prepare("UPDATE users SET duty=?,lat=?,lng=?,acc=?,loc_at=? WHERE id=?").bind(duty,+body.lat,+body.lng,num(body.acc),now(),me.id).run();
       else await db.prepare("UPDATE users SET duty=? WHERE id=?").bind(duty,me.id).run();
       return J({ok:true})}
+
+    if(route==="scans"){
+      const ret=num(await getSetting(db,"scanRetention",0));
+      if(m==="GET"&&!parts[1]){
+        if(ret>0){const cut=now()-ret*86400000;await db.prepare("UPDATE scans SET del=1,upd=? WHERE del=0 AND created<?").bind(now(),cut).run();await db.prepare("DELETE FROM scan_pages WHERE scan_id IN (SELECT id FROM scans WHERE del=1)").run()}
+        const since=num(url.searchParams.get("since")),t=now();
+        const r=owner?await db.prepare("SELECT id,user_id,uname,created,upd,del,type,fields,text,npages,thumb FROM scans WHERE upd>?").bind(since).all():await db.prepare("SELECT id,user_id,uname,created,upd,del,type,fields,text,npages,thumb FROM scans WHERE upd>? AND user_id=?").bind(since,me.id).all();
+        return J({now:t,retention:ret,scans:(r.results||[]).map(x=>x.del?{id:x.id,del:1}:{id:x.id,by:x.uname,uid:x.user_id,created:x.created,type:x.type,fields:JSON.parse(x.fields||"{}"),text:x.text||"",npages:x.npages,thumb:x.thumb||""})})}
+      if(parts[1]){
+        const sc=await db.prepare("SELECT * FROM scans WHERE id=? AND del=0").bind(parts[1]).first();
+        if(m==="GET"&&parts[2]==="pages"){if(!sc||(!owner&&sc.user_id!==me.id))return J({error:"not_found"},404);
+          const r=await db.prepare("SELECT idx,data FROM scan_pages WHERE scan_id=? ORDER BY idx").bind(sc.id).all();return J({pages:(r.results||[]).map(x=>x.data)})}
+        if(m==="DELETE"){if(!sc)return J({ok:true});if(!owner&&sc.user_id!==me.id)return J({error:"forbidden"},403);
+          await db.prepare("UPDATE scans SET del=1,upd=? WHERE id=?").bind(now(),sc.id).run();await db.prepare("DELETE FROM scan_pages WHERE scan_id=?").bind(sc.id).run();return J({ok:true})}}
+      if(m==="POST"){
+        const id=clip(body.id,40);if(!id)return J({error:"bad_input"},400);
+        const ex=await db.prepare("SELECT * FROM scans WHERE id=?").bind(id).first();
+        if(ex&&ex.user_id!==me.id&&!owner)return J({error:"forbidden"},403);
+        const f={};if(body.fields&&typeof body.fields==="object")Object.keys(body.fields).slice(0,40).forEach(k=>{f[clip(k,30)]=clip(body.fields[k],200)});
+        const type=["passport","idcard","document"].includes(body.type)?body.type:"document";
+        let pages=null;
+        if(Array.isArray(body.pages)){pages=body.pages.slice(0,20);
+          for(const d of pages)if(typeof d!=="string"||!d.startsWith("data:image/jpeg;base64,")||d.length>2500000)return J({error:"bad_page"},400)}
+        const np=pages?pages.length:(ex?ex.npages:0);
+        await db.prepare("INSERT INTO scans(id,user_id,uname,created,upd,del,type,fields,text,npages,thumb) VALUES(?,?,?,?,?,0,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET upd=excluded.upd,del=0,type=excluded.type,fields=excluded.fields,text=excluded.text,npages=excluded.npages,thumb=COALESCE(excluded.thumb,scans.thumb)")
+          .bind(id,ex?ex.user_id:me.id,ex?ex.uname:me.name,ex?ex.created:(num(body.created)||now()),now(),type,JSON.stringify(f),clip(body.text,20000),np,typeof body.thumb==="string"&&body.thumb.startsWith("data:image/jpeg;base64,")&&body.thumb.length<30000?body.thumb:null).run();
+        if(pages){await db.prepare("DELETE FROM scan_pages WHERE scan_id=?").bind(id).run();let i=0;for(const d of pages){await db.prepare("INSERT INTO scan_pages(scan_id,idx,data) VALUES(?,?,?)").bind(id,i++,d).run()}}
+        return J({ok:true,n:np})}}
 
     return J({error:"not_found"},404);
   }catch(e){return J({error:"server",detail:String(e&&e.message||e).slice(0,200)},500)}
