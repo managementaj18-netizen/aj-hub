@@ -1,7 +1,7 @@
 // Soramma Scan API — Cloudflare Pages Function with a D1 database bound as DB.
 // Accounts: one "owner" (admin of the service) and any number of self-registered users, each with a private library.
 const SCHEMA=[
-"CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,num INTEGER,name TEXT NOT NULL,role TEXT NOT NULL,salt TEXT,hash TEXT,active INTEGER DEFAULT 1,created INTEGER,phone TEXT,expires INTEGER)",
+"CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,num INTEGER,name TEXT NOT NULL,role TEXT NOT NULL,salt TEXT,hash TEXT,active INTEGER DEFAULT 1,created INTEGER,phone TEXT,expires INTEGER,biz TEXT,biz_info TEXT,biz_logo TEXT)",
 "CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT,created INTEGER)",
 "CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY,v TEXT)",
 "CREATE TABLE IF NOT EXISTS scans(id TEXT PRIMARY KEY,user_id TEXT,uname TEXT,created INTEGER,upd INTEGER,del INTEGER DEFAULT 0,type TEXT,fields TEXT,text TEXT,npages INTEGER DEFAULT 0,thumb TEXT)",
@@ -25,10 +25,11 @@ async function init(db){if(ready)return;await db.batch(SCHEMA.map(s=>db.prepare(
   const r=await db.prepare("PRAGMA table_info(users)").all(),cols=(r.results||[]).map(c=>c.name);
   if(!cols.includes("phone"))await db.prepare("ALTER TABLE users ADD COLUMN phone TEXT").run();
   if(!cols.includes("expires"))await db.prepare("ALTER TABLE users ADD COLUMN expires INTEGER").run();
+  for(const c of["biz","biz_info","biz_logo"])if(!cols.includes(c))await db.prepare("ALTER TABLE users ADD COLUMN "+c+" TEXT").run();
   ready=true}
 async function getSetting(db,k,d){const r=await db.prepare("SELECT v FROM settings WHERE k=?").bind(k).first();if(!r)return d;try{return JSON.parse(r.v)}catch(e){return d}}
 async function setSetting(db,k,v){await db.prepare("INSERT INTO settings(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(k,JSON.stringify(v)).run()}
-const pubUser=u=>({id:u.id,name:u.name,phone:u.phone||"",role:u.role,active:!!u.active,expires:u.expires==null?null:u.expires,expired:u.role!=="owner"&&u.expires!=null&&now()>u.expires,created:u.created})
+const pubUser=u=>({id:u.id,name:u.name,phone:u.phone||"",biz:u.biz||"",bizInfo:u.biz_info||"",bizLogo:u.biz_logo||"",role:u.role,active:!!u.active,expires:u.expires==null?null:u.expires,expired:u.role!=="owner"&&u.expires!=null&&now()>u.expires,created:u.created})
 async function publicInfo(db){return{trialDays:num(await getSetting(db,"trialDays",3)),signupOpen:!!(await getSetting(db,"signupOpen",1)),needCode:!!(await getSetting(db,"signupCode","")),contact:clip(await getSetting(db,"contact",""),300)}}
 
 async function newSession(db,uid){const t=rid(32);await db.prepare("INSERT INTO sessions(token,user_id,created) VALUES(?,?,?)").bind(t,uid,now()).run();return t}
@@ -84,6 +85,11 @@ export async function onRequest(ctx){
       if(owner)out.signupCode=await getSetting(db,"signupCode","");
       return J(out)}
 
+    if(route==="profile"&&m==="PUT"){
+      const logo=typeof body.bizLogo==="string"&&/^data:image\/(png|jpeg);base64,/.test(body.bizLogo)&&body.bizLogo.length<=90000?body.bizLogo:"";
+      await db.prepare("UPDATE users SET biz=?,biz_info=?,biz_logo=? WHERE id=?").bind(clip(body.biz,100).trim(),clip(body.bizInfo,200).trim(),logo,me.id).run();
+      return J({ok:true})}
+
     if(route==="settings"&&m==="PUT"){if(!owner)return J({error:"forbidden"},403);
       if(body.scanRetention!=null)await setSetting(db,"scanRetention",Math.max(0,Math.min(3650,Math.floor(num(body.scanRetention)))));
       if(body.trialDays!=null)await setSetting(db,"trialDays",Math.max(1,Math.min(365,Math.floor(num(body.trialDays)))));
@@ -95,7 +101,7 @@ export async function onRequest(ctx){
     if(route==="admin"&&parts[1]==="users"){
       if(!owner)return J({error:"forbidden"},403);
       if(m==="GET"){const r=await db.prepare("SELECT u.*,(SELECT COUNT(*) FROM scans s WHERE s.user_id=u.id AND s.del=0) n FROM users u ORDER BY u.created DESC").all();
-        return J({users:(r.results||[]).map(u=>({...pubUser(u),scans:u.n}))})}
+        return J({users:(r.results||[]).map(u=>({...pubUser(u),bizLogo:"",scans:u.n}))})}
       if(m==="POST"&&parts[2]){const u=await db.prepare("SELECT * FROM users WHERE id=?").bind(parts[2]).first();if(!u)return J({error:"not_found"},404);
         const a=String(body.action||"");if(u.role==="owner"&&a!=="reset")return J({error:"forbidden"},403);
         if(a==="extend"){const base=Math.max(now(),u.expires||0),days=Math.max(1,Math.min(3650,Math.floor(num(body.days))));await db.prepare("UPDATE users SET expires=?,active=1 WHERE id=?").bind(base+days*DAY,u.id).run()}
