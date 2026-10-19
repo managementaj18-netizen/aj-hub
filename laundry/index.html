@@ -4,14 +4,14 @@
 <meta name="theme-color" content="#3d4752">
 <title>Soramma Laundry</title>
 <link rel="manifest" href="manifest.json">
-<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#e9edf1;--card:#fff;--ink:#1f2933;--mute:#66727f;--line:#d5dce3;--hd:#3d4752;--ac:#0284c7;--sky:#0ea5e9;--skybg:#e0f2fe;--ok:#1f7a3a;--okbg:#e3f4e8;--warn:#a15c07;--warnbg:#fdf2dc;--bad:#b42318;--badbg:#fde8e6;--blue:#1d4ed8;--bluebg:#e0e9ff}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Kantumruy Pro",system-ui,sans-serif;font-size:15px;line-height:1.45}
 header{background:var(--hd);color:#fff;border-bottom:3px solid var(--sky);padding:calc(12px + env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
-header b{font-size:18px;flex:1}header small{opacity:.7;font-weight:400}
+header .lg{width:38px;height:38px;flex:none}header b{font-size:18px;flex:1}header small{opacity:.7;font-weight:400}
 main{max-width:720px;margin:0 auto;padding:14px 14px calc(88px + env(safe-area-inset-bottom))}
 nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;padding:6px 6px calc(8px + env(safe-area-inset-bottom));z-index:6}
 nav button{flex:1;border:0;background:none;font:inherit;font-size:12px;color:var(--mute);padding:6px 2px;cursor:pointer}
@@ -43,7 +43,7 @@ dialog{border:0;border-radius:18px;padding:0;max-width:440px;width:calc(100% - 2
 .toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--hd);color:#fff;padding:10px 16px;border-radius:12px;z-index:50}
 @media print{header,nav,main,.toast,.noprint{display:none!important}body{background:#fff}dialog{position:static;box-shadow:none;max-width:80mm;margin:0;width:auto}dialog::backdrop{display:none}@page{margin:6mm}}
 </style></head><body>
-<header><b id="biz">Soramma Laundry <small>· បោកគក់</small></b></header>
+<header><img src="logo-mark.svg" alt="S&amp;A" class="lg"><b id="biz">Soramma Laundry <small>· បោកគក់</small></b></header>
 <main id="app"></main>
 <nav id="nav"></nav>
 <dialog id="dlg"><div class="dbody" id="dbody"></div></dialog>
@@ -138,7 +138,7 @@ function saveOrder(){readDraft();var d=draft;
  var o={id:Date.now().toString(36)+Math.random().toString(36).slice(2,5),no:nextNo(),at:new Date().toISOString(),status:"received",name:d.name.trim(),phone:d.phone.trim(),room:d.room.trim(),idno:d.idno.trim(),note:d.note.trim(),due:d.due,paid:d.paid,lines:lines.map(function(l){return{n:l.n,q:+l.q,p:+l.p||0}})};
  O.push(o);save(K_ORD,O);draft=newDraft();tab="orders";flt="active";render();openOrder(o.id,true)}
 
-function receipt(o){return'<div class="rc"><h1>'+esc(S.name)+'</h1><div class="c">វិក្កយបត្រ · Receipt · by Soramma</div><div class="c"><b>'+esc(o.no)+"</b> · "+fd(o.at)+"</div><hr>"+
+function receipt(o){return'<div class="rc"><div style="text-align:center"><img src="logo-light.svg" alt="S&amp;A" style="width:56px;height:56px"></div><h1>'+esc(S.name)+'</h1><div class="c">វិក្កយបត្រ · Receipt · by Soramma</div><div class="c"><b>'+esc(o.no)+"</b> · "+fd(o.at)+"</div><hr>"+
  "<div><b>"+esc(o.name)+"</b>"+(o.phone?" · "+esc(o.phone):"")+(o.room?"<br>"+esc(o.room):"")+(o.due?"<br>យក · Pick-up: "+fd(o.due):"")+"</div>"+
  "<table><tr><th>អីវ៉ាន់</th><th>ចំនួន</th><th>$</th></tr>"+o.lines.map(function(l){return"<tr><td>"+esc(l.n)+"</td><td>"+l.q+" × "+money(l.p)+"</td><td>"+money(l.q*l.p)+"</td></tr>"}).join("")+"</table>"+
  '<div style="text-align:right;font-size:16px"><b>សរុប · Total: '+money(total(o))+"</b></div><div style=\"text-align:right\">"+(o.paid?"✓ បានបង់ · PAID":"មិនទាន់បង់ · UNPAID")+"</div>"+(o.note?"<div>📝 "+esc(o.note)+"</div>":"")+'<div class="c" style="margin-top:8px">សូមអរគុណ · Thank you</div></div>'}
