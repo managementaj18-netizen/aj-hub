@@ -14,7 +14,14 @@ function dateISO(yymmdd,kind){if(!/^\d{6}$/.test(yymmdd))return"";var yy=+yymmdd
   if(kind==="dob")y=yy>cur?1900+yy:2000+yy;else y=yy>=70?1900+yy:2000+yy;
   if(+mm<1||+mm>12||+dd<1||+dd>31)return"";return y+"-"+mm+"-"+dd}
 function cleanTail(s){var t=String(s||"").replace(/\s+/g," ").trim().split(" ");while(t.length>1&&/^[KLCSXEZ]{3,}$/.test(t[t.length-1]))t.pop();if(t.length)t[t.length-1]=t[t.length-1].replace(/[KLC]{3,}$/,"");return t.filter(Boolean).join(" ")}
-function nm(raw){var parts=raw.replace(/<+$/,"").split("<<");var sur=(parts[0]||"").replace(/</g," ").trim(),giv=(parts.slice(1).join(" ")||"").replace(/</g," ").replace(/\s+/g," ").trim();return{surname:cleanTail(sur),given:cleanTail(giv)}}
+function nameTokens(p){return p.split(/<+/).filter(function(t){return t&&!/^[KLCSXEZ]+$/.test(t)})}
+function nm(raw){var s=alp(String(raw).replace(/\s+/g,"<").replace(/O0(?=<|$)/g,"O")).replace(/0/g,"O").replace(/^<+/,""),i=s.indexOf("<<"),sur="",giv="",end=0;
+  if(i>=2){var gp=s.slice(i+2).split("<<")[0],st=nameTokens(s.slice(0,i)),gt=nameTokens(gp);sur=st.join(" ");giv=gt.join(" ");end=gt.length?s.indexOf(gt[gt.length-1],i+2)+gt[gt.length-1].length:i+2}
+  if(!giv){var tk=nameTokens(s);if(tk.length>=3)tk=tk.filter(function(t,k){return k===0||k===tk.length-1||t.length>2});sur=tk[0]||"";giv=tk.slice(1).join(" ");end=tk.length?s.lastIndexOf(tk[tk.length-1])+tk[tk.length-1].length:0}
+  /* OCR often reads the first filler '<' after the last name as a glued L/K: drop one when lots of such noise follows */
+  var last=giv||sur;if(last.length>3&&/[KL]$/.test(last)&&/[KLCSXEZ]{6,}/.test(s.slice(end).replace(/</g,"")))last=last.slice(0,-1);
+  if(giv)giv=last;else sur=last;
+  return{surname:cleanTail(sur),given:cleanTail(giv)}}
 function norm(line){return String(line).toUpperCase().replace(/\s+/g,"").replace(/[«‹›»]/g,"<").replace(/[^A-Z0-9<]/g,"<")}
 function fit(s,n){return s.length>=n?s.slice(0,n):s+new Array(n-s.length+1).join("<")}
 var AMB={O:["0"],"0":["O"],I:["1"],"1":["I","7"],B:["8"],"8":["B"],S:["5"],"5":["S"],Z:["2","7"],"2":["Z"],G:["6"],"6":["G"],"7":["Z","1"]};
@@ -26,15 +33,15 @@ function repair(f,d){/* alphanumeric field: if its check digit fails, try swappi
 function parseTD3(a,b){a=fit(a,44);b=fit(b,44);
   var docno=repair(b.slice(0,9),b[9]),dcd=num(b[9]),nat=alp(b.slice(10,13)),dob=num(b.slice(13,19)),dobcd=num(b[19]),sex=b[20],exp=num(b.slice(21,27)),expcd=num(b[27]),pers=repair(b.slice(28,42),b[42]),perscd=num(b[42]),fin=num(b[43]);
   var ok={docno:cd(docno)===+dcd,dob:cd(dob)===+dobcd,exp:cd(exp)===+expcd,final:cd(docno+b[9]+b.slice(13,20)+b.slice(21,28)+pers+b[42])===+fin};
-  var n=nm(alp(a.slice(5,44)).replace(/0/g,"O"));
+  var n=nm(a.slice(5,44));
   return{form:"TD3",type:a.slice(0,2).replace(/</g,""),issuer:alp(a.slice(2,5)).replace(/</g,""),surname:n.surname,given:n.given,docno:docno.replace(/</g,""),nationality:nat.replace(/</g,""),dob:dateISO(dob,"dob"),sex:sex==="M"||sex==="F"?sex:"",expiry:dateISO(exp,"exp"),personal:pers.replace(/</g,""),ok:ok}}
 function parseTD2(a,b){a=fit(a,36);b=fit(b,36);
   var docno=repair(b.slice(0,9),b[9]),dcd=num(b[9]),nat=alp(b.slice(10,13)),dob=num(b.slice(13,19)),dobcd=num(b[19]),sex=b[20],exp=num(b.slice(21,27)),expcd=num(b[27]),opt=b.slice(28,35),fin=num(b[35]);
   var ok={docno:cd(docno)===+dcd,dob:cd(dob)===+dobcd,exp:cd(exp)===+expcd,final:cd(docno+b[9]+b.slice(13,20)+b.slice(21,35))===+fin};
-  var n=nm(alp(a.slice(5,36)).replace(/0/g,"O"));
+  var n=nm(a.slice(5,36));
   return{form:"TD2",type:a.slice(0,2).replace(/</g,""),issuer:alp(a.slice(2,5)).replace(/</g,""),surname:n.surname,given:n.given,docno:docno.replace(/</g,""),nationality:nat.replace(/</g,""),dob:dateISO(dob,"dob"),sex:sex==="M"||sex==="F"?sex:"",expiry:dateISO(exp,"exp"),personal:opt.replace(/</g,""),ok:ok}}
 function fill(s){return/^[<KLCSXEZ]*$/.test(s)?new Array(s.length+1).join("<"):s}
-function nmTD1(c){var p=norm(c).replace(/^<+/,"").split("<<"),sur=p[0]||"",giv=(p[1]||"").replace(/[0<]+$/,"");return nm(alp(sur+"<<"+giv).replace(/0/g,"O"))}
+function nmTD1(c){return nm(norm(c))}
 function parseTD1(a,b,c){a=a.length>=15?a.slice(0,15)+fill(a.slice(15,30)):a;a=fit(a,30);
   if(b.length>=19&&b.length!==30)b=b.slice(0,18)+new Array(12).join("<")+b[b.length-1];else if(b.length===30)b=b.slice(0,18)+fill(b.slice(18,29))+b[29];
   b=fit(b,30);
