@@ -32,10 +32,14 @@ function parseTD2(a,b){a=fit(a,36);b=fit(b,36);
   var ok={docno:cd(docno)===+dcd,dob:cd(dob)===+dobcd,exp:cd(exp)===+expcd,final:cd(docno+b[9]+b.slice(13,20)+b.slice(21,35))===+fin};
   var n=nm(alp(a.slice(5,36)).replace(/0/g,"O"));
   return{form:"TD2",type:a.slice(0,2).replace(/</g,""),issuer:alp(a.slice(2,5)).replace(/</g,""),surname:n.surname,given:n.given,docno:docno.replace(/</g,""),nationality:nat.replace(/</g,""),dob:dateISO(dob,"dob"),sex:sex==="M"||sex==="F"?sex:"",expiry:dateISO(exp,"exp"),personal:opt.replace(/</g,""),ok:ok}}
-function parseTD1(a,b,c){a=fit(a,30);b=fit(b,30);c=fit(c,30);
+function fill(s){return/^[<KLCSXEZ]*$/.test(s)?new Array(s.length+1).join("<"):s}
+function nmTD1(c){var p=norm(c).replace(/^<+/,"").split("<<"),sur=p[0]||"",giv=(p[1]||"").replace(/[0<]+$/,"");return nm(alp(sur+"<<"+giv).replace(/0/g,"O"))}
+function parseTD1(a,b,c){a=a.length>=15?a.slice(0,15)+fill(a.slice(15,30)):a;a=fit(a,30);
+  if(b.length>=19&&b.length!==30)b=b.slice(0,18)+new Array(12).join("<")+b[b.length-1];else if(b.length===30)b=b.slice(0,18)+fill(b.slice(18,29))+b[29];
+  b=fit(b,30);
   var docno=repair(a.slice(5,14),a[14]),dcd=num(a[14]),dob=num(b.slice(0,6)),dobcd=num(b[6]),sex=b[7],exp=num(b.slice(8,14)),expcd=num(b[14]),nat=alp(b.slice(15,18)),fin=num(b[29]);
   var ok={docno:cd(docno)===+dcd,dob:cd(dob)===+dobcd,exp:cd(exp)===+expcd,final:cd(docno+a.slice(14,30)+b.slice(0,7)+b.slice(8,15)+b.slice(18,29))===+fin};
-  var n=nm(alp(c).replace(/0/g,"O"));
+  var n=nmTD1(c);
   return{form:"TD1",type:a.slice(0,2).replace(/</g,""),issuer:alp(a.slice(2,5)).replace(/</g,""),surname:n.surname,given:n.given,docno:docno.replace(/</g,""),nationality:nat.replace(/</g,""),dob:dateISO(dob,"dob"),sex:sex==="M"||sex==="F"?sex:"",expiry:dateISO(exp,"exp"),personal:a.slice(15,30).replace(/</g,""),ok:ok}}
 function score(r){var s=0;["docno","dob","exp","final"].forEach(function(k){if(r.ok[k])s++});return s}
 /* text: raw OCR text possibly containing the MRZ lines. returns best parse or null */
@@ -47,7 +51,7 @@ SC.mrzParse=function(text){
     var a=lines[i],b=lines[i+1],c=lines[i+2];
     if(b&&Math.abs(a.length-44)<=4&&Math.abs(b.length-44)<=4&&/^[PVA][A-Z<]/.test(a))tryit(parseTD3(a,b));
     if(b&&Math.abs(a.length-36)<=3&&Math.abs(b.length-36)<=3&&/^[IAC][A-Z<]/.test(a))tryit(parseTD2(a,b));
-    if(b&&c&&Math.abs(a.length-30)<=3&&Math.abs(b.length-30)<=3&&Math.abs(c.length-30)<=3&&/^[IAC][A-Z<]/.test(a))tryit(parseTD1(a,b,c));
+    if(b&&c&&Math.abs(a.length-30)<=3&&Math.abs(b.length-30)<=3&&c.length>=12&&/^[IAC][A-Z<]/.test(a))tryit(parseTD1(a,b,c));
   }
   return best&&best.docno?best:null};
 SC.mrzValid=function(r){return!!r&&score(r)>=3};
