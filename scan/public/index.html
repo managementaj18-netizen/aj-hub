@@ -144,7 +144,7 @@ function settingsDialog(){var opts=[0,30,90,180,365],td=[1,3,7,14,30];
 function userDialog(id){var u=AU.filter(function(x){return x.id===id})[0];if(!u)return;var own=u.role==="owner";
  var B=function(a,l,c){return'<button class="b alt sm" data-a="'+a+'"'+(c?' data-d="'+c+'"':"")+' style="margin:3px 4px 3px 0">'+esc(l)+"</button>"};
  $("dbody").innerHTML='<h2>'+ic("user")+" "+esc(u.name)+'</h2><p class="muted">'+esc(u.phone)+" · "+esc(ustat(u))+"<br>"+esc(t("n_scans",{n:u.scans}))+" · "+esc(t("joined",{d:dstr(u.created)}))+"</p>"+
-  (own?"":'<b>'+esc(t("give_time"))+"</b><div>"+B("extend","+1 "+t("day"),1)+B("extend","+3 "+t("day"),3)+B("extend","+7 "+t("day"),7)+B("extend","+30 "+t("day"),30)+B("unlimited",t("unlimited"))+"</div>"+
+  (own?"":'<b>'+esc(t("give_time"))+"</b><div>"+B("extend","+1 "+t("day"),1)+B("extend","+3 "+t("day"),3)+B("extend","+7 "+t("day"),7)+B("extend","+30 "+t("day"),30)+B("extend","+90 "+t("day"),90)+B("extend","+365 "+t("day"),365)+B("unlimited",t("unlimited"))+"</div>"+
   "<div style=\"margin-top:8px\">"+(u.active?B("block",t("block")):B("unblock",t("unblock")))+'<button class="b bad sm" data-a="delete">'+esc(t("delete"))+"</button></div>")+
   '<label style="margin-top:8px">'+esc(t("staff_new_code"))+'<input id="uu_code" autocomplete="off"></label><button class="b alt sm" data-a="reset">'+esc(t("reset_pass"))+'</button>'+
   '<div class="row" style="margin-top:12px"><span class="sp"></span><button class="b alt sm" id="uu_x">'+esc(t("close"))+"</button></div>";
