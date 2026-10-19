@@ -9,7 +9,19 @@
 (function(){
 'use strict';
 const TZ='Asia/Phnom_Penh';
-const LS_NAMES='ajatt_names', LS_LOG='ajatt_log', LS_Q='ajatt_queue', LS_SHIFT='ajatt_shift';
+const LS_NAMES='ajatt_names', LS_LOG='ajatt_log', LS_Q='ajatt_queue', LS_CFG='ajatt_cfg';
+/* staff list + shifts: set by the boss once (🕒 វត្តមាន → 👥 បុគ្គលិក & វេន), saved in the Google backend, every tablet loads it */
+const DEF_SHIFTS=[{id:'m',name:'វេនព្រឹក',start:'07:00',end:'15:00'},{id:'a',name:'វេនល្ងាច',start:'15:00',end:'23:00'},{id:'n',name:'វេនយប់',start:'23:00',end:'07:00'}];
+const SHIFT_ICON={m:'🌅',a:'🌇',n:'🌙'};
+let CFG=null;
+function cfgNorm(c){ c=c&&typeof c==='object'?c:{}; const sh=Array.isArray(c.shifts)&&c.shifts.length?c.shifts:DEF_SHIFTS;
+  return {shifts:sh.map(x=>({id:String(x.id),name:String(x.name||''),start:String(x.start||''),end:String(x.end||'')})),staff:(Array.isArray(c.staff)?c.staff:[]).filter(x=>x&&x.name).map(x=>({name:String(x.name),shift:String(x.shift||'')}))}; }
+function cfgGet(){ if(!CFG) CFG=cfgNorm(jget(LS_CFG,null)); return CFG; }
+function cfgSet(c){ CFG=cfgNorm(c); jset(LS_CFG,CFG); }
+const shiftById=id=>cfgGet().shifts.find(x=>x.id===id)||null;
+const staffShift=n=>{ const s=cfgGet().staff.find(x=>x.name===n); return s?shiftById(s.shift):null; };
+const shiftLbl=sh=>sh?`${SHIFT_ICON[sh.id]||'🕒'} ${sh.name} ${sh.start}–${sh.end}`:'';
+async function cfgLoad(key){ try{ const j=await api('attCfg',{key}); if(j&&j.cfg) cfgSet(j.cfg); return true; }catch(e){ return false; } }
 const jget=(k,d)=>{try{const v=JSON.parse(ls.get(k)||'null');return v==null?d:v}catch(e){return d}};
 const jset=(k,v)=>ls.set(k,JSON.stringify(v));
 const _fmt=new Intl.DateTimeFormat('en-GB',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});
@@ -60,7 +72,7 @@ td.att-bad{color:var(--bad);font-weight:600}td.att-warn{color:var(--warn);font-w
 let SEL=null, clockT=null, doneT=null, editNames=false;
 const logGet=()=>jget(LS_LOG,[]).filter(x=>x&&x.id);
 function logPrune(){ const keep=pp(Date.now()-3*864e5).date; const L=logGet().filter(x=>x.date>=keep||!x.sent); jset(LS_LOG,L); return L; }
-function names(){ const set=new Set(jget(LS_NAMES,[])); logGet().forEach(x=>x.staff&&set.add(x.staff)); return [...set].filter(Boolean).sort((a,b)=>a.localeCompare(b)); }
+function names(){ const C=cfgGet(); if(C.staff.length) return C.staff.map(x=>x.name); const set=new Set(jget(LS_NAMES,[])); logGet().forEach(x=>x.staff&&set.add(x.staff)); return [...set].filter(Boolean).sort((a,b)=>a.localeCompare(b)); }
 function lastOf(n){ const L=logGet().filter(x=>x.staff===n).sort((a,b)=>String(a.at).localeCompare(String(b.at))); return L[L.length-1]||null; }
 function isIn(n){ const l=lastOf(n); return !!(l&&l.act==='in'&&(Date.now()-new Date(l.at))<18*3600e3); }
 
@@ -69,11 +81,11 @@ function attRender(){
   host.innerHTML=`<div class="att-clock"><div class="t" id="attT">--:--</div><div class="d" id="attD"></div></div>
   <div id="attMain"></div>
   <h2 style="margin-top:22px">📋 ថ្ងៃនេះ (ថេប្លេតនេះ)</h2><div id="attLog" class="muted"></div>
-  <div class="row att-noprint" style="margin-top:14px;flex-wrap:wrap"><button class="btn alt sm" onclick="attAddName()">➕ បន្ថែមឈ្មោះបុគ្គលិក</button><button class="btn alt sm" onclick="attToggleEdit()">✏️ កែ / លុបឈ្មោះ</button></div>
   <p class="muted" style="font-size:13px">ម៉ោងគិតតាមម៉ោងកម្ពុជា · បើអ៊ីនធឺណិតដាច់ ទិន្នន័យទុកក្នុងថេប្លេត ហើយផ្ញើទៅមេដោយស្វ័យប្រវត្តិពេលមានអ៊ីនធឺណិតវិញ</p>`;
   clearInterval(clockT); const tick=()=>{ if(!$('attT')){clearInterval(clockT);return;} const p=pp(new Date()); $('attT').textContent=p.time+':'+p.sec; $('attD').textContent='ថ្ងៃ'+dayName(p.date)+' · '+fmtD(p.date); };
   tick(); clockT=setInterval(tick,1000);
   drawMain(); drawLog(); attFlush();
+  cfgLoad(deviceKey()||bossKey()).then(ok=>{ if(ok&&!SEL&&$('attMain')&&!$('attMain').querySelector('.att-done')) drawMain(); });
 }
 function drawMain(){
   const box=$('attMain'); if(!box) return; const N=names();
@@ -81,9 +93,14 @@ function drawMain(){
     box.innerHTML=`<div class="att-sel">👤 ${esc(SEL)}</div><div class="muted" style="text-align:center">${l?(l.act==='in'?'ចូលចុងក្រោយ ':'ចេញចុងក្រោយ ')+esc(l.time)+' ('+esc(fmtD(l.date))+')':'មិនទាន់មានកំណត់ត្រា'}</div>
     <div class="att-act"><button class="bin ${inNow?'dim':''}" onclick="attPunch('in')">✅ ចូលធ្វើការ<small>Check In</small></button><button class="bout ${inNow?'':'dim'}" onclick="attPunch('out')">🏁 ចេញពីការងារ<small>Check Out</small></button></div>
     <div class="row" style="justify-content:center"><button class="btn alt" onclick="attBack()">← ត្រលប់ក្រោយ</button></div>`; return; }
-  if(!N.length){ box.innerHTML=`<div class="alert warn">មិនទាន់មានឈ្មោះបុគ្គលិកនៅលើថេប្លេតនេះទេ។ ចុច <b>➕ បន្ថែមឈ្មោះបុគ្គលិក</b> ខាងក្រោម (ធ្វើតែម្ដងគត់)។</div>`; return; }
-  box.innerHTML=`<div style="text-align:center;font-weight:600;margin-bottom:10px">👇 ចុចលើឈ្មោះរបស់អ្នក</div><div class="att-names">`+N.map(n=>{ const i=isIn(n), l=lastOf(n);
-    return `<button class="att-n ${i?'in':''}" onclick="attPick(this.dataset.n)" data-n="${esc(n)}">${editNames?'<span class="x">×</span>':''}<b>${esc(n)}</b><small>${i?'🟢 កំពុងធ្វើការ · '+esc(l.time):(l&&l.date===ppToday()?'ចេញ '+esc(l.time):'—')}</small></button>`; }).join('')+`</div>`;
+  if(!N.length){ box.innerHTML=`<div class="alert warn">មិនទាន់មានឈ្មោះបុគ្គលិកទេ។ មេបញ្ចូលឈ្មោះ និងវេន នៅ <b>ទំព័រមេ → 🕒 វត្តមាន → 👥 បុគ្គលិក &amp; វេន</b> ហើយឈ្មោះនឹងចេញនៅទីនេះដោយខ្លួនឯង។</div>`; return; }
+  const btn=n=>{ const i=isIn(n), l=lastOf(n);
+    return `<button class="att-n ${i?'in':''}" onclick="attPick(this.dataset.n)" data-n="${esc(n)}"><b>${esc(n)}</b><small>${i?'🟢 កំពុងធ្វើការ · '+esc(l.time):(l&&l.date===ppToday()?'ចេញ '+esc(l.time):'—')}</small></button>`; };
+  const C=cfgGet(); let html='';
+  if(C.staff.length){ const groups=C.shifts.map(sh=>[shiftLbl(sh),N.filter(n=>{const x=staffShift(n);return x&&x.id===sh.id})]); groups.push(['ផ្សេងៗ',N.filter(n=>!staffShift(n))]);
+    html=groups.filter(g=>g[1].length).map(g=>`<h3 style="margin:14px 0 8px">${esc(g[0])}</h3><div class="att-names">${g[1].map(btn).join('')}</div>`).join(''); }
+  else html=`<div class="att-names">${N.map(btn).join('')}</div>`;
+  box.innerHTML=`<div style="text-align:center;font-weight:600;margin-bottom:4px">👇 ចុចលើឈ្មោះរបស់អ្នក</div>`+html;
 }
 function drawLog(){
   const el=$('attLog'); if(!el) return; const t=ppToday(); const L=logGet().filter(x=>x.date===t).sort((a,b)=>String(b.at).localeCompare(String(a.at)));
@@ -98,7 +115,7 @@ window.attPunch=async act=>{
   const n=SEL; if(!n) return; const l=lastOf(n);
   if(l&&l.act===act&&(Date.now()-new Date(l.at))<12*3600e3){ if(!confirm(`${n} បាន${act==='in'?'ចូល':'ចេញ'}រួចហើយ ម៉ោង ${l.time}។\nចង់កត់${act==='in'?'ចូល':'ចេញ'}ម្ដងទៀតមែនទេ?`)) return; }
   const now=new Date(), p=pp(now); const id=device()+'-'+now.getTime().toString(36)+'-'+Math.random().toString(36).slice(2,6);
-  const rec={type:'attend',staff:n,act,at:now.toISOString(),date:p.date,time:p.time,ci:p.date,device:device(),ciAt:now.toISOString()};
+  const sh=staffShift(n); const rec={type:'attend',staff:n,act,at:now.toISOString(),date:p.date,time:p.time,ci:p.date,device:device(),ciAt:now.toISOString(),...(sh?{shift:sh.name,shiftStart:sh.start,shiftEnd:sh.end}:{})};
   const L=logGet(); L.push({id,staff:n,act,at:rec.at,date:p.date,time:p.time,sent:false}); jset(LS_LOG,L);
   const Q=jget(LS_Q,{}); Q[id]=rec; jset(LS_Q,Q);
   SEL=null; const box=$('attMain');
@@ -136,31 +153,62 @@ function injectBoss(){
       <button class="btn alt sm" onclick="attPrint()">🖨 បោះពុម្ព / PDF</button>
       <button class="btn alt sm" onclick="attManual()">➕ បញ្ចូលដោយដៃ</button>
       <a class="btn alt sm" href="#f/attend" target="_blank" rel="noopener" style="text-decoration:none">🕒 បើកទំព័របុគ្គលិក</a></div>
+    <details id="attCfgBox" class="card att-noprint" style="margin:12px 0"><summary style="cursor:pointer;font-weight:700;font-size:17px">👥 បុគ្គលិក &amp; វេន <span class="muted" id="attCfgSum" style="font-weight:400;font-size:14px"></span></summary><div id="attCfgBody" style="margin-top:10px"></div></details>
     <div id="attPrintArea">
       <h2 style="margin-top:6px">🟢 ថ្ងៃនេះ <span class="muted" id="attTodayD" style="font-size:14px;font-weight:400"></span></h2><div id="attWho" class="att-who"></div>
       <h2 id="attSumH">📊 សង្ខេបប្រចាំខែ</h2><div class="tw"><table id="attSum"></table></div>
-      <p class="muted att-noprint" style="font-size:13px">«ម៉ោងចូល» = ម៉ោងដែលបុគ្គលិកត្រូវមកដល់ (ដាក់ម្ដងគត់ — ប្រើដើម្បីរាប់ការមកយឺត លើសពី ១០ នាទី)។ ទុកចន្លោះទទេ បើមិនចង់រាប់។</p>
+      <p class="muted att-noprint" style="font-size:13px">មកយឺត = ចូលក្រោយម៉ោងចាប់ផ្ដើមវេន លើសពី ១០ នាទី · ចេញមុន = ចេញមុនម៉ោងបញ្ចប់វេន លើសពី ១០ នាទី</p>
       <h2>📅 លម្អិតប្រចាំថ្ងៃ</h2><div class="tw"><table id="attDays"></table></div>
     </div>`;
   const main=document.querySelector('#bossApp main'); const pay=$('t-payroll'); pay?pay.after(sec):main.appendChild(sec);
+  drawCfg(); cfgLoad(bossKey()).then(ok=>{ if(ok){ EDIT=null; drawCfg(); attBoss(); } });
 }
+/* ---------- 👥 staff & shifts editor (boss) ---------- */
+let EDIT=null;
+function drawCfg(){
+  const body=$('attCfgBody'); if(!body) return; if(!EDIT) EDIT=JSON.parse(JSON.stringify(cfgGet()));
+  const E=EDIT; $('attCfgSum').textContent=`· ${E.staff.length} នាក់ · ${E.shifts.length} វេន`;
+  if(!E.staff.length) $('attCfgBox').open=true;
+  const opt=cur=>E.shifts.map(sh=>`<option value="${esc(sh.id)}" ${sh.id===cur?'selected':''}>${esc((SHIFT_ICON[sh.id]||'')+' '+sh.name+' '+sh.start+'–'+sh.end)}</option>`).join('')+`<option value="" ${!cur?'selected':''}>— គ្មានវេន —</option>`;
+  body.innerHTML=`<p class="muted" style="margin-top:0">① វាយឈ្មោះ → ជ្រើសវេន → ចុច ➕ បន្ថែម ② ធ្វើម្ដងទៀតសម្រាប់បុគ្គលិកម្នាក់ៗ ③ ចុច <b>💾 រក្សាទុក</b>។ ថេប្លេតទាំងអស់នឹងទាញឈ្មោះ និងវេនដោយខ្លួនឯង។</p>
+    <div class="row" style="flex-wrap:wrap;gap:8px"><input id="attNewN" placeholder="ឈ្មោះបុគ្គលិក (ឧ. ម៉ើត)" style="flex:1;min-width:160px" onkeydown="if(event.key==='Enter')attCfgAdd()"><select id="attNewS" style="width:auto">${opt(E.shifts[0]&&E.shifts[0].id)}</select><button class="btn" onclick="attCfgAdd()">➕ បន្ថែម</button></div>
+    <div class="tw" style="margin-top:10px"><table><tr><th>#</th><th>ឈ្មោះ</th><th>វេន</th><th></th></tr>${E.staff.length?E.staff.map((x,i)=>`<tr><td>${i+1}</td><td><input value="${esc(x.name)}" onchange="attCfgName(${i},this.value)" style="min-width:120px"></td><td><select onchange="attCfgShift(${i},this.value)" style="width:auto">${opt(x.shift)}</select></td><td><button class="btn alt sm" onclick="attCfgDel(${i})">🗑 លុប</button></td></tr>`).join(''):'<tr><td colspan="4" class="muted">មិនទាន់មានបុគ្គលិក — វាយឈ្មោះខាងលើ</td></tr>'}</table></div>
+    <h3 style="margin:16px 0 6px">🕒 ម៉ោងវេន</h3>
+    <div class="tw"><table><tr><th>វេន</th><th>ចាប់ផ្ដើម</th><th>បញ្ចប់</th></tr>${E.shifts.map((sh,i)=>`<tr><td><input value="${esc(sh.name)}" onchange="attCfgSh(${i},'name',this.value)" style="min-width:110px"></td><td><input type="time" value="${esc(sh.start)}" onchange="attCfgSh(${i},'start',this.value)"></td><td><input type="time" value="${esc(sh.end)}" onchange="attCfgSh(${i},'end',this.value)"></td></tr>`).join('')}</table></div>
+    <div class="row" style="margin-top:12px;align-items:center;flex-wrap:wrap"><button class="btn big" id="attCfgSave" onclick="attCfgSave()">💾 រក្សាទុក</button><span id="attCfgMsg" class="muted"></span></div>`;
+}
+const dirty=()=>{ const m=$('attCfgMsg'); if(m){ m.textContent='⚠️ មិនទាន់រក្សាទុក — ចុច 💾 រក្សាទុក'; m.style.color='var(--bad)'; } };
+window.attCfgAdd=()=>{ const n=($('attNewN').value||'').trim().replace(/\s+/g,' ').slice(0,40); if(!n) return $('attNewN').focus();
+  if(EDIT.staff.some(x=>x.name===n)) return alert('មានឈ្មោះនេះរួចហើយ');
+  EDIT.staff.push({name:n,shift:$('attNewS').value}); const keep=$('attNewS').value; drawCfg(); $('attNewS').value=keep; dirty(); $('attNewN').focus(); };
+window.attCfgName=(i,v)=>{ v=String(v||'').trim().slice(0,40); if(v) EDIT.staff[i].name=v; drawCfg(); dirty(); };
+window.attCfgShift=(i,v)=>{ EDIT.staff[i].shift=v; dirty(); };
+window.attCfgDel=i=>{ if(!confirm('លុប "'+EDIT.staff[i].name+'" ចេញពីបញ្ជី?\n(កំណត់ត្រាវត្តមានចាស់ៗ នៅដដែល)')) return; EDIT.staff.splice(i,1); drawCfg(); dirty(); };
+window.attCfgSh=(i,k,v)=>{ EDIT.shifts[i][k]=String(v||''); drawCfg(); dirty(); };
+window.attCfgSave=async()=>{ const b=$('attCfgSave'); b.disabled=true; b.textContent='⏳ កំពុងរក្សាទុក…';
+  try{ await api('setAttCfg',{key:bossKey(),cfg:EDIT}); cfgSet(EDIT); EDIT=null; drawCfg(); attBoss(); const m=$('attCfgMsg'); m.textContent='✅ រក្សាទុករួច — ថេប្លេតនឹងឃើញឈ្មោះថ្មីពេលបើកទំព័រ 🕒'; m.style.color='var(--ok)'; }
+  catch(e){ alert(/Unknown action/.test(e.message)?'ម៉ាស៊ីនមេ (Apps Script) មិនទាន់ Deploy កំណែថ្មី':'រក្សាទុកមិនបាន៖ '+e.message); }
+  finally{ const bb=$('attCfgSave'); if(bb){ bb.disabled=false; bb.textContent='💾 រក្សាទុក'; } } };
 function pairUp(list){ // list of punches of ONE staff → shifts
   const P=[...list].sort((a,b)=>String(a.at).localeCompare(String(b.at))); const out=[]; let open=null;
   for(const r of P){
-    if(r.act==='in'){ if(open) out.push({...open,miss:'out'}); open={staff:r.staff,date:r.date,inT:r.time,inAt:r.at,inId:r._id,dev:r.device}; }
+    if(r.act==='in'){ if(open) out.push({...open,miss:'out'}); open={staff:r.staff,date:r.date,inT:r.time,inAt:r.at,inId:r._id,dev:r.device,shift:r.shift,sStart:r.shiftStart,sEnd:r.shiftEnd}; }
     else { if(open&&(new Date(r.at)-new Date(open.inAt))<20*3600e3){ out.push({...open,outT:r.time,outAt:r.at,outDate:r.date,outId:r._id,min:(new Date(r.at)-new Date(open.inAt))/6e4}); open=null; }
-      else { if(open){ out.push({...open,miss:'out'}); open=null; } out.push({staff:r.staff,date:r.date,outT:r.time,outAt:r.at,outId:r._id,miss:'in',dev:r.device}); } }
+      else { if(open){ out.push({...open,miss:'out'}); open=null; } out.push({staff:r.staff,date:r.date,outT:r.time,outAt:r.at,outId:r._id,miss:'in',dev:r.device,shift:r.shift,sStart:r.shiftStart,sEnd:r.shiftEnd}); } }
   }
   if(open){ const stillOn=(Date.now()-new Date(open.inAt))<20*3600e3; out.push({...open,miss:stillOn?'working':'out'}); }
   return out;
 }
 function shifts(){ const by={}; ATT.forEach(r=>{(by[r.staff]=by[r.staff]||[]).push(r)}); return Object.values(by).flatMap(pairUp).sort((a,b)=>(b.date+(b.inT||b.outT)).localeCompare(a.date+(a.inT||a.outT))); }
-function lateMin(s){ const sh=jget(LS_SHIFT,{})[s.staff]; const a=toMin(sh), b=toMin(s.inT); if(a==null||b==null) return 0; const d=b-a; return d>10&&d<6*60?d:0; }
+const wrapDiff=(t,ref)=>{ const a=toMin(t), b=toMin(ref); if(a==null||b==null) return null; return ((a-b+1440+720)%1440)-720; }; // minutes, works across midnight
+function shiftFor(s){ if(s.sStart) return {name:s.shift,start:s.sStart,end:s.sEnd}; const x=staffShift(s.staff); return x; }
+function lateMin(s){ const sh=shiftFor(s); if(!sh||!s.inT) return 0; const d=wrapDiff(s.inT,sh.start); return d!=null&&d>10&&d<6*60?d:0; }
+function earlyMin(s){ const sh=shiftFor(s); if(!sh||!s.outT||!s.inT) return 0; const d=wrapDiff(s.outT,sh.end); return d!=null&&d< -10&&d>-6*60?-d:0; }
 window.attBoss=function(){
   if(!$('t-attend')) return;
   const months=[...new Set([ppToday().slice(0,7),...ATT.map(r=>String(r.date||'').slice(0,7))])].filter(Boolean).sort().reverse();
   const mSel=$('attM'); const cur=mSel.value||attM||months[0]; mSel.innerHTML=months.map(m=>`<option value="${m}">${esc(fmtD(m))}</option>`).join(''); mSel.value=cur; attM=cur;
-  const staffAll=[...new Set(ATT.map(r=>r.staff))].sort((a,b)=>a.localeCompare(b));
+  const cfgNames=cfgGet().staff.map(x=>x.name); const staffAll=[...new Set([...cfgNames,...ATT.map(r=>r.staff)])];
   const sSel=$('attS'); const cs=sSel.value; sSel.innerHTML='<option value="">បុគ្គលិកទាំងអស់</option>'+staffAll.map(n=>`<option>${esc(n)}</option>`).join(''); sSel.value=staffAll.includes(cs)?cs:''; attS=sSel.value;
   const SH=shifts();
   /* today */
@@ -172,38 +220,37 @@ window.attBoss=function(){
   $('attWho').innerHTML=chips.join('')||'<span class="muted">មិនទាន់មានកំណត់ត្រា។ ឲ្យបុគ្គលិកបើកលីង 🕒 (ផ្ទាំង លីងថេប្លេត) ហើយចុចឈ្មោះខ្លួនឯង។</span>';
   /* month */
   const MS=SH.filter(s=>String(s.date).startsWith(attM)&&(!attS||s.staff===attS));
-  const shiftMap=jget(LS_SHIFT,{});
-  const sum={}; staffAll.filter(n=>!attS||n===attS).forEach(n=>sum[n]={days:new Set(),min:0,late:0,lateMin:0,miss:0});
-  MS.forEach(s=>{ const o=sum[s.staff]; if(!o) return; o.days.add(s.date); o.min+=s.min||0; const lm=lateMin(s); if(lm){o.late++;o.lateMin+=lm;} if(s.miss==='out'||s.miss==='in') o.miss++; });
+  const sum={}; staffAll.filter(n=>!attS||n===attS).forEach(n=>sum[n]={days:new Set(),min:0,late:0,lateMin:0,early:0,miss:0});
+  MS.forEach(s=>{ const o=sum[s.staff]; if(!o) return; o.days.add(s.date); o.min+=s.min||0; const lm=lateMin(s); if(lm){o.late++;o.lateMin+=lm;} if(earlyMin(s)) o.early++; if(s.miss==='out'||s.miss==='in') o.miss++; });
   $('attSumH').textContent='📊 សង្ខេបខែ '+fmtD(attM);
-  $('attSum').innerHTML=`<tr><th>បុគ្គលិក</th><th>ថ្ងៃធ្វើការ</th><th>ម៉ោងសរុប</th><th>មធ្យម/ថ្ងៃ</th><th>មកយឺត</th><th>ភ្លេចចុច</th><th class="att-noprint">ម៉ោងចូល</th></tr>`+
-    (Object.keys(sum).length?Object.entries(sum).map(([n,o])=>`<tr><td><b>${esc(n)}</b></td><td>${o.days.size}</td><td>${hm(o.min)}</td><td>${o.days.size?hmShort(o.min/o.days.size):'—'}</td><td class="${o.late?'att-warn':''}">${o.late?o.late+' ដង ('+o.lateMin+' នាទី)':'—'}</td><td class="${o.miss?'att-bad':''}">${o.miss?o.miss+' ដង':'—'}</td><td class="att-noprint"><input type="time" class="att-shift" value="${esc(shiftMap[n]||'')}" data-n="${esc(n)}" onchange="attSetShift(this)"></td></tr>`).join(''):'<tr><td colspan="7" class="muted">គ្មានទិន្នន័យខែនេះ</td></tr>');
-  $('attDays').innerHTML=`<tr><th>ថ្ងៃ</th><th>បុគ្គលិក</th><th>ចូល</th><th>ចេញ</th><th>ម៉ោងធ្វើការ</th><th>ស្ថានភាព</th><th class="att-noprint"></th></tr>`+
-    (MS.length?MS.map(s=>{ const lm=lateMin(s);
-      const st=s.miss==='working'?'<td class="att-ok">🟢 កំពុងធ្វើការ</td>':s.miss==='out'?'<td class="att-bad">⚠️ ភ្លេច Check Out</td>':s.miss==='in'?'<td class="att-bad">⚠️ គ្មាន Check In</td>':lm?`<td class="att-warn">⏰ យឺត ${lm} នាទី</td>`:'<td class="att-ok">✅ ត្រឹមត្រូវ</td>';
+  $('attSum').innerHTML=`<tr><th>បុគ្គលិក</th><th>ថ្ងៃធ្វើការ</th><th>ម៉ោងសរុប</th><th>មធ្យម/ថ្ងៃ</th><th>មកយឺត</th><th>ចេញមុន</th><th>ភ្លេចចុច</th><th>វេន</th></tr>`+
+    (Object.keys(sum).length?Object.entries(sum).map(([n,o])=>`<tr><td><b>${esc(n)}</b></td><td>${o.days.size}</td><td>${hm(o.min)}</td><td>${o.days.size?hmShort(o.min/o.days.size):'—'}</td><td class="${o.late?'att-warn':''}">${o.late?o.late+' ដង ('+o.lateMin+' នាទី)':'—'}</td><td class="${o.early?'att-warn':''}">${o.early?o.early+' ដង':'—'}</td><td class="${o.miss?'att-bad':''}">${o.miss?o.miss+' ដង':'—'}</td><td class="muted">${esc(shiftLbl(staffShift(n))||'—')}</td></tr>`).join(''):'<tr><td colspan="8" class="muted">គ្មានទិន្នន័យខែនេះ</td></tr>');
+  $('attDays').innerHTML=`<tr><th>ថ្ងៃ</th><th>បុគ្គលិក</th><th>ចូល</th><th>ចេញ</th><th>វេន</th><th>ម៉ោងធ្វើការ</th><th>ស្ថានភាព</th><th class="att-noprint"></th></tr>`+
+    (MS.length?MS.map(s=>{ const lm=lateMin(s), em=earlyMin(s); const sh=shiftFor(s);
+      const warn=[lm?`⏰ យឺត ${lm} នាទី`:'',em?`↩️ ចេញមុន ${em} នាទី`:''].filter(Boolean).join(' · ');
+      const st=s.miss==='working'?`<td class="att-ok">🟢 កំពុងធ្វើការ${lm?' · ⏰ យឺត '+lm+' នាទី':''}</td>`:s.miss==='out'?'<td class="att-bad">⚠️ ភ្លេច Check Out</td>':s.miss==='in'?'<td class="att-bad">⚠️ គ្មាន Check In</td>':warn?`<td class="att-warn">${warn}</td>`:'<td class="att-ok">✅ ត្រឹមត្រូវ</td>';
       const ids=[s.inId,s.outId].filter(Boolean).map(String);
-      return `<tr><td>${esc(dayName(s.date))} ${esc(fmtD(s.date))}</td><td><b>${esc(s.staff)}</b></td><td>${esc(s.inT||'—')}</td><td>${esc(s.outT||'—')}${s.outDate&&s.outDate!==s.date?' <small class="muted">(ថ្ងៃបន្ទាប់)</small>':''}</td><td>${s.min?hm(s.min):'—'}</td>${st}<td class="att-noprint">${ids.map(id=>`<button class="btn alt sm" title="លុបការចុចខុស" onclick="attDel('${esc(id)}')">🗑</button>`).join(' ')}</td></tr>`; }).join(''):'<tr><td colspan="7" class="muted">គ្មានទិន្នន័យ</td></tr>');
+      return `<tr><td>${esc(dayName(s.date))} ${esc(fmtD(s.date))}</td><td><b>${esc(s.staff)}</b></td><td>${esc(s.inT||'—')}</td><td>${esc(s.outT||'—')}${s.outDate&&s.outDate!==s.date?' <small class="muted">(ថ្ងៃបន្ទាប់)</small>':''}</td><td class="muted">${sh?esc(sh.name||''):'—'}</td><td>${s.min?hm(s.min):'—'}</td>${st}<td class="att-noprint">${ids.map(id=>`<button class="btn alt sm" title="លុបការចុចខុស" onclick="attDel('${esc(id)}')">🗑</button>`).join(' ')}</td></tr>`; }).join(''):'<tr><td colspan="8" class="muted">គ្មានទិន្នន័យ</td></tr>');
 };
-window.attSetShift=el=>{ const m=jget(LS_SHIFT,{}); if(el.value) m[el.dataset.n]=el.value; else delete m[el.dataset.n]; jset(LS_SHIFT,m); attBoss(); };
 window.attDel=async id=>{ const r=ATT.find(x=>String(x._id)===String(id)); if(!r) return;
   if(!confirm(`🗑 លុបការចុចនេះ?\n${r.staff} · ${r.act==='in'?'ចូល':'ចេញ'} ${r.time} · ${fmtD(r.date)}\n(ទៅក្នុងធុងសំរាម — អាចយកមកវិញបាន)`)) return;
   try{ await api('delete',{key:bossKey(),id:String(id)}); }catch(e){ return alert('លុបមិនបាន៖ '+e.message); }
   ATT=ATT.filter(x=>String(x._id)!==String(id)); attBoss(); };
 window.attManual=async()=>{
-  const staffAll=[...new Set(ATT.map(r=>r.staff))];
+  const staffAll=[...new Set([...cfgGet().staff.map(x=>x.name),...ATT.map(r=>r.staff)])];
   const n=(prompt('ឈ្មោះបុគ្គលិក'+(staffAll.length?' ('+staffAll.join(', ')+')':''),attS||'')||'').trim(); if(!n) return;
   const act=(prompt('វាយ 1 = ចូល (Check In) · 2 = ចេញ (Check Out)','2')||'').trim(); if(!['1','2'].includes(act)) return;
   const date=(prompt('ថ្ងៃ (YYYY-MM-DD)',ppToday())||'').trim(); if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return alert('ថ្ងៃមិនត្រឹមត្រូវ');
   const time=(prompt('ម៉ោង (HH:MM) ម៉ោងកម្ពុជា','17:00')||'').trim(); if(!/^\d{1,2}:\d{2}$/.test(time)) return alert('ម៉ោងមិនត្រឹមត្រូវ');
   const tt=time.padStart(5,'0'); const at=new Date(date+'T'+tt+':00+07:00').toISOString();
-  const rec={type:'attend',staff:n,act:act==='1'?'in':'out',at,date,time:tt,ci:date,device:'មេ (បញ្ចូលដោយដៃ)',manual:true,ciAt:new Date().toISOString()};
+  const sh=staffShift(n); const rec={type:'attend',staff:n,act:act==='1'?'in':'out',at,date,time:tt,ci:date,device:'មេ (បញ្ចូលដោយដៃ)',manual:true,ciAt:new Date().toISOString(),...(sh?{shift:sh.name,shiftStart:sh.start,shiftEnd:sh.end}:{})};
   try{ const j=await api('submit',{type:'attend',data:rec,key:bossKey()}); if(j&&j.pdfToken) api('savePdf',{id:j.id,token:j.pdfToken,type:'attend',pdf:''}).catch(()=>{}); ATT.push({...rec,_id:j.id}); attBoss(); }
   catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); } };
 window.attCsv=()=>{
   const MS=shifts().filter(s=>String(s.date).startsWith(attM)&&(!attS||s.staff===attS)).reverse();
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
-  const rows=[['Date','Day','Staff','Check In','Check Out','Hours','Minutes','Status','Late (min)']].concat(MS.map(s=>[s.date,dayName(s.date),s.staff,s.inT||'',s.outT||'',s.min?hmShort(s.min):'',Math.round(s.min||0),
-    s.miss==='working'?'Working':s.miss==='out'?'Missing check-out':s.miss==='in'?'Missing check-in':'OK',lateMin(s)||'']));
+  const rows=[['Date','Day','Staff','Shift','Check In','Check Out','Hours','Minutes','Status','Late (min)','Left early (min)']].concat(MS.map(s=>[s.date,dayName(s.date),s.staff,(shiftFor(s)||{}).name||'',s.inT||'',s.outT||'',s.min?hmShort(s.min):'',Math.round(s.min||0),
+    s.miss==='working'?'Working':s.miss==='out'?'Missing check-out':s.miss==='in'?'Missing check-in':'OK',lateMin(s)||'',earlyMin(s)||'']));
   const blob=new Blob(['﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`AJ-Attendance-${attM}${attS?'-'+attS:''}.csv`; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500); };
 window.attPrint=()=>{
