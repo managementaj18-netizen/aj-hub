@@ -321,8 +321,8 @@ function saveScan(){if(!D.pages.length)return;var pages=D.pages.map(function(p){
 function dataUrlBytes(u){var b=atob(u.split(",")[1]),a=new Uint8Array(b.length);for(var i=0;i<b.length;i++)a[i]=b.charCodeAt(i);return a}
 
 /* ---------- business profile, printable sheet, report ---------- */
-function biz(){return{name:(ME&&ME.biz)||"Soramma Scan",info:(ME&&ME.bizInfo)||"",logo:(ME&&ME.bizLogo)||""}}
-function profileDialog(){var b=biz(),logo=(ME&&ME.bizLogo)||"";
+function biz(){return{name:(ME&&ME.biz)||"",info:(ME&&ME.bizInfo)||"",logo:(ME&&ME.bizLogo)||new URL("logo-for-light.svg",location.href).href}}
+function profileDialog(){var b=biz(),logo=(ME&&ME.bizLogo)||"";b.info=(ME&&ME.bizInfo)||"";
  $("dbody").innerHTML='<h2>'+ic("user")+" "+esc(t("profile"))+'</h2><label>'+esc(t("biz_name"))+'<input id="p_name" value="'+esc((ME&&ME.biz)||"")+'" placeholder="Soramma Scan"></label><label>'+esc(t("biz_info"))+'<input id="p_info" value="'+esc(b.info)+'"></label><div style="margin:8px 0"><b>'+esc(t("biz_logo"))+'</b><div id="p_prev" style="margin:6px 0;min-height:60px">'+(logo?'<img src="'+logo+'" style="max-height:80px;max-width:200px">':"")+'</div><input id="p_file" type="file" accept="image/*" style="display:none"><button class="b alt sm" id="p_pick">'+esc(t("logo_pick"))+'</button> <button class="b alt sm" id="p_del">'+esc(t("logo_remove"))+'</button></div><div class="row" style="margin-top:12px"><span class="sp"></span><button class="b alt sm" id="p_x">'+esc(t("cancel"))+'</button><button class="b sm" id="p_ok">'+esc(t("save"))+"</button></div>";
  if(!$("dlg").open)$("dlg").showModal();$("dlg").oncancel=null;$("dbody").onclick=null;
  $("p_x").onclick=function(){$("dlg").close()};$("p_pick").onclick=function(){$("p_file").click()};
@@ -337,7 +337,7 @@ function sheetPages(urls,type,f,ctx){var B=biz(),W=1240,H=1754,M=80,FF='"Kantumr
  return Promise.all([document.fonts&&document.fonts.ready,loadImg(B.logo)].concat(urls.map(loadImg))).then(function(r){var logo=r[1],imgs=r.slice(2).filter(Boolean),pages=[],cv,x,y;
   function newPage(){cv=document.createElement("canvas");cv.width=W;cv.height=H;x=cv.getContext("2d");x.fillStyle="#fff";x.fillRect(0,0,W,H);x.textBaseline="top";var tx=M;
    if(logo){var s=Math.min(130/logo.width,130/logo.height);x.drawImage(logo,M,M,logo.width*s,logo.height*s);tx=M+logo.width*s+24}
-   x.fillStyle="#1f2d4d";x.font="700 44px "+FF;x.fillText(B.name,tx,M+4);x.fillStyle="#555";x.font="400 24px "+FF;if(B.info)x.fillText(B.info,tx,M+64);
+   x.fillStyle="#1f2d4d";x.font="700 44px "+FF;if(B.name)x.fillText(B.name,tx,M+4);x.fillStyle="#555";x.font="400 24px "+FF;if(B.info)x.fillText(B.info,tx,M+(B.name?64:30));
    x.textAlign="right";x.fillStyle="#222";x.font="600 26px "+FF;x.fillText(t("sheet_no")+": "+sheetNo(ctx),W-M,M+4);x.font="400 26px "+FF;x.fillText(t("sheet_date")+": "+dmy(ctx.created||Date.now()),W-M,M+44);x.textAlign="left";
    x.fillStyle="#2e3a4f";x.fillRect(M,M+150,W-2*M,4);y=M+190;pages.push(cv)}
   newPage();
@@ -347,7 +347,7 @@ function sheetPages(urls,type,f,ctx){var B=biz(),W=1240,H=1754,M=80,FF='"Kantumr
   function put(im,px,w,maxH){var s=Math.min(w/im.width,maxH/im.height);var dw=im.width*s,dh=im.height*s;x.fillStyle="#fff";x.drawImage(im,px+(w-dw)/2,y,dw,dh);x.strokeStyle="#ccc";x.lineWidth=2;x.strokeRect(px+(w-dw)/2,y,dw,dh);return dh}
   if(two){var w2=(W-2*M-30)/2,room=H-y-110;if(room<w2*.62){newPage();y=M+190;room=H-y-110}var h1=put(imgs[0],M,w2,room),h2=put(imgs[1],M+w2+30,w2,room);y+=Math.max(h1,h2)+30}
   else imgs.forEach(function(im){var wd=W-2*M,hh=wd*im.height/im.width;if(type!=="document")wd=Math.min(wd,900);var avail=H-y-110;if(avail<400){newPage();avail=H-y-110}var dh=put(im,M,W-2*M,Math.min(avail,type==="document"?avail:760));y+=dh+30});
-  pages.forEach(function(c,i){var g=c.getContext("2d");g.fillStyle="#888";g.font="400 20px "+FF;g.textBaseline="top";g.textAlign="center";g.fillText(B.name+" · "+(i+1)+"/"+pages.length,W/2,H-60)});
+  pages.forEach(function(c,i){var g=c.getContext("2d");g.fillStyle="#888";g.font="400 20px "+FF;g.textBaseline="top";g.textAlign="center";g.fillText("Soramma Scan"+(pages.length>1?" · "+(i+1)+"/"+pages.length:""),W/2,H-60)});
   return pages})}
 function dataPairs(f){return[["f_guest","guest"],["f_room","room"],["f_checkin","checkin"],["f_checkout","checkout"],["f_surname","surname"],["f_given","given"],["f_docno","docno"],["f_nat","nationality"],["f_dob","dob"],["f_sex","sex"],["f_expiry","expiry"],["f_phone","phone"],["f_email","email"],["f_address","address"],["f_personal","personal"],["f_notes","notes"],["f_notes","title"]].filter(function(x){return f[x[1]]}).map(function(x){return[t(x[0]),f[x[1]]]})}
 /* report */
