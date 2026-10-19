@@ -1,18 +1,18 @@
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
-<meta name="theme-color" content="#3b63b8">
+<meta name="theme-color" content="#dfe4ea">
 <title>Soramma Scan</title>
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#eaf0fa;--card:#fff;--ink:#1f2933;--mute:#66727f;--line:#d3dcee;--hd:#3b63b8;--ac:#2f58ad;--sky:#5b8def;--edge:#d4d9df;--skybg:#e4ecfc;--ok:#1f7a3a;--okbg:#e3f4e8;--warn:#a15c07;--warnbg:#fdf2dc;--bad:#b42318;--badbg:#fde8e6}
+:root{--bg:#eaf0fa;--card:#fff;--ink:#1f2933;--mute:#66727f;--line:#d3dcee;--hd:#dfe4ea;--ac:#2f58ad;--sky:#5b8def;--edge:#3b63b8;--skybg:#e4ecfc;--ok:#1f7a3a;--okbg:#e3f4e8;--warn:#a15c07;--warnbg:#fdf2dc;--bad:#b42318;--badbg:#fde8e6}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Kantumruy Pro",system-ui,sans-serif;font-size:15px;line-height:1.45}
-header{background:var(--hd);color:#fff;border-bottom:3px solid var(--edge);padding:calc(12px + env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+header{background:var(--hd);color:#1f2d4d;border-bottom:3px solid var(--edge);padding:calc(12px + env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
 header .lg{width:38px;height:38px;flex:none}header b{font-size:18px;flex:1;line-height:1.2}header small{display:block;opacity:.75;font-weight:400;font-size:11px;letter-spacing:.04em}
-header button.ic,#drawer .dh button{border:0;background:none;color:#fff;line-height:1;padding:6px;cursor:pointer}
+header button.ic,#drawer .dh button{border:0;background:none;color:#1f2d4d;line-height:1;padding:6px;cursor:pointer}
 main{max-width:720px;margin:0 auto;padding:14px 14px calc(88px + env(safe-area-inset-bottom))}
 nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;padding:6px 6px calc(8px + env(safe-area-inset-bottom));z-index:6}
 nav button{flex:1;border:0;background:none;font:inherit;font-size:12px;color:var(--mute);padding:6px 2px;cursor:pointer}
@@ -35,12 +35,12 @@ svg.i{flex:none;vertical-align:-3px}
 .item img{width:64px;height:46px;object-fit:cover;border-radius:8px;background:#ddd;flex:none}.item .th{width:64px;height:46px;border-radius:8px;background:var(--skybg);display:flex;align-items:center;justify-content:center;color:#2f58ad;flex:none}
 .item b{display:block}.item small{color:var(--mute)}
 .chips{display:flex;gap:6px;overflow-x:auto;margin:8px 0}.chips button{border:1px solid var(--line);background:#fff;border-radius:99px;padding:7px 13px;font:inherit;font-size:13px;white-space:nowrap;cursor:pointer}.chips button.on{background:var(--sky);color:#fff;border-color:var(--sky)}
-.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);background:var(--hd);color:#fff;padding:10px 16px;border-radius:12px;z-index:60;max-width:88vw;text-align:center}
+.toast{position:fixed;left:50%;bottom:calc(86px + env(safe-area-inset-bottom));transform:translateX(-50%);background:#1f2d4d;color:#fff;padding:10px 16px;border-radius:12px;z-index:60;max-width:88vw;text-align:center}
 dialog{border:0;border-radius:18px;padding:0;max-width:460px;width:calc(100% - 24px);max-height:92vh;overflow:auto}dialog::backdrop{background:#0007}.dbody{padding:16px}
 .note{background:var(--skybg);border-radius:12px;padding:10px 12px;font-size:13px;color:#1f3c7a}
 #ov{position:fixed;inset:0;background:#0007;z-index:20}
 #drawer{position:fixed;top:0;bottom:0;left:0;width:min(300px,84vw);background:#fff;z-index:21;transform:translateX(-102%);transition:transform .2s;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom);overflow:auto}#drawer.open{transform:none}
-#drawer .dh{background:var(--hd);color:#fff;border-bottom:3px solid var(--edge);padding:calc(16px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;gap:10px}#drawer .dh img{width:44px;height:44px}#drawer .dh b{flex:1;font-size:17px}
+#drawer .dh{background:var(--hd);color:#1f2d4d;border-bottom:3px solid var(--edge);padding:calc(16px + env(safe-area-inset-top)) 16px 14px;display:flex;align-items:center;gap:10px}#drawer .dh img{width:44px;height:44px}#drawer .dh b{flex:1;font-size:17px}
 #drawer .mi{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border:0;background:none;font:inherit;font-size:16px;padding:14px 18px;cursor:pointer;color:var(--ink)}#drawer hr{border:0;border-top:1px solid var(--line);margin:6px 0;width:100%}
 .langs button{display:block;width:100%;text-align:left;font:inherit;font-size:17px;padding:13px 14px;margin-bottom:8px;border:1px solid var(--line);border-radius:12px;background:#fff;cursor:pointer}.langs button.on{border-color:var(--sky);background:var(--skybg);font-weight:700}
 /* camera */
@@ -65,7 +65,7 @@ dialog{border:0;border-radius:18px;padding:0;max-width:460px;width:calc(100% - 2
 .bar2{height:6px;border-radius:3px;background:#dbe3f3;overflow:hidden}.bar2 i{display:block;height:100%;width:0;background:var(--sky);transition:width .2s}
 @media print{header,nav,main,#drawer,#ov,.toast{display:none!important}}
 </style></head><body>
-<header><button class="ic" id="hm" aria-label="Menu"></button><img src="logo-for-dark.svg" alt="S&amp;A" class="lg"><b>Soramma Scan<small>by Soramma</small></b><button class="ic" id="hl" aria-label="Language"></button></header>
+<header><button class="ic" id="hm" aria-label="Menu"></button><img src="logo-for-light.svg" alt="S&amp;A" class="lg"><b>Soramma Scan<small>by Soramma</small></b><button class="ic" id="hl" aria-label="Language"></button></header>
 <div id="ov" class="hide"></div><aside id="drawer"></aside>
 <main id="app"></main><nav id="nav"></nav>
 <div id="cam" class="hide"></div><div id="flash"></div>
@@ -109,7 +109,7 @@ function nav(){var tt=[["home","scan","nav_scan"],["lib","lib","nav_library"]];
  $("nav").innerHTML=tt.map(function(x){return'<button class="'+(tab===x[0]?"on":"")+'" data-t="'+x[0]+'"><span>'+ic(x[1],24)+"</span>"+esc(t(x[2]))+"</button>"}).join("")+'<button data-t="__menu"><span>'+ic("menu",24)+"</span>"+esc(t("nav_menu"))+"</button>";
  $("nav").onclick=function(e){var b=e.target.closest("button");if(!b)return;if(b.dataset.t==="__menu"){openDrawer();return}tab=b.dataset.t;render()}}
 function openDrawer(){var d=$("drawer");
- d.innerHTML='<div class="dh"><img src="logo-for-dark.svg" alt=""><b>Soramma Scan<small style="display:block;font-weight:400;opacity:.75;font-size:12px">by Soramma</small></b><button id="dx" aria-label="close">'+ic("x",22)+'</button></div>'+
+ d.innerHTML='<div class="dh"><img src="logo-for-light.svg" alt=""><b>Soramma Scan<small style="display:block;font-weight:400;opacity:.75;font-size:12px">by Soramma</small></b><button id="dx" aria-label="close">'+ic("x",22)+'</button></div>'+
  '<button class="mi" data-t="__lang">'+ic("globe",20)+esc(t("language"))+" · "+esc((LANGS.filter(function(l){return l[0]===LANG})[0]||["","English"])[1])+"</button>"+
  (ME&&ME.role==="owner"?'<button class="mi" data-t="__set">'+ic("sliders",20)+esc(t("settings"))+"</button>":"")+
  (ME?'<hr><div style="padding:6px 18px"><b>'+esc(t("signed_as",{n:ME.name}))+'</b></div><button class="mi" data-t="__logout">'+ic("lock",20)+esc(t("logout"))+"</button>":"")+
