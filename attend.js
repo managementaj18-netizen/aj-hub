@@ -40,6 +40,8 @@ DEFS.attend={icon:'🕒',short:'វត្តមានបុគ្គលិក',t
   date:r=>r.date||'',room:()=>'',name:r=>r.staff||'',idn:()=>'',extra:r=>r.act==='in'?'ចូល '+(r.time||''):'ចេញ '+(r.time||'')};
 if(!TABLET_TYPES.includes('attend')) TABLET_TYPES.push('attend');
 if(!QR_TYPES.includes('attend')) QR_TYPES.splice(QR_TYPES.indexOf('decl'),0,'attend');
+/* the boss page may already have drawn the QR cards before this file loaded → draw them again so the 🕒 QR shows */
+setTimeout(()=>{ try{ if($('tabletLinks')&&$('tabletLinks').children.length&&!$('qr_attend')) renderTabletLinks(); }catch(e){} },0);
 
 /* ---------- styles ---------- */
 const css=document.createElement('style'); css.textContent=`
