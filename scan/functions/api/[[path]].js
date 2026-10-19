@@ -1,0 +1,114 @@
+// Soramma Scan API — Cloudflare Pages Function with a D1 database bound as DB.
+const SCHEMA=[
+"CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,num INTEGER,name TEXT NOT NULL,role TEXT NOT NULL,salt TEXT,hash TEXT,active INTEGER DEFAULT 1,duty INTEGER DEFAULT 0,lat REAL,lng REAL,acc REAL,loc_at INTEGER,created INTEGER)",
+"CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT,created INTEGER)",
+"CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY,v TEXT)",
+"CREATE TABLE IF NOT EXISTS scans(id TEXT PRIMARY KEY,user_id TEXT,uname TEXT,created INTEGER,upd INTEGER,del INTEGER DEFAULT 0,type TEXT,fields TEXT,text TEXT,npages INTEGER DEFAULT 0,thumb TEXT)",
+"CREATE TABLE IF NOT EXISTS scan_pages(scan_id TEXT,idx INTEGER,data TEXT,PRIMARY KEY(scan_id,idx))",
+"CREATE INDEX IF NOT EXISTS scans_upd ON scans(upd)",
+"CREATE TABLE IF NOT EXISTS fails(name TEXT PRIMARY KEY,n INTEGER,ts INTEGER)",
+];
+let ready=false;
+const J=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
+const hex=b=>Array.from(new Uint8Array(b)).map(x=>("0"+x.toString(16)).slice(-2)).join("");
+const rid=n=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return hex(a)};
+async function hashCode(code,salt){const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(code),"PBKDF2",false,["deriveBits"]);
+  return hex(await crypto.subtle.deriveBits({name:"PBKDF2",salt:new TextEncoder().encode(salt),iterations:100000,hash:"SHA-256"},k,256))}
+const now=()=>Date.now();
+const clip=(s,n)=>String(s==null?"":s).slice(0,n);
+const num=v=>isFinite(+v)?+v:0;
+
+async function init(db){if(ready)return;await db.batch(SCHEMA.map(s=>db.prepare(s)));ready=true}
+async function getSetting(db,k,d){const r=await db.prepare("SELECT v FROM settings WHERE k=?").bind(k).first();if(!r)return d;try{return JSON.parse(r.v)}catch(e){return d}}
+async function setSetting(db,k,v){await db.prepare("INSERT INTO settings(k,v) VALUES(?,?) ON CONFLICT(k) DO UPDATE SET v=excluded.v").bind(k,JSON.stringify(v)).run()}
+const pubUser=u=>({id:u.id,num:u.num,name:u.name,role:u.role,active:!!u.active,duty:!!u.duty,lat:u.lat,lng:u.lng,acc:u.acc,locAt:u.loc_at})
+
+async function newSession(db,uid){const t=rid(32);await db.prepare("INSERT INTO sessions(token,user_id,created) VALUES(?,?,?)").bind(t,uid,now()).run();return t}
+async function authUser(db,req){const h=req.headers.get("authorization")||"";const t=h.startsWith("Bearer ")?h.slice(7):"";if(!t)return null;
+  const r=await db.prepare("SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND u.active=1").bind(t).first();return r||null}
+
+export async function onRequest(ctx){
+  const {request:req,env}=ctx,db=env.DB;
+  if(!db)return J({error:"no_db"},503);
+  const url=new URL(req.url),parts=url.pathname.replace(/^\/api\/?/,"").split("/").filter(Boolean),m=req.method;
+  try{
+    await init(db);
+    const route=parts[0]||"";
+    if(route==="ping"&&m==="GET"){const c=await db.prepare("SELECT COUNT(*) c FROM users").first();return J({ok:true,setup:!c.c})}
+    let body={};if(m==="POST"||m==="PUT"){try{body=await req.json()}catch(e){body={}}}
+
+    if(route==="setup"&&m==="POST"){
+      const c=await db.prepare("SELECT COUNT(*) c FROM users").first();if(c.c)return J({error:"already_setup"},403);
+      const name=clip(body.name,100).trim(),code=String(body.code||"");if(!name||code.length<6)return J({error:"bad_input"},400);
+      const id=rid(8),salt=rid(12);await db.prepare("INSERT INTO users(id,num,name,role,salt,hash,created) VALUES(?,?,?,?,?,?,?)").bind(id,1,name,"owner",salt,await hashCode(code,salt),now()).run();
+      if(body.biz)await setSetting(db,"name",clip(body.biz,100));
+      return J({token:await newSession(db,id)})}
+
+    if(route==="login"&&m==="POST"){
+      const name=clip(body.name,100).trim(),code=String(body.code||""),key=name.toLowerCase();
+      const f=await db.prepare("SELECT * FROM fails WHERE name=?").bind(key).first();
+      if(f&&f.n>=8&&now()-f.ts<600000)return J({error:"too_many"},429);
+      const u=await db.prepare("SELECT * FROM users WHERE lower(name)=? AND active=1").bind(key).first();
+      const ok=u&&u.hash===await hashCode(code,u.salt);
+      if(!ok){const n=f&&now()-f.ts<600000?f.n+1:1;await db.prepare("INSERT INTO fails(name,n,ts) VALUES(?,?,?) ON CONFLICT(name) DO UPDATE SET n=excluded.n,ts=excluded.ts").bind(key,n,now()).run();return J({error:"bad_login"},401)}
+      await db.prepare("DELETE FROM fails WHERE name=?").bind(key).run();
+      return J({token:await newSession(db,u.id),user:pubUser(u)})}
+
+    const me=await authUser(db,req);if(!me)return J({error:"auth"},401);
+    const owner=me.role==="owner";
+
+    if(route==="logout"&&m==="POST"){const t=(req.headers.get("authorization")||"").slice(7);await db.prepare("DELETE FROM sessions WHERE token=?").bind(t).run();return J({ok:true})}
+
+    if(route==="sync"&&m==="GET"){
+      const ur=await db.prepare("SELECT * FROM users ORDER BY num").all();
+      return J({now:now(),user:pubUser(me),users:(ur.results||[]).filter(u=>owner||u.id===me.id).map(pubUser),retention:num(await getSetting(db,"scanRetention",0))})}
+
+    if(route==="settings"&&m==="PUT"){if(!owner)return J({error:"forbidden"},403);
+      if(body.scanRetention!=null)await setSetting(db,"scanRetention",Math.max(0,Math.min(3650,Math.floor(num(body.scanRetention)))));
+      return J({ok:true})}
+
+    if(route==="users"){
+      if(!owner)return J({error:"forbidden"},403);
+      if(m==="POST"){const name=clip(body.name,100).trim(),code=body.code?String(body.code):"";
+        if(!name)return J({error:"bad_input"},400);
+        if(body.id){const u=await db.prepare("SELECT * FROM users WHERE id=?").bind(body.id).first();if(!u)return J({error:"not_found"},404);
+          if(code){if(code.length<4)return J({error:"bad_input"},400);const salt=rid(12);await db.prepare("UPDATE users SET salt=?,hash=? WHERE id=?").bind(salt,await hashCode(code,salt),u.id).run()}
+          await db.prepare("UPDATE users SET name=?,active=? WHERE id=?").bind(name,body.active===false&&u.role!=="owner"?0:1,u.id).run();
+          if(body.active===false&&u.role!=="owner")await db.prepare("DELETE FROM sessions WHERE user_id=?").bind(u.id).run();
+          return J({ok:true})}
+        if(code.length<4)return J({error:"bad_input"},400);
+        const dup=await db.prepare("SELECT 1 x FROM users WHERE lower(name)=?").bind(name.toLowerCase()).first();if(dup)return J({error:"duplicate"},409);
+        const mx=await db.prepare("SELECT COALESCE(MAX(num),0) n FROM users").first(),id=rid(8),salt=rid(12);
+        await db.prepare("INSERT INTO users(id,num,name,role,salt,hash,created) VALUES(?,?,?,?,?,?,?)").bind(id,mx.n+1,name,"staff",salt,await hashCode(code,salt),now()).run();return J({ok:true,id})}}
+
+    if(route==="scans"){
+      const ret=num(await getSetting(db,"scanRetention",0));
+      if(m==="GET"&&!parts[1]){
+        if(ret>0){const cut=now()-ret*86400000;await db.prepare("UPDATE scans SET del=1,upd=? WHERE del=0 AND created<?").bind(now(),cut).run();await db.prepare("DELETE FROM scan_pages WHERE scan_id IN (SELECT id FROM scans WHERE del=1)").run()}
+        const since=num(url.searchParams.get("since")),t=now();
+        const r=owner?await db.prepare("SELECT id,user_id,uname,created,upd,del,type,fields,text,npages,thumb FROM scans WHERE upd>?").bind(since).all():await db.prepare("SELECT id,user_id,uname,created,upd,del,type,fields,text,npages,thumb FROM scans WHERE upd>? AND user_id=?").bind(since,me.id).all();
+        return J({now:t,retention:ret,scans:(r.results||[]).map(x=>x.del?{id:x.id,del:1}:{id:x.id,by:x.uname,uid:x.user_id,created:x.created,type:x.type,fields:JSON.parse(x.fields||"{}"),text:x.text||"",npages:x.npages,thumb:x.thumb||""})})}
+      if(parts[1]){
+        const sc=await db.prepare("SELECT * FROM scans WHERE id=? AND del=0").bind(parts[1]).first();
+        if(m==="GET"&&parts[2]==="pages"){if(!sc||(!owner&&sc.user_id!==me.id))return J({error:"not_found"},404);
+          const r=await db.prepare("SELECT idx,data FROM scan_pages WHERE scan_id=? ORDER BY idx").bind(sc.id).all();return J({pages:(r.results||[]).map(x=>x.data)})}
+        if(m==="DELETE"){if(!sc)return J({ok:true});if(!owner&&sc.user_id!==me.id)return J({error:"forbidden"},403);
+          await db.prepare("UPDATE scans SET del=1,upd=? WHERE id=?").bind(now(),sc.id).run();await db.prepare("DELETE FROM scan_pages WHERE scan_id=?").bind(sc.id).run();return J({ok:true})}}
+      if(m==="POST"){
+        const id=clip(body.id,40);if(!id)return J({error:"bad_input"},400);
+        const ex=await db.prepare("SELECT * FROM scans WHERE id=?").bind(id).first();
+        if(ex&&ex.user_id!==me.id&&!owner)return J({error:"forbidden"},403);
+        const f={};if(body.fields&&typeof body.fields==="object")Object.keys(body.fields).slice(0,40).forEach(k=>{f[clip(k,30)]=clip(body.fields[k],200)});
+        const type=["passport","idcard","document"].includes(body.type)?body.type:"document";
+        let pages=null;
+        if(Array.isArray(body.pages)){pages=body.pages.slice(0,20);
+          for(const d of pages)if(typeof d!=="string"||!d.startsWith("data:image/jpeg;base64,")||d.length>2500000)return J({error:"bad_page"},400)}
+        const np=pages?pages.length:(ex?ex.npages:0);
+        await db.prepare("INSERT INTO scans(id,user_id,uname,created,upd,del,type,fields,text,npages,thumb) VALUES(?,?,?,?,?,0,?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET upd=excluded.upd,del=0,type=excluded.type,fields=excluded.fields,text=excluded.text,npages=excluded.npages,thumb=COALESCE(excluded.thumb,scans.thumb)")
+          .bind(id,ex?ex.user_id:me.id,ex?ex.uname:me.name,ex?ex.created:(num(body.created)||now()),now(),type,JSON.stringify(f),clip(body.text,20000),np,typeof body.thumb==="string"&&body.thumb.startsWith("data:image/jpeg;base64,")&&body.thumb.length<30000?body.thumb:null).run();
+        if(pages){await db.prepare("DELETE FROM scan_pages WHERE scan_id=?").bind(id).run();let i=0;for(const d of pages){await db.prepare("INSERT INTO scan_pages(scan_id,idx,data) VALUES(?,?,?)").bind(id,i++,d).run()}}
+        return J({ok:true,n:np})}}
+
+    return J({error:"not_found"},404);
+  }catch(e){return J({error:"server",detail:String(e&&e.message||e).slice(0,200)},500)}
+}
