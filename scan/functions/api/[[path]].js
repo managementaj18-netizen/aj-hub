@@ -114,6 +114,7 @@ export async function onRequest(ctx){
         return J({ok:true})}}
 
     if(route==="scans"){
+      if(pubUser(me).expired)return J({error:"trial_over"},402);
       const ret=num(await getSetting(db,"scanRetention",0));
       if(m==="GET"&&!parts[1]){
         if(ret>0){const cut=now()-ret*DAY;await db.prepare("UPDATE scans SET del=1,upd=? WHERE del=0 AND created<?").bind(now(),cut).run();await db.prepare("DELETE FROM scan_pages WHERE scan_id IN (SELECT id FROM scans WHERE del=1)").run()}
@@ -127,7 +128,6 @@ export async function onRequest(ctx){
         if(m==="DELETE"){if(!sc)return J({ok:true});
           await db.prepare("UPDATE scans SET del=1,upd=? WHERE id=?").bind(now(),sc.id).run();await db.prepare("DELETE FROM scan_pages WHERE scan_id=?").bind(sc.id).run();return J({ok:true})}}
       if(m==="POST"){
-        if(pubUser(me).expired)return J({error:"trial_over"},402);
         const id=clip(body.id,40);if(!id)return J({error:"bad_input"},400);
         const ex=await db.prepare("SELECT * FROM scans WHERE id=?").bind(id).first();
         if(ex&&ex.user_id!==me.id)return J({error:"forbidden"},403);
