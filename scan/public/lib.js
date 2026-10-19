@@ -13,7 +13,8 @@ function alp(s){return s.split("").map(function(c){return D2L[c]||c}).join("")}
 function dateISO(yymmdd,kind){if(!/^\d{6}$/.test(yymmdd))return"";var yy=+yymmdd.slice(0,2),mm=yymmdd.slice(2,4),dd=yymmdd.slice(4,6),cur=new Date().getFullYear()%100,y;
   if(kind==="dob")y=yy>cur?1900+yy:2000+yy;else y=yy>=70?1900+yy:2000+yy;
   if(+mm<1||+mm>12||+dd<1||+dd>31)return"";return y+"-"+mm+"-"+dd}
-function nm(raw){var parts=raw.replace(/<+$/,"").split("<<");var sur=(parts[0]||"").replace(/</g," ").trim(),giv=(parts.slice(1).join(" ")||"").replace(/</g," ").replace(/\s+/g," ").trim();return{surname:sur,given:giv}}
+function cleanTail(s){var t=String(s||"").replace(/\s+/g," ").trim().split(" ");while(t.length>1&&/^[KLCSXEZ]{3,}$/.test(t[t.length-1]))t.pop();if(t.length)t[t.length-1]=t[t.length-1].replace(/[KLC]{3,}$/,"");return t.filter(Boolean).join(" ")}
+function nm(raw){var parts=raw.replace(/<+$/,"").split("<<");var sur=(parts[0]||"").replace(/</g," ").trim(),giv=(parts.slice(1).join(" ")||"").replace(/</g," ").replace(/\s+/g," ").trim();return{surname:cleanTail(sur),given:cleanTail(giv)}}
 function norm(line){return String(line).toUpperCase().replace(/\s+/g,"").replace(/[«‹›»]/g,"<").replace(/[^A-Z0-9<]/g,"<")}
 function fit(s,n){return s.length>=n?s.slice(0,n):s+new Array(n-s.length+1).join("<")}
 var AMB={O:["0"],"0":["O"],I:["1"],"1":["I","7"],B:["8"],"8":["B"],S:["5"],"5":["S"],Z:["2","7"],"2":["Z"],G:["6"],"6":["G"],"7":["Z","1"]};
@@ -53,7 +54,7 @@ SC.mrzParse=function(text){
     if(b&&Math.abs(a.length-36)<=3&&Math.abs(b.length-36)<=3&&/^[IAC][A-Z<]/.test(a))tryit(parseTD2(a,b));
     if(b&&c&&Math.abs(a.length-30)<=3&&Math.abs(b.length-30)<=3&&c.length>=12&&/^[IAC][A-Z<]/.test(a))tryit(parseTD1(a,b,c));
   }
-  return best&&best.docno?best:null};
+  if(best){var pv=cleanTail(best.personal||"");best.personal=/^[KLCSXEZ]*$/.test(pv)?"":pv}return best&&best.docno?best:null};
 SC.mrzValid=function(r){return!!r&&score(r)>=3};
 SC.COUNTRY=(function(){var s="AFG:Afghanistan,ALB:Albania,DZA:Algeria,AND:Andorra,AGO:Angola,ARG:Argentina,ARM:Armenia,AUS:Australia,AUT:Austria,AZE:Azerbaijan,BHR:Bahrain,BGD:Bangladesh,BLR:Belarus,BEL:Belgium,BTN:Bhutan,BOL:Bolivia,BIH:Bosnia and Herzegovina,BRA:Brazil,BRN:Brunei,BGR:Bulgaria,KHM:Cambodia,CMR:Cameroon,CAN:Canada,CHL:Chile,CHN:China,COL:Colombia,HRV:Croatia,CUB:Cuba,CYP:Cyprus,CZE:Czechia,DNK:Denmark,DOM:Dominican Republic,ECU:Ecuador,EGY:Egypt,EST:Estonia,ETH:Ethiopia,FIN:Finland,FRA:France,GEO:Georgia,D:Germany,DEU:Germany,GHA:Ghana,GRC:Greece,GTM:Guatemala,HKG:Hong Kong,HUN:Hungary,ISL:Iceland,IND:India,IDN:Indonesia,IRN:Iran,IRQ:Iraq,IRL:Ireland,ISR:Israel,ITA:Italy,JPN:Japan,JOR:Jordan,KAZ:Kazakhstan,KEN:Kenya,PRK:North Korea,KOR:South Korea,KWT:Kuwait,KGZ:Kyrgyzstan,LAO:Laos,LVA:Latvia,LBN:Lebanon,LBY:Libya,LIE:Liechtenstein,LTU:Lithuania,LUX:Luxembourg,MAC:Macao,MYS:Malaysia,MDV:Maldives,MLT:Malta,MEX:Mexico,MDA:Moldova,MCO:Monaco,MNG:Mongolia,MNE:Montenegro,MAR:Morocco,MMR:Myanmar,NPL:Nepal,NLD:Netherlands,NZL:New Zealand,NGA:Nigeria,MKD:North Macedonia,NOR:Norway,OMN:Oman,PAK:Pakistan,PSE:Palestine,PAN:Panama,PER:Peru,PHL:Philippines,POL:Poland,PRT:Portugal,QAT:Qatar,ROU:Romania,RUS:Russia,SAU:Saudi Arabia,SRB:Serbia,SGP:Singapore,SVK:Slovakia,SVN:Slovenia,ZAF:South Africa,ESP:Spain,LKA:Sri Lanka,SWE:Sweden,CHE:Switzerland,SYR:Syria,TWN:Taiwan,TJK:Tajikistan,TZA:Tanzania,THA:Thailand,TLS:Timor-Leste,TUN:Tunisia,TUR:Turkey,TKM:Turkmenistan,UGA:Uganda,UKR:Ukraine,ARE:United Arab Emirates,GBR:United Kingdom,GBD:United Kingdom,GBN:United Kingdom,USA:United States,URY:Uruguay,UZB:Uzbekistan,VEN:Venezuela,VNM:Vietnam,YEM:Yemen,ZMB:Zambia,ZWE:Zimbabwe,UTO:Utopia (specimen)",m={};s.split(",").forEach(function(x){var p=x.split(":");m[p[0]]=p[1]});return m})();
 
