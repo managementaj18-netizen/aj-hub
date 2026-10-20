@@ -37,7 +37,10 @@ function devLabel(req){const u=req.headers.get("user-agent")||"",c=req.headers.g
   const os=/iPhone|iPad/.test(u)?"iPhone/iPad":/Android/.test(u)?(((u.match(/Android[^;)]*;\s*([^;)]+)/)||[])[1]||"Android").replace(/\s*Build.*/,"").trim()):/Windows/.test(u)?"Windows":/Mac OS/.test(u)?"Mac":/Linux/.test(u)?"Linux":"?";
   const br=/Edg\//.test(u)?"Edge":/OPR\//.test(u)?"Opera":/Chrome\//.test(u)?"Chrome":/Safari\//.test(u)?"Safari":/Firefox\//.test(u)?"Firefox":"";
   return clip(os+(br?" · "+br:"")+(c&&c!=="XX"?" · "+c:""),80)}
-async function newSession(db,uid,req){const t=rid(32);await db.prepare("INSERT INTO sessions(token,user_id,created,ua) VALUES(?,?,?,?)").bind(t,uid,now(),req?devLabel(req):"").run();return t}
+async function newSession(db,uid,req){const t=rid(32);await db.prepare("INSERT INTO sessions(token,user_id,created,ua) VALUES(?,?,?,?)").bind(t,uid,now(),req?devLabel(req):"").run();
+  const ur=await db.prepare("SELECT role FROM users WHERE id=?").bind(uid).first();
+  if(ur&&ur.role!=="owner"){const mx=num(await getSetting(db,"maxDevices",3));if(mx>0)await db.prepare("DELETE FROM sessions WHERE user_id=? AND token NOT IN (SELECT token FROM sessions WHERE user_id=? ORDER BY created DESC LIMIT ?)").bind(uid,uid,mx).run()}
+  return t}
 async function authUser(db,req){const h=req.headers.get("authorization")||"";const t=h.startsWith("Bearer ")?h.slice(7):"";if(!t)return null;
   const r=await db.prepare("SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND u.active=1").bind(t).first();return r||null}
 
@@ -87,7 +90,7 @@ export async function onRequest(ctx){
 
     if(route==="sync"&&m==="GET"){
       const out={now:now(),user:pubUser(me),retention:num(await getSetting(db,"scanRetention",0)),...(await publicInfo(db))};
-      if(owner)out.signupCode=await getSetting(db,"signupCode","");
+      if(owner){out.signupCode=await getSetting(db,"signupCode","");out.maxDevices=num(await getSetting(db,"maxDevices",3))}
       return J(out)}
 
     if(route==="profile"&&m==="PUT"){
@@ -100,6 +103,7 @@ export async function onRequest(ctx){
       if(body.trialDays!=null)await setSetting(db,"trialDays",Math.max(1,Math.min(365,Math.floor(num(body.trialDays)))));
       if(body.signupOpen!=null)await setSetting(db,"signupOpen",body.signupOpen?1:0);
       if(body.signupCode!=null)await setSetting(db,"signupCode",clip(body.signupCode,40).trim());
+      if(body.maxDevices!=null)await setSetting(db,"maxDevices",Math.max(0,Math.min(50,Math.floor(num(body.maxDevices)))));
       if(body.contact!=null)await setSetting(db,"contact",clip(body.contact,300));
       return J({ok:true})}
 
