@@ -1,4 +1,4 @@
-/* attend.js v4 */
+/* attend.js v5 */
 /* =====================================================================
    🕒 STAFF ATTENDANCE (Check In / Check Out) — A&J Kampot Hub
    - Staff page:  #f/attend  (tablet / phone, PIN once like other forms)
@@ -154,7 +154,7 @@ function injectBoss(){
       <select id="attS" onchange="attBoss()" style="width:auto"><option value="">បុគ្គលិកទាំងអស់</option></select>
       <button class="btn sm" onclick="attCsv()">⬇️ CSV (Google Sheets)</button>
       <button class="btn alt sm" onclick="attPrint()">🖨 បោះពុម្ព / PDF</button>
-      <button class="btn alt sm" onclick="attManual()">➕ បញ្ចូលដោយដៃ</button>
+      <button class="btn alt sm" onclick="attEdit(-1)">➕ បញ្ចូលដោយដៃ</button>
       <a class="btn alt sm" href="#f/attend" target="_blank" rel="noopener" style="text-decoration:none">🕒 បើកទំព័របុគ្គលិក</a></div>
     <details id="attCfgBox" class="card att-noprint" style="margin:12px 0"><summary style="cursor:pointer;font-weight:700;font-size:17px">👥 បុគ្គលិក &amp; វេន <span class="muted" id="attCfgSum" style="font-weight:400;font-size:14px"></span></summary><div id="attCfgBody" style="margin-top:10px"></div></details>
     <div id="attPrintArea">
@@ -228,27 +228,55 @@ window.attBoss=function(){
   $('attSumH').textContent='📊 សង្ខេបខែ '+fmtD(attM);
   $('attSum').innerHTML=`<tr><th>បុគ្គលិក</th><th>ថ្ងៃធ្វើការ</th><th>ម៉ោងសរុប</th><th>មធ្យម/ថ្ងៃ</th><th>មកយឺត</th><th>ចេញមុន</th><th>ភ្លេចចុច</th><th>វេន</th></tr>`+
     (Object.keys(sum).length?Object.entries(sum).map(([n,o])=>`<tr><td><b>${esc(n)}</b></td><td>${o.days.size}</td><td>${hm(o.min)}</td><td>${o.days.size?hmShort(o.min/o.days.size):'—'}</td><td class="${o.late?'att-warn':''}">${o.late?o.late+' ដង ('+o.lateMin+' នាទី)':'—'}</td><td class="${o.early?'att-warn':''}">${o.early?o.early+' ដង':'—'}</td><td class="${o.miss?'att-bad':''}">${o.miss?o.miss+' ដង':'—'}</td><td class="muted">${esc(shiftLbl(staffShift(n))||'—')}</td></tr>`).join(''):'<tr><td colspan="8" class="muted">គ្មានទិន្នន័យខែនេះ</td></tr>');
-  $('attDays').innerHTML=`<tr><th>ថ្ងៃ</th><th>បុគ្គលិក</th><th>ចូល</th><th>ចេញ</th><th>វេន</th><th>ម៉ោងធ្វើការ</th><th>ស្ថានភាព</th><th class="att-noprint"></th></tr>`+
+  ROWS=[]; $('attDays').innerHTML=`<tr><th>ថ្ងៃ</th><th>បុគ្គលិក</th><th>ចូល</th><th>ចេញ</th><th>វេន</th><th>ម៉ោងធ្វើការ</th><th>ស្ថានភាព</th><th class="att-noprint"></th></tr>`+
     (MS.length?MS.map(s=>{ const lm=lateMin(s), em=earlyMin(s); const sh=shiftFor(s);
       const warn=[lm?`⏰ យឺត ${lm} នាទី`:'',em?`↩️ ចេញមុន ${em} នាទី`:''].filter(Boolean).join(' · ');
       const st=s.miss==='working'?`<td class="att-ok">🟢 កំពុងធ្វើការ${lm?' · ⏰ យឺត '+lm+' នាទី':''}</td>`:s.miss==='out'?'<td class="att-bad">⚠️ ភ្លេច Check Out</td>':s.miss==='in'?'<td class="att-bad">⚠️ គ្មាន Check In</td>':warn?`<td class="att-warn">${warn}</td>`:'<td class="att-ok">✅ ត្រឹមត្រូវ</td>';
-      const ids=[s.inId,s.outId].filter(Boolean).map(String);
-      return `<tr><td>${esc(dayName(s.date))} ${esc(fmtD(s.date))}</td><td><b>${esc(s.staff)}</b></td><td>${esc(s.inT||'—')}</td><td>${esc(s.outT||'—')}${s.outDate&&s.outDate!==s.date?' <small class="muted">(ថ្ងៃបន្ទាប់)</small>':''}</td><td class="muted">${sh?esc(sh.name||''):'—'}</td><td>${s.min?hm(s.min):'—'}</td>${st}<td class="att-noprint">${ids.map(id=>`<button class="btn alt sm" title="លុបការចុចខុស" onclick="attDel('${esc(id)}')">🗑</button>`).join(' ')}</td></tr>`; }).join(''):'<tr><td colspan="8" class="muted">គ្មានទិន្នន័យ</td></tr>');
+      const ri=ROWS.push(s)-1;
+      return `<tr><td>${esc(dayName(s.date))} ${esc(fmtD(s.date))}</td><td><b>${esc(s.staff)}</b></td><td>${esc(s.inT||'—')}</td><td>${esc(s.outT||'—')}${s.outDate&&s.outDate!==s.date?' <small class="muted">(ថ្ងៃបន្ទាប់)</small>':''}</td><td class="muted">${sh?esc(sh.name||''):'—'}</td><td>${s.min?hm(s.min):'—'}</td>${st}<td class="att-noprint"><button class="btn sm" onclick="attEdit(${ri})">✏️ កែ</button></td></tr>`; }).join(''):'<tr><td colspan="8" class="muted">គ្មានទិន្នន័យ</td></tr>');
 };
 window.attDel=async id=>{ const r=ATT.find(x=>String(x._id)===String(id)); if(!r) return;
   if(!confirm(`🗑 លុបការចុចនេះ?\n${r.staff} · ${r.act==='in'?'ចូល':'ចេញ'} ${r.time} · ${fmtD(r.date)}\n(ទៅក្នុងធុងសំរាម — អាចយកមកវិញបាន)`)) return;
   try{ await api('delete',{key:bossKey(),id:String(id)}); }catch(e){ return alert('លុបមិនបាន៖ '+e.message); }
   ATT=ATT.filter(x=>String(x._id)!==String(id)); attBoss(); };
-window.attManual=async()=>{
-  const staffAll=[...new Set([...cfgGet().staff.map(x=>x.name),...ATT.map(r=>r.staff)])];
-  const n=(prompt('ឈ្មោះបុគ្គលិក'+(staffAll.length?' ('+staffAll.join(', ')+')':''),attS||'')||'').trim(); if(!n) return;
-  const act=(prompt('វាយ 1 = ចូល (Check In) · 2 = ចេញ (Check Out)','2')||'').trim(); if(!['1','2'].includes(act)) return;
-  const date=(prompt('ថ្ងៃ (YYYY-MM-DD)',ppToday())||'').trim(); if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return alert('ថ្ងៃមិនត្រឹមត្រូវ');
-  const time=(prompt('ម៉ោង (HH:MM) ម៉ោងកម្ពុជា','17:00')||'').trim(); if(!/^\d{1,2}:\d{2}$/.test(time)) return alert('ម៉ោងមិនត្រឹមត្រូវ');
-  const tt=time.padStart(5,'0'); const at=new Date(date+'T'+tt+':00+07:00').toISOString();
-  const sh=staffShift(n); const rec={type:'attend',staff:n,act:act==='1'?'in':'out',at,date,time:tt,ci:date,device:'មេ (បញ្ចូលដោយដៃ)',manual:true,ciAt:new Date().toISOString(),...(sh?{shift:sh.name,shiftStart:sh.start,shiftEnd:sh.end}:{})};
-  try{ const j=await api('submit',{type:'attend',data:rec,key:bossKey()}); if(j&&j.pdfToken) api('savePdf',{id:j.id,token:j.pdfToken,type:'attend',pdf:''}).catch(()=>{}); ATT.push({...rec,_id:j.id}); attBoss(); }
-  catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); } };
+/* ---------- ✏️ edit one shift (fix forgotten / wrong check in or out) ---------- */
+let ROWS=[];
+const ppAt=(date,t)=>new Date(date+'T'+t+':00+07:00').toISOString();
+window.attEdit=i=>{
+  const s=i>=0?ROWS[i]:null; window._attEditRow=s;
+  const names=[...new Set([...cfgGet().staff.map(x=>x.name),...ATT.map(r=>r.staff)])];
+  $('dT').textContent=s?'✏️ កែម៉ោង — '+s.staff:'➕ បញ្ចូលម៉ោងដោយដៃ'; try{setDocBtns(null)}catch(e){}
+  $('dB').innerHTML=`<div style="display:grid;gap:12px;max-width:420px">
+    <label>បុគ្គលិក<br>${s?`<b style="font-size:18px">${esc(s.staff)}</b>`:`<select id="ae_n">${names.map(n=>`<option ${n===attS?'selected':''}>${esc(n)}</option>`).join('')}</select>`}</label>
+    <label>ថ្ងៃចូលធ្វើការ<br><input type="date" id="ae_d" value="${esc(s?s.date:ppToday())}"></label>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <label>✅ ម៉ោងចូល<br><input type="time" id="ae_in" value="${esc(s&&s.inT||'')}"></label>
+      <label>🏁 ម៉ោងចេញ<br><input type="time" id="ae_out" value="${esc(s&&s.outT||'')}"></label></div>
+    <p class="muted" style="margin:0;font-size:13px">ម៉ោងកម្ពុជា · បើម៉ោងចេញតិចជាងម៉ោងចូល (វេនយប់) ប្រព័ន្ធគិតជាថ្ងៃបន្ទាប់ដោយខ្លួនឯង · ទុកចន្លោះទទេ = មិនមាន</p>
+    <div class="row" style="flex-wrap:wrap;gap:8px"><button class="btn big" id="ae_save" onclick="attEditSave()">💾 រក្សាទុក</button>${s?`<button class="btn alt" onclick="attEditDel()">🗑 លុបវេននេះ</button>`:''}<button class="btn alt" onclick="closeDlg()">បោះបង់</button></div>
+    <div id="ae_msg" class="muted"></div></div>`;
+  $('dlg').showModal();
+};
+async function attSubmit(rec){ const j=await api('submit',{type:'attend',data:rec,key:bossKey()}); if(j&&j.pdfToken) api('savePdf',{id:j.id,token:j.pdfToken,type:'attend',pdf:''}).catch(()=>{}); ATT.push({...rec,_id:j.id}); }
+async function attRemove(id){ if(!id) return; await api('delete',{key:bossKey(),id:String(id)}); ATT=ATT.filter(x=>String(x._id)!==String(id)); }
+window.attEditSave=async()=>{
+  const s=window._attEditRow; const n=s?s.staff:($('ae_n')&&$('ae_n').value); if(!n) return alert('សូមជ្រើសបុគ្គលិក (បញ្ចូលឈ្មោះនៅ 👥 បុគ្គលិក & វេន ជាមុនសិន)');
+  const d=$('ae_d').value, tin=$('ae_in').value, tout=$('ae_out').value;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d)) return alert('សូមដាក់ថ្ងៃ');
+  if(!tin&&!tout) return alert('សូមដាក់ម៉ោងចូល ឬម៉ោងចេញ');
+  const outDate=(tin&&tout&&tout<tin)?addDays(d,1):d;
+  const sh=staffShift(n); const base={type:'attend',staff:n,device:'មេ (កែ/បញ្ចូលដោយដៃ)',manual:true,ciAt:new Date().toISOString(),...(sh?{shift:sh.name,shiftStart:sh.start,shiftEnd:sh.end}:{})};
+  const btn=$('ae_save'); btn.disabled=true; btn.textContent='⏳ កំពុងរក្សាទុក…';
+  try{
+    const inChanged=!s||tin!==(s.inT||'')||(s.inT&&d!==s.date), outChanged=!s||tout!==(s.outT||'')||(s.outT&&outDate!==(s.outDate||s.date));
+    if(inChanged){ if(tin) await attSubmit({...base,act:'in',at:ppAt(d,tin),date:d,time:tin,ci:d}); if(s&&s.inId) await attRemove(s.inId); }
+    if(outChanged){ if(tout) await attSubmit({...base,act:'out',at:ppAt(outDate,tout),date:outDate,time:tout,ci:outDate}); if(s&&s.outId) await attRemove(s.outId); }
+    closeDlg(); attBoss();
+  }catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); btn.disabled=false; btn.textContent='💾 រក្សាទុក'; }
+};
+window.attEditDel=async()=>{ const s=window._attEditRow; if(!s) return;
+  if(!confirm(`🗑 លុបវេននេះ?\n${s.staff} · ${fmtD(s.date)} · ${s.inT||'—'} → ${s.outT||'—'}\n(ទៅក្នុងធុងសំរាម — អាចយកមកវិញបាន)`)) return;
+  try{ await attRemove(s.inId); await attRemove(s.outId); closeDlg(); attBoss(); }catch(e){ alert('លុបមិនបាន៖ '+e.message); } };
 window.attCsv=()=>{
   const MS=shifts().filter(s=>String(s.date).startsWith(attM)&&(!attS||s.staff===attS)).reverse();
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
