@@ -426,6 +426,7 @@ dialog::backdrop{background:#0008}
       <section id="t-home">
         <div class="hello"><div><div class="muted" id="helloDate"></div><h2 style="margin:2px 0 0">សួស្ដីមេ 👋</h2></div></div>
         <div class="card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:200px"><b>🛡️ Backup ប្រព័ន្ធ Check-in ចាស់</b><div class="muted" id="syncStatus">កំពុងពិនិត្យ…</div></div><button class="btn alt sm" id="syncBtn" onclick="syncNow()">ចម្លងឥឡូវ</button></div>
+        <div class="card" style="margin-top:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap"><div style="flex:1;min-width:200px"><b>☁️ PDF ទៅ Google Drive</b><div class="muted" id="pdfCatchStat">ហ្វមដែលស៊ីញ៉េរួច ផ្ញើជា PDF ដោយស្វ័យប្រវត្តិ (មិនផ្ញើស្ទួន)</div></div><button class="btn alt sm" onclick="pdfCatchup(true)">ផ្ញើ PDF ដែលនៅខ្វះ</button></div>
         <div class="tiles" id="launcher"></div>
       </section>
       <section id="t-today" class="hide">
@@ -1494,7 +1495,7 @@ async function loadBoss(){
   $('upd').textContent='កំពុងទាញទិន្នន័យ…'; const errs=[];
   await Promise.all([
     api('list',{key:bossKey()}).then(j=>{const R=j.records||[];S.forms=R.filter(r=>r.type!=='payroll'&&r.type!=='bk'&&r.type!=='room'&&r._origin!=='old-system').map(r=>({...r,_origin:'new'}));
-      const syn={}; R.filter(r=>r._origin==='old-system').forEach(r=>{ if(!syn[r._oldId]||String(r.savedAt)>String(syn[r._oldId].savedAt)) syn[r._oldId]=r; }); S.synced=syn;S.payroll=R.filter(r=>r.type==='payroll');S.pdfs=j.pdfs||{}; setTimeout(prefetchRecentImgs,1500);})
+      const syn={}; R.filter(r=>r._origin==='old-system').forEach(r=>{ if(!syn[r._oldId]||String(r.savedAt)>String(syn[r._oldId].savedAt)) syn[r._oldId]=r; }); S.synced=syn;S.payroll=R.filter(r=>r.type==='payroll');S.pdfs=j.pdfs||{}; setTimeout(prefetchRecentImgs,1500); setTimeout(()=>pdfCatchup(false),8000);})
       .catch(e=>{ if(/WRONG|NO_PASSWORD/.test(e.message)) return bossLogout(); errs.push('ហ្វម (Google Sheet) '+e.message)}),
     getJSON(OLD.checkin).then(d=>{S.oldForms=(Array.isArray(d)?d:Object.values(d||{})).filter(Boolean).map((v,i)=>({...v,type:'checkin',_id:'old/'+i,_origin:'old'}))}).catch(e=>errs.push('ហ្វមចាស់ '+e.message)),
     loadBookings().then(a=>S.oldBk=a).catch(()=>{S.oldBk=[]}),
@@ -1999,6 +2000,26 @@ function autoPdf(type,data,id,token){
       await api('savePdf',{id,token,type,title:docTitle(r),pdf:uri}); stat('☁️ PDF រក្សាទុកក្នុង Google Drive រួច ✅');
     }catch(e){ stat('PDF: '+e.message+' (ហ្វមនៅតែរក្សាទុកក្នុងប្រព័ន្ធមេ)'); } });
 }
+/* boss: catch-up — every signed form that has no PDF in Google Drive yet is rendered and saved (no duplicates).
+   Runs by itself when the boss page opens (at most once a day) and from the ☁️ button. */
+const _hasSig=r=>Object.keys(r).some(k=>/sig/i.test(k)&&r[k]);
+function pdfMissing(){ const P=S.pdfs||{}; return [...allForms(),...(S.payroll||[])].filter(r=>r&&!P[docId(r)]&&!P[r._id]&&_hasSig(r)&&(r.type==='checkin'||DEFS[r.type])); }
+let _catchRun=false;
+async function pdfCatchup(manual){ if(_catchRun||ROLE!=='boss'||!bossKey()) return; const st=t=>{const e=$('pdfCatchStat'); if(e) e.textContent=t;};
+  if(!manual){ try{ const last=+ls.get('ajhub_pdfcatch')||0; if(Date.now()-last<20*3600e3) return; }catch(e){} }
+  const list=pdfMissing(); if(!list.length){ st('✅ ហ្វមដែលបានស៊ីញ៉េទាំងអស់មាន PDF ក្នុង Drive រួចហើយ'); try{ls.set('ajhub_pdfcatch',String(Date.now()))}catch(e){} return; }
+  _catchRun=true; let ok=0, bad=0;
+  try{ for(const r of list){ st(`☁️ កំពុងផ្ញើ PDF ${ok+bad+1}/${list.length}…`);
+      try{ await fetchImgs(driveIdsOf(r),2); const box=document.createElement('div');
+        box.innerHTML=r.type==='checkin'?paperCheckin(r):paperGeneric(r); const el=box.firstElementChild||box;
+        const title=docTitle(r), id=docId(r), month=(r.type==='checkin'?String(r.ci||''):String(fDate(r)||'')).slice(0,7);
+        const uri=await (await pdfWorker(el,title)).w.outputPdf('datauristring');
+        const j=await api('savePdf',{key:bossKey(),id,type:r.type,month,title,pdf:uri}); (S.pdfs=S.pdfs||{})[id]=j.fileId; ok++;
+      }catch(e){ bad++; } }
+    st(`✅ ផ្ញើ PDF ថ្មី ${ok} ទៅ Google Drive`+(bad?` · ⚠️ មិនទាន់បាន ${bad} (នឹងព្យាយាមម្ដងទៀត)`:''));
+    if(!bad) try{ls.set('ajhub_pdfcatch',String(Date.now()))}catch(e){}
+  } finally{ _catchRun=false; } }
+
 /* view a just-signed form on the tablet (print / PDF for the guest) */
 function viewLast(){ const L=window._lastDoc; if(!L) return; const r={...L.data,type:L.type,_id:L.id||'',ciAt:L.data.ciAt};
   $('dT').textContent=docTitle(r); $('dB').innerHTML=paperFor(r); setDocBtns({id:L.id,type:L.type,title:docTitle(r)}); $('dlg').showModal(); }
