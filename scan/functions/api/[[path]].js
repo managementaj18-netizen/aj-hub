@@ -7,9 +7,12 @@ const SCHEMA=[
 "CREATE TABLE IF NOT EXISTS scans(id TEXT PRIMARY KEY,user_id TEXT,uname TEXT,created INTEGER,upd INTEGER,del INTEGER DEFAULT 0,type TEXT,fields TEXT,text TEXT,npages INTEGER DEFAULT 0,thumb TEXT)",
 "CREATE TABLE IF NOT EXISTS scan_pages(scan_id TEXT,idx INTEGER,data TEXT,PRIMARY KEY(scan_id,idx))",
 "CREATE INDEX IF NOT EXISTS scans_upd ON scans(upd)",
+"CREATE TABLE IF NOT EXISTS support(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id TEXT,from_owner INTEGER,auto INTEGER DEFAULT 0,text TEXT,created INTEGER,read INTEGER DEFAULT 0)",
+"CREATE INDEX IF NOT EXISTS support_u ON support(user_id)",
 "CREATE TABLE IF NOT EXISTS fails(name TEXT PRIMARY KEY,n INTEGER,ts INTEGER)",
 ];
 const DAY=86400000;
+const AUTO_DEFAULT="អរគុណ! យើងបានទទួលសាររបស់អ្នក ហើយនឹងឆ្លើយតបឆាប់ៗ។ / Thank you! We received your message and will reply soon.";
 const RESERVED=/^\s*(admin|administrator|owner|soramma|soramma scan|support)\s*$/i;
 let ready=false;
 const J=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
@@ -91,7 +94,8 @@ export async function onRequest(ctx){
 
     if(route==="sync"&&m==="GET"){
       const out={now:now(),user:pubUser(me),retention:num(await getSetting(db,"scanRetention",0)),...(await publicInfo(db))};
-      if(owner){out.signupCode=await getSetting(db,"signupCode","");out.maxDevices=num(await getSetting(db,"maxDevices",3))}
+      if(owner){out.signupCode=await getSetting(db,"signupCode","");out.maxDevices=num(await getSetting(db,"maxDevices",3));out.supportAuto=await getSetting(db,"supportAuto",AUTO_DEFAULT)}
+      const un=owner?await db.prepare("SELECT COUNT(*) c FROM support WHERE from_owner=0 AND read=0").first():await db.prepare("SELECT COUNT(*) c FROM support WHERE user_id=? AND from_owner=1 AND auto=0 AND read=0").bind(me.id).first();out.sup=un.c;
       return J(out)}
 
     if(route==="profile"&&m==="PUT"){
@@ -108,8 +112,31 @@ export async function onRequest(ctx){
       if(body.signupOpen!=null)await setSetting(db,"signupOpen",body.signupOpen?1:0);
       if(body.signupCode!=null)await setSetting(db,"signupCode",clip(body.signupCode,40).trim());
       if(body.maxDevices!=null)await setSetting(db,"maxDevices",Math.max(0,Math.min(50,Math.floor(num(body.maxDevices)))));
+      if(body.supportAuto!=null)await setSetting(db,"supportAuto",clip(body.supportAuto,300));
       if(body.contact!=null)await setSetting(db,"contact",clip(body.contact,300));
       return J({ok:true})}
+
+    if(route==="support"){
+      const SEL="SELECT id,from_owner,auto,text,created FROM support WHERE user_id=? ORDER BY id DESC LIMIT 100";
+      if(m==="POST"){const text=clip(body.text,1000).trim();if(!text)return J({error:"bad_input"},400);
+        const day=await db.prepare("SELECT COUNT(*) c FROM support WHERE user_id=? AND from_owner=0 AND created>?").bind(me.id,now()-DAY).first();if(day.c>=30)return J({error:"too_many"},429);
+        await db.prepare("INSERT INTO support(user_id,from_owner,text,created,read) VALUES(?,0,?,?,0)").bind(me.id,text,now()).run();
+        const au=await getSetting(db,"supportAuto",AUTO_DEFAULT),rec=await db.prepare("SELECT COUNT(*) c FROM support WHERE user_id=? AND from_owner=1 AND created>?").bind(me.id,now()-12*3600000).first();
+        if(au&&!rec.c)await db.prepare("INSERT INTO support(user_id,from_owner,auto,text,created,read) VALUES(?,1,1,?,?,1)").bind(me.id,au,now()).run()}
+      else if(m!=="GET")return J({error:"not_found"},404);
+      else await db.prepare("UPDATE support SET read=1 WHERE user_id=? AND from_owner=1").bind(me.id).run();
+      const r=await db.prepare(SEL).bind(me.id).all();return J({messages:(r.results||[]).reverse().map(x=>({id:x.id,mine:!x.from_owner,auto:!!x.auto,text:x.text,at:x.created}))})}
+
+    if(route==="admin"&&parts[1]==="support"){
+      if(!owner)return J({error:"forbidden"},403);
+      if(!parts[2]&&m==="GET"){const r=await db.prepare("SELECT s.user_id uid,u.name,u.phone,u.biz,MAX(s.id) last,SUM(CASE WHEN s.from_owner=0 AND s.read=0 THEN 1 ELSE 0 END) unread FROM support s JOIN users u ON u.id=s.user_id GROUP BY s.user_id ORDER BY last DESC LIMIT 100").all(),rows=r.results||[],lt={};
+        for(const x of rows){const l=await db.prepare("SELECT text,created,from_owner FROM support WHERE id=?").bind(x.last).first();lt[x.uid]=l}
+        return J({threads:rows.map(x=>({uid:x.uid,name:x.name,phone:x.phone||"",biz:x.biz||"",unread:x.unread,text:(lt[x.uid]||{}).text||"",at:(lt[x.uid]||{}).created||0,mine:!!(lt[x.uid]||{}).from_owner}))})}
+      if(parts[2]){const uid=parts[2],u=await db.prepare("SELECT id,name,phone,biz FROM users WHERE id=?").bind(uid).first();if(!u)return J({error:"not_found"},404);
+        if(m==="POST"){const text=clip(body.text,1000).trim();if(!text)return J({error:"bad_input"},400);await db.prepare("INSERT INTO support(user_id,from_owner,text,created,read) VALUES(?,1,?,?,0)").bind(uid,text,now()).run()}
+        else if(m==="GET")await db.prepare("UPDATE support SET read=1 WHERE user_id=? AND from_owner=0").bind(uid).run();
+        const r=await db.prepare("SELECT id,from_owner,auto,text,created FROM support WHERE user_id=? ORDER BY id DESC LIMIT 100").bind(uid).all();
+        return J({user:{id:u.id,name:u.name,phone:u.phone||"",biz:u.biz||""},messages:(r.results||[]).reverse().map(x=>({id:x.id,mine:!!x.from_owner,auto:!!x.auto,text:x.text,at:x.created}))})}}
 
     if(route==="admin"&&parts[1]==="users"){
       if(!owner)return J({error:"forbidden"},403);
