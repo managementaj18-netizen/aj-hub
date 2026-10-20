@@ -66,7 +66,7 @@ dialog{border:0;border-radius:18px;padding:0;max-width:460px;width:calc(100% - 2
 @media print{header,nav,main,#drawer,#ov,.toast{display:none!important}}
 details{margin:6px 0 10px}summary{cursor:pointer;color:var(--ac);font-weight:600;padding:6px 0}
 </style></head><body>
-<header><button class="ic" id="hm" aria-label="Menu"></button><img src="logo-for-dark.svg" alt="S&amp;A" class="lg"><b>Soramma Scan<small>by Soramma</small></b><button class="ic" id="hl" aria-label="Language"></button></header>
+<header><button class="ic" id="hm" aria-label="Menu"></button><img src="logo-for-dark.svg" alt="S&amp;A" class="lg"><b>Soramma Scan<small id="hsub">by Soramma</small></b><button class="ic" id="hl" aria-label="Language"></button></header>
 <div id="ov" class="hide"></div><aside id="drawer"></aside>
 <main id="app"></main><nav id="nav"></nav>
 <div id="cam" class="hide"></div><div id="flash"></div>
@@ -114,7 +114,7 @@ function openDrawer(){var d=$("drawer");
  '<button class="mi" data-t="__lang">'+ic("globe",20)+esc(t("language"))+" · "+esc((LANGS.filter(function(l){return l[0]===LANG})[0]||["","English"])[1])+"</button>"+
  (ME?'<button class="mi" data-t="__prof">'+ic("user",20)+esc(t("profile"))+"</button>":"")+
  (ME&&ME.role==="owner"?'<button class="mi" data-t="__set">'+ic("sliders",20)+esc(t("settings"))+"</button>":"")+
- (ME?'<hr><div style="padding:6px 18px"><b>'+esc(t("signed_as",{n:ME.name}))+'</b></div><button class="mi" data-t="__logout">'+ic("lock",20)+esc(t("logout"))+"</button>":"")+
+ (ME?'<hr><div style="padding:6px 18px"><b>'+esc(t("signed_as",{n:ME.name}))+'</b>'+(ME.role==="owner"?' <span class="pill ok">ADMIN</span>':"")+'</div><button class="mi" data-t="__logout">'+ic("lock",20)+esc(t("logout"))+"</button>":"")+
  '<div class="muted" style="font-size:12px;padding:12px 18px">'+esc(t("privacy_note"))+"</div>";
  d.onclick=function(e){var b=e.target.closest("button");if(!b)return;if(b.id==="dx"){closeDrawer();return}var k=b.dataset.t;if(!k)return;closeDrawer();
   if(k==="__lang")langDialog(false);else if(k==="__set")settingsDialog();else if(k==="__prof")profileDialog();else if(k==="__logout"){if(confirm(t("logout")+"?"))api("POST","logout").catch(function(){}).then(function(){TOK="";save(K_TOK,"");location.reload()})}};
@@ -128,19 +128,21 @@ var AU=[],PINFO={};
 function dstr(ts){return ts?new Date(ts).toLocaleDateString()+" "+new Date(ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"}):"—"}
 function ustat(u){return u.role==="owner"?t("st_owner"):!u.active?t("st_blocked"):u.expires==null?t("st_unlimited"):u.expired?t("st_expired"):t("st_until",{d:dstr(u.expires)})}
 function settingsDialog(){var opts=[0,30,90,180,365],td=[1,3,7,14,30];
- api("GET","admin/users").then(function(r){AU=r.users||[]}).catch(function(){}).then(function(){return api("GET","sync")}).then(function(sy){var TD=sy.trialDays,OPEN=sy.signupOpen,CODE=sy.signupCode||"",CT=sy.contact||"";
- $("dbody").innerHTML='<h2>'+ic("sliders")+" "+esc(t("settings"))+'</h2>'+
+ api("GET","admin/users").then(function(r){AU=r.users||[]}).catch(function(){}).then(function(){return api("GET","sync")}).then(function(sy){var TD=sy.trialDays,OPEN=sy.signupOpen,CODE=sy.signupCode||"",CT=sy.contact||"",MD=sy.maxDevices==null?3:sy.maxDevices,nu=AU.filter(function(u){return u.role!=="owner"}),sm={n:nu.length,trial:nu.filter(function(u){return u.active&&!u.expired&&u.expires!=null}).length,paid:nu.filter(function(u){return u.active&&u.expires==null}).length,exp:nu.filter(function(u){return u.expired}).length,dev:AU.reduce(function(a,u){return a+(u.devices||0)},0)};
+ $("dbody").innerHTML='<h2>'+ic("sliders")+" "+esc(t("settings"))+'</h2><div class="note" style="margin-bottom:10px"><b>ADMIN</b> · '+esc(ME.name)+'<br>'+esc(t("sum_line",sm))+'</div>'+
   '<label>'+esc(t("trial_days"))+'<select id="s_td">'+td.concat(td.indexOf(TD)<0?[TD]:[]).map(function(n){return'<option value="'+n+'"'+(n===TD?" selected":"")+">"+esc(t("ret_days",{n:n}))+"</option>"}).join("")+'</select></label>'+
   '<label><input type="checkbox" id="s_open" style="width:auto;margin-right:6px"'+(OPEN?" checked":"")+">"+esc(t("signup_open"))+'</label>'+
   '<label>'+esc(t("invite_code"))+'<input id="s_inv" value="'+esc(CODE)+'" autocomplete="off"></label><p class="muted" style="margin-top:0">'+esc(t("invite_note"))+'</p>'+
   '<label>'+esc(t("contact_info"))+'<input id="s_ct" value="'+esc(CT)+'"></label>'+
+  '<label>'+esc(t("max_devices"))+'<select id="s_md">'+[1,2,3,5,10,0].map(function(n){return'<option value="'+n+'"'+(n===MD?" selected":"")+">"+esc(n?String(n):t("unlimited"))+"</option>"}).join("")+'</select></label><p class="muted" style="margin-top:0">'+esc(t("max_devices_note"))+'</p><button class="b alt sm" id="s_copy" style="margin-bottom:8px">'+ic("copy",16)+esc(t("copy_invite"))+'</button>'+
   '<label>'+esc(t("retention"))+'<select id="s_ret">'+opts.map(function(n){return'<option value="'+n+'"'+(n===RET?" selected":"")+">"+esc(n?t("ret_days",{n:n}):t("ret_never"))+"</option>"}).join("")+'</select></label>'+
   '<h3>'+esc(t("users_title",{n:AU.length}))+"</h3>"+AU.map(function(u){return'<div class="row" style="padding:7px 0;border-top:1px solid var(--line)"><span>'+ic("user",16)+" <b>"+esc(u.name)+"</b><br><small class=\"muted\">"+esc(u.phone)+" · "+esc(ustat(u))+" · "+esc(t("n_scans",{n:u.scans}))+" · "+esc(t("n_devices",{n:u.devices||0}))+(u.biz?"<br>"+esc(u.biz+(u.bizInfo?" · "+u.bizInfo:"")):"")+(u.lastLogin?"<br>"+esc(t("last_login",{d:dstr(u.lastLogin)})):"")+'</small></span><span class="sp"></span><button class="b alt sm" data-eu="'+esc(u.id)+'">'+esc(t("edit"))+"</button></div>"}).join("")+
   '<div class="row" style="margin-top:14px"><span class="sp"></span><button class="b alt sm" id="s_x">'+esc(t("cancel"))+'</button><button class="b sm" id="s_ok">'+esc(t("save"))+"</button></div>";
  if(!$("dlg").open)$("dlg").showModal();$("dlg").oncancel=null;
  $("dbody").onclick=function(e){var b=e.target.closest("[data-eu]");if(b)userDialog(b.dataset.eu)};
  $("s_x").onclick=function(){$("dlg").close()};
- $("s_ok").onclick=function(){var v=+$("s_ret").value;api("PUT","settings",{scanRetention:v,trialDays:+$("s_td").value,signupOpen:$("s_open").checked,signupCode:$("s_inv").value,contact:$("s_ct").value}).then(function(){RET=v;$("dlg").close();toast(t("saved"));syncLib()}).catch(function(){toast(t("net_err"))})}}).catch(function(){toast(t("net_err"))})}
+ $("s_copy").onclick=function(){var tx=t("invite_msg",{url:location.origin,code:$("s_inv").value||"-",days:$("s_td").value});try{navigator.clipboard.writeText(tx);toast(t("copied"))}catch(e){var a=document.createElement("textarea");a.value=tx;document.body.appendChild(a);a.select();try{document.execCommand("copy")}catch(x){}a.remove();toast(t("copied"))}};
+ $("s_ok").onclick=function(){var v=+$("s_ret").value;api("PUT","settings",{scanRetention:v,trialDays:+$("s_td").value,signupOpen:$("s_open").checked,signupCode:$("s_inv").value,contact:$("s_ct").value,maxDevices:+$("s_md").value}).then(function(){RET=v;$("dlg").close();toast(t("saved"));syncLib()}).catch(function(){toast(t("net_err"))})}}).catch(function(){toast(t("net_err"))})}
 function userDialog(id){var u=AU.filter(function(x){return x.id===id})[0];if(!u)return;var own=u.role==="owner";
  var B=function(a,l,c){return'<button class="b alt sm" data-a="'+a+'"'+(c?' data-d="'+c+'"':"")+' style="margin:3px 4px 3px 0">'+esc(l)+"</button>"};
  $("dbody").innerHTML='<h2>'+ic("user")+" "+esc(u.name)+'</h2><p class="muted">'+esc(u.phone)+" · "+esc(ustat(u))+"<br>"+esc(t("n_scans",{n:u.scans}))+" · "+esc(t("joined",{d:dstr(u.created)}))+(u.biz?"<br>"+esc(u.biz+(u.bizInfo?" · "+u.bizInfo:"")):"")+'</p><b>'+esc(t("devices"))+" ("+(u.devices||0)+')</b><div class="muted" style="margin:4px 0 8px;font-size:13px">'+((u.devList||[]).map(function(d){return esc((d.ua||"?")+" — "+dstr(d.at))}).join("<br>")||"—")+"</div>"+(u.devices&&!own?'<button class="b alt sm" data-a="signout">'+esc(t("signout_all"))+"</button>":"")+
@@ -194,7 +196,7 @@ function itemHtml(s){var f=s.fields||{};return'<button class="item" data-id="'+e
 function vLib(){var q=libQ.trim().toLowerCase(),L=LIB.slice().sort(function(a,b){return b.created-a.created}).filter(function(s){if(libF!=="all"&&s.type!==libF)return false;if(!q)return true;var f=s.fields||{};return[f.surname,f.given,f.docno,f.nat,f.guest,f.room,f.phone,f.address,s.text,s.by].join(" ").toLowerCase().indexOf(q)>=0});
  return'<input id="lq" placeholder="'+esc(t("lib_search"))+'" value="'+esc(libQ)+'"><div class="chips">'+[["all",t("lib_all")],["passport",t("t_passport")],["idcard",t("t_idcard")],["document",t("t_document")]].map(function(x){return'<button data-f="'+x[0]+'" class="'+(libF===x[0]?"on":"")+'">'+esc(x[1])+"</button>"}).join("")+"</div>"+
  (L.length?L.map(itemHtml).join(""):'<p class="muted" style="text-align:center;padding:30px 0">'+esc(t("none"))+"</p>")}
-function render(){if(D&&AUTH==="app")return;nav();$("hm").innerHTML=ic("menu",26);$("hl").innerHTML=ic("globe",24);document.documentElement.lang=LANG;var a=$("app");
+function render(){if(D&&AUTH==="app")return;nav();if($("hsub"))$("hsub").textContent="by Soramma"+(AUTH==="app"&&ME&&ME.role==="owner"?" · ADMIN":"");$("hm").innerHTML=ic("menu",26);$("hl").innerHTML=ic("globe",24);document.documentElement.lang=LANG;var a=$("app");
  $("hm").style.visibility=AUTH==="app"?"visible":"hidden";
  if(AUTH==="boot"){$("nav").innerHTML="";a.innerHTML='<p class="muted" style="text-align:center;padding:40px">'+esc(t("loading"))+"</p>";return}
  if(AUTH==="login"){$("nav").innerHTML="";a.innerHTML=vLogin();bindLogin();return}
