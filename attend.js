@@ -1,3 +1,4 @@
+/* attend.js v4 */
 /* =====================================================================
    🕒 STAFF ATTENDANCE (Check In / Check Out) — A&J Kampot Hub
    - Staff page:  #f/attend  (tablet / phone, PIN once like other forms)
