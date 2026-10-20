@@ -2,7 +2,7 @@
 // Accounts: one "owner" (admin of the service) and any number of self-registered users, each with a private library.
 const SCHEMA=[
 "CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,num INTEGER,name TEXT NOT NULL,role TEXT NOT NULL,salt TEXT,hash TEXT,active INTEGER DEFAULT 1,created INTEGER,phone TEXT,expires INTEGER,biz TEXT,biz_info TEXT,biz_logo TEXT)",
-"CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT,created INTEGER)",
+"CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT,created INTEGER,ua TEXT)",
 "CREATE TABLE IF NOT EXISTS settings(k TEXT PRIMARY KEY,v TEXT)",
 "CREATE TABLE IF NOT EXISTS scans(id TEXT PRIMARY KEY,user_id TEXT,uname TEXT,created INTEGER,upd INTEGER,del INTEGER DEFAULT 0,type TEXT,fields TEXT,text TEXT,npages INTEGER DEFAULT 0,thumb TEXT)",
 "CREATE TABLE IF NOT EXISTS scan_pages(scan_id TEXT,idx INTEGER,data TEXT,PRIMARY KEY(scan_id,idx))",
@@ -25,6 +25,7 @@ async function init(db){if(ready)return;await db.batch(SCHEMA.map(s=>db.prepare(
   const r=await db.prepare("PRAGMA table_info(users)").all(),cols=(r.results||[]).map(c=>c.name);
   if(!cols.includes("phone"))await db.prepare("ALTER TABLE users ADD COLUMN phone TEXT").run();
   if(!cols.includes("expires"))await db.prepare("ALTER TABLE users ADD COLUMN expires INTEGER").run();
+  const sr=await db.prepare("PRAGMA table_info(sessions)").all();if(!(sr.results||[]).some(c=>c.name==="ua"))await db.prepare("ALTER TABLE sessions ADD COLUMN ua TEXT").run();
   for(const c of["biz","biz_info","biz_logo"])if(!cols.includes(c))await db.prepare("ALTER TABLE users ADD COLUMN "+c+" TEXT").run();
   ready=true}
 async function getSetting(db,k,d){const r=await db.prepare("SELECT v FROM settings WHERE k=?").bind(k).first();if(!r)return d;try{return JSON.parse(r.v)}catch(e){return d}}
@@ -32,7 +33,11 @@ async function setSetting(db,k,v){await db.prepare("INSERT INTO settings(k,v) VA
 const pubUser=u=>({id:u.id,name:u.name,phone:u.phone||"",biz:u.biz||"",bizInfo:u.biz_info||"",bizLogo:u.biz_logo||"",role:u.role,active:!!u.active,expires:u.expires==null?null:u.expires,expired:u.role!=="owner"&&u.expires!=null&&now()>u.expires,created:u.created})
 async function publicInfo(db){return{trialDays:num(await getSetting(db,"trialDays",3)),signupOpen:!!(await getSetting(db,"signupOpen",1)),needCode:!!(await getSetting(db,"signupCode","")),contact:clip(await getSetting(db,"contact",""),300)}}
 
-async function newSession(db,uid){const t=rid(32);await db.prepare("INSERT INTO sessions(token,user_id,created) VALUES(?,?,?)").bind(t,uid,now()).run();return t}
+function devLabel(req){const u=req.headers.get("user-agent")||"",c=req.headers.get("cf-ipcountry")||"";
+  const os=/iPhone|iPad/.test(u)?"iPhone/iPad":/Android/.test(u)?(((u.match(/Android[^;)]*;\s*([^;)]+)/)||[])[1]||"Android").replace(/\s*Build.*/,"").trim()):/Windows/.test(u)?"Windows":/Mac OS/.test(u)?"Mac":/Linux/.test(u)?"Linux":"?";
+  const br=/Edg\//.test(u)?"Edge":/OPR\//.test(u)?"Opera":/Chrome\//.test(u)?"Chrome":/Safari\//.test(u)?"Safari":/Firefox\//.test(u)?"Firefox":"";
+  return clip(os+(br?" · "+br:"")+(c&&c!=="XX"?" · "+c:""),80)}
+async function newSession(db,uid,req){const t=rid(32);await db.prepare("INSERT INTO sessions(token,user_id,created,ua) VALUES(?,?,?,?)").bind(t,uid,now(),req?devLabel(req):"").run();return t}
 async function authUser(db,req){const h=req.headers.get("authorization")||"";const t=h.startsWith("Bearer ")?h.slice(7):"";if(!t)return null;
   const r=await db.prepare("SELECT u.* FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token=? AND u.active=1").bind(t).first();return r||null}
 
@@ -50,7 +55,7 @@ export async function onRequest(ctx){
       const c=await db.prepare("SELECT COUNT(*) c FROM users").first();if(c.c)return J({error:"already_setup"},403);
       const name=clip(body.name,100).trim(),code=String(body.code||""),phone=normPhone(body.phone);if(!name||code.length<6||phone.length<8)return J({error:"bad_input"},400);
       const id=rid(8),salt=rid(12);await db.prepare("INSERT INTO users(id,num,name,role,salt,hash,created,phone,expires) VALUES(?,?,?,?,?,?,?,?,NULL)").bind(id,1,name,"owner",salt,await hashCode(code,salt),now(),phone).run();
-      return J({token:await newSession(db,id)})}
+      return J({token:await newSession(db,id,req)})}
 
     if(route==="signup"&&m==="POST"){
       const c=await db.prepare("SELECT COUNT(*) c FROM users").first();if(!c.c)return J({error:"not_setup"},403);
@@ -62,7 +67,7 @@ export async function onRequest(ctx){
       const dup=await db.prepare("SELECT 1 x FROM users WHERE phone=?").bind(phone).first();if(dup)return J({error:"phone_dup"},409);
       const mx=await db.prepare("SELECT COALESCE(MAX(num),0) n FROM users").first(),id=rid(8),salt=rid(12);
       await db.prepare("INSERT INTO users(id,num,name,role,salt,hash,created,phone,expires) VALUES(?,?,?,?,?,?,?,?,?)").bind(id,mx.n+1,name,"user",salt,await hashCode(pass,salt),now(),phone,now()+info.trialDays*DAY).run();
-      return J({token:await newSession(db,id)})}
+      return J({token:await newSession(db,id,req)})}
 
     if(route==="login"&&m==="POST"){
       const ident=clip(body.phone||body.name,100).trim(),np=normPhone(ident),key=(np||ident.toLowerCase()),code=String(body.code||"");
@@ -73,7 +78,7 @@ export async function onRequest(ctx){
       if(!ok){const n=f&&now()-f.ts<600000?f.n+1:1;await db.prepare("INSERT INTO fails(name,n,ts) VALUES(?,?,?) ON CONFLICT(name) DO UPDATE SET n=excluded.n,ts=excluded.ts").bind(key,n,now()).run();return J({error:"bad_login"},401)}
       await db.prepare("DELETE FROM fails WHERE name=?").bind(key).run();
       if(!u.active)return J({error:"blocked"},403);
-      return J({token:await newSession(db,u.id),user:pubUser(u)})}
+      return J({token:await newSession(db,u.id,req),user:pubUser(u)})}
 
     const me=await authUser(db,req);if(!me)return J({error:"auth"},401);
     const owner=me.role==="owner";
@@ -101,10 +106,12 @@ export async function onRequest(ctx){
     if(route==="admin"&&parts[1]==="users"){
       if(!owner)return J({error:"forbidden"},403);
       if(m==="GET"){const r=await db.prepare("SELECT u.*,(SELECT COUNT(*) FROM scans s WHERE s.user_id=u.id AND s.del=0) n FROM users u ORDER BY u.created DESC").all();
-        return J({users:(r.results||[]).map(u=>({...pubUser(u),bizLogo:"",scans:u.n}))})}
+        const sr=await db.prepare("SELECT user_id,ua,created FROM sessions ORDER BY created DESC").all(),dev={};(sr.results||[]).forEach(x=>{(dev[x.user_id]=dev[x.user_id]||[]).push({ua:x.ua||"",at:x.created})});
+        return J({users:(r.results||[]).map(u=>({...pubUser(u),bizLogo:"",scans:u.n,devices:(dev[u.id]||[]).length,lastLogin:(dev[u.id]||[])[0]?dev[u.id][0].at:null,devList:(dev[u.id]||[]).slice(0,8)}))})}
       if(m==="POST"&&parts[2]){const u=await db.prepare("SELECT * FROM users WHERE id=?").bind(parts[2]).first();if(!u)return J({error:"not_found"},404);
         const a=String(body.action||"");if(u.role==="owner"&&a!=="reset")return J({error:"forbidden"},403);
         if(a==="extend"){const base=Math.max(now(),u.expires||0),days=Math.max(1,Math.min(3650,Math.floor(num(body.days))));await db.prepare("UPDATE users SET expires=?,active=1 WHERE id=?").bind(base+days*DAY,u.id).run()}
+        else if(a==="signout")await db.prepare("DELETE FROM sessions WHERE user_id=?").bind(u.id).run();
         else if(a==="unlimited")await db.prepare("UPDATE users SET expires=NULL WHERE id=?").bind(u.id).run();
         else if(a==="block"){await db.prepare("UPDATE users SET active=0 WHERE id=?").bind(u.id).run();await db.prepare("DELETE FROM sessions WHERE user_id=?").bind(u.id).run()}
         else if(a==="unblock")await db.prepare("UPDATE users SET active=1 WHERE id=?").bind(u.id).run();
