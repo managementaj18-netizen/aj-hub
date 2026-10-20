@@ -10,6 +10,7 @@ const SCHEMA=[
 "CREATE TABLE IF NOT EXISTS fails(name TEXT PRIMARY KEY,n INTEGER,ts INTEGER)",
 ];
 const DAY=86400000;
+const RESERVED=/^\s*(admin|administrator|owner|soramma|soramma scan|support)\s*$/i;
 let ready=false;
 const J=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const hex=b=>Array.from(new Uint8Array(b)).map(x=>("0"+x.toString(16)).slice(-2)).join("");
@@ -65,7 +66,7 @@ export async function onRequest(ctx){
       const info=await publicInfo(db);if(!info.signupOpen)return J({error:"signup_closed"},403);
       const code=await getSetting(db,"signupCode","");if(code&&String(body.invite||"").trim()!==code)return J({error:"bad_invite"},403);
       const name=clip(body.name,100).trim(),pass=String(body.code||""),phone=normPhone(body.phone);
-      if(!name||pass.length<6)return J({error:"bad_input"},400);if(phone.length<8||phone.length>15)return J({error:"bad_phone"},400);
+      if(!name||pass.length<6)return J({error:"bad_input"},400);if(RESERVED.test(name))return J({error:"bad_name"},400);if(phone.length<8||phone.length>15)return J({error:"bad_phone"},400);
       const recent=await db.prepare("SELECT COUNT(*) c FROM users WHERE created>?").bind(now()-3600000).first();if(recent.c>=30)return J({error:"too_many"},429);
       const dup=await db.prepare("SELECT 1 x FROM users WHERE phone=?").bind(phone).first();if(dup)return J({error:"phone_dup"},409);
       const mx=await db.prepare("SELECT COALESCE(MAX(num),0) n FROM users").first(),id=rid(8),salt=rid(12);
@@ -95,7 +96,10 @@ export async function onRequest(ctx){
 
     if(route==="profile"&&m==="PUT"){
       const logo=typeof body.bizLogo==="string"&&/^data:image\/(png|jpeg);base64,/.test(body.bizLogo)&&body.bizLogo.length<=90000?body.bizLogo:"";
-      await db.prepare("UPDATE users SET biz=?,biz_info=?,biz_logo=? WHERE id=?").bind(clip(body.biz,100).trim(),clip(body.bizInfo,200).trim(),logo,me.id).run();
+      const nn=clip(body.name,100).trim(),np=normPhone(body.phone);
+      if(np){if(np.length<8||np.length>15)return J({error:"bad_phone"},400);const dup=await db.prepare("SELECT 1 x FROM users WHERE phone=? AND id<>?").bind(np,me.id).first();if(dup)return J({error:"phone_dup"},409)}
+      if(nn&&!owner&&RESERVED.test(nn))return J({error:"bad_name"},400);
+      await db.prepare("UPDATE users SET biz=?,biz_info=?,biz_logo=?,name=COALESCE(NULLIF(?,''),name),phone=COALESCE(NULLIF(?,''),phone) WHERE id=?").bind(clip(body.biz,100).trim(),clip(body.bizInfo,200).trim(),logo,nn,np,me.id).run();
       return J({ok:true})}
 
     if(route==="settings"&&m==="PUT"){if(!owner)return J({error:"forbidden"},403);
