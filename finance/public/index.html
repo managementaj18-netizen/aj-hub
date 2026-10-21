@@ -77,13 +77,23 @@ table.t{width:100%;border-collapse:collapse;font-size:14px}table.t th,table.t td
  .fab{right:28px;bottom:28px}
  .toast{bottom:28px}
 }
+/* sales analysis */
+.band{background:var(--hd);color:#fff;border-radius:10px;padding:9px 14px;font-weight:700;text-align:center;letter-spacing:.03em;font-size:14px;margin-bottom:10px}.band.sm{font-size:12.5px;padding:6px 10px;margin-bottom:8px;background:#1d5b5a}
+.anwrap{display:block}.anside{margin-bottom:10px}
+.slc{background:#fff;border-radius:14px;padding:8px;margin-bottom:10px;box-shadow:0 1px 3px #0001}.slcb{display:flex;flex-wrap:wrap;gap:6px;max-height:190px;overflow:auto}.slcb button{border:0;background:#cfe9e4;color:#123c3a;border-radius:8px;padding:7px 11px;font:inherit;font-size:13px;cursor:pointer}.slcb button.on{background:#fbbf24;color:#3b2a00;font-weight:700}.slcb.per button{flex:1;text-align:center}
+.tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:12px}.tile{background:#1d5b5a;border-radius:14px;padding:10px 12px;text-align:center;box-shadow:0 2px 0 #0b3b3a}.tile small{color:#cdeee9;font-size:11px;letter-spacing:.06em;text-transform:uppercase;display:block}.tile b{color:#e9ff4a;font-size:19px;display:block;margin-top:2px}
+.agrid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px}.agrid .card{margin:0}
+.hb .hbr{display:grid;grid-template-columns:minmax(70px,28%) 1fr auto;gap:8px;align-items:center;margin:7px 0;font-size:13px}.hbl{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.hbt{background:#eaf3f1;border-radius:6px;height:12px;display:block;overflow:hidden}.hbt i{display:block;height:100%;border-radius:6px}
+.pie{display:flex;gap:14px;align-items:center;flex-wrap:wrap;justify-content:center}.pl{flex:1;min-width:130px;font-size:13px}.pl div{display:flex;gap:8px;align-items:center;margin:4px 0}.pl i{width:11px;height:11px;border-radius:3px;flex:none}.pl span{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.anlink{margin-bottom:12px}
+@media(min-width:900px){.anwrap{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;align-items:start}.anside{position:sticky;top:78px;margin:0}.tiles{grid-template-columns:repeat(4,minmax(0,1fr))}.agrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media print{header,nav,main,#drawer,#ov,.toast{display:none!important}}
 </style></head><body>
 <header><button class="ic" id="hm" aria-label="Menu"></button><img src="logo-for-dark.svg" alt="S&amp;A" class="lg"><b>Soramma Finance<small id="hsub">by Soramma</small></b><button class="ic" id="hl" aria-label="Language"></button></header>
 <div id="ov" class="hide"></div><aside id="drawer"></aside>
 <main id="app"></main><nav id="nav"></nav>
 <dialog id="dlg"><div class="dbody" id="dbody"></div></dialog>
-<script src="i18n.js?v=2"></script><script src="lib.js?v=1"></script><script src="common.js?v=1"></script><script src="app.js?v=2"></script>
+<script src="i18n.js?v=3"></script><script src="lib.js?v=1"></script><script src="common.js?v=1"></script><script src="app.js?v=3"></script>
 <script>
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
 </script>
