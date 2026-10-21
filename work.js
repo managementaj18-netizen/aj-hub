@@ -138,7 +138,7 @@ function drawForm(box){
   box.innerHTML=`<h2 style="margin-top:6px">${esc(titleOf(li))}</h2>
   <div class="fg"><label>ឈ្មោះរបស់អ្នក *<input id="wk_name" autocomplete="off" value="${esc(jget(LS_LAST,''))}" placeholder="វាយឈ្មោះពេញរបស់អ្នក"></label><label>ថ្ងៃទី<input type="date" id="wk_d" value="${esc(DATE)}"></label></div>
   ${li.room?`<div class="fg"><label>លេខបន្ទប់ *<input id="wk_room" inputmode="text" placeholder="ឧ. 201"></label><label>ស្ថានភាពបន្ទប់បន្ទាប់ពីឆែក *<select id="wk_rs"><option value="">— ជ្រើស —</option>${ROOM_STATUS.map(x=>`<option>${esc(x)}</option>`).join('')}</select></label></div><h3>⚠️ បញ្ហាដែលរកឃើញ (បើមាន)</h3><div class="row" style="gap:8px">${ROOM_ISSUES.map((x,i)=>`<label class="wk-iss"><input type="checkbox" value="${i}" style="width:auto;margin:0"> ${esc(x)}</label>`).join('')}</div><h3>បញ្ជីពិនិត្យបន្ទប់</h3>`:''}
-  ${T.length?T.map(x=>`<div class="wk-row" id="wr_${x.id}"><div class="wk-t">${esc(x.t)}</div><div class="wk-b">${['y','n','na'].map(v=>`<button type="button" data-v="${v}" onclick="wkSet('${x.id}','${v}')">${ANS_LBL[v]}</button>`).join('')}</div><input class="wk-note hide" id="wn_${x.id}" placeholder="មូលហេតុ / ចំណាំ (ចាំបាច់)" oninput="wkNote('${x.id}',this.value)"></div>`).join(''):`<div class="alert warn">មេមិនទាន់កំណត់ការងារក្នុងបញ្ជីនេះទេ។</div>`}
+  ${T.length?T.map((x,i)=>`<div class="wk-row" id="wr_${x.id}"><div class="wk-t">${i+1}. ${esc(x.t)}</div><div class="wk-b">${['y','n','na'].map(v=>`<button type="button" data-v="${v}" onclick="wkSet('${x.id}','${v}')">${ANS_LBL[v]}</button>`).join('')}</div><input class="wk-note hide" id="wn_${x.id}" placeholder="មូលហេតុ / ចំណាំ (ចាំបាច់)" oninput="wkNote('${x.id}',this.value)"></div>`).join(''):`<div class="alert warn">មេមិនទាន់កំណត់ការងារក្នុងបញ្ជីនេះទេ។</div>`}
   <label>ចំណាំបន្ថែម (បើមាន)<textarea id="wk_notes" rows="3" placeholder="បញ្ហា ឬអ្វីដែលមេគួរដឹង"></textarea></label>
   ${li.leave?`<label>ម៉ោងចេញពីការងារ<input type="time" id="wk_leave"></label>`:''}
   ${li.room?'':`<div class="note">${esc(DUTY_NOTE)}</div><label class="check" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="wk_agree" style="width:auto;margin:0"><span>ខ្ញុំបានអាន និងយល់ព្រមទទួលស្គាល់លក្ខខណ្ឌខាងលើ *</span></label>`}
@@ -299,7 +299,7 @@ let RV=null;
 window.wkReview=i=>{
   const r=ROWS[i]; if(!r) return; const old=REV[r._id]; RV={r,marks:JSON.parse(JSON.stringify((old&&old.marks)||{})),old};
   $('dT').textContent='🔎 '+r.staff+' · '+dayName(r.date)+' '+fmtD(r.date); try{setDocBtns(null)}catch(e){}
-  const rows=tasksOf(r).map(t=>{ const a=(r.items&&r.items[t.id])||{}; return `<div class="wk-row"><div class="wk-t">${esc(t.t)}</div>
+  const rows=tasksOf(r).map((t,i)=>{ const a=(r.items&&r.items[t.id])||{}; return `<div class="wk-row"><div class="wk-t">${i+1}. ${esc(t.t)}</div>
     <div class="row" style="align-items:center;justify-content:space-between;flex-wrap:wrap"><span class="${a.v==='y'?'wk-ok':a.v==='n'?'wk-bad':'muted'}">បុគ្គលិក៖ <b>${esc(ANS_LBL[a.v]||'—')}</b>${a.n?' · '+esc(a.n):''}</span>
     <span class="wk-mk" id="wm_${t.id}"><button type="button" data-m="ok" onclick="wkMark('${t.id}','ok')">✔ ត្រឹមត្រូវ</button><button type="button" data-m="bad" onclick="wkMark('${t.id}','bad')">✖ ខុស</button></span></div>
     <input class="wk-note ${RV.marks[t.id]&&RV.marks[t.id].m==='bad'?'':'hide'}" id="wmn_${t.id}" value="${esc((RV.marks[t.id]||{}).n||'')}" placeholder="មេកត់ពីមូលហេតុ (បើមាន)" oninput="wkMarkNote('${t.id}',this.value)"></div>`; }).join('');
@@ -318,7 +318,7 @@ window.wkRvSave=async()=>{
   if(!Object.keys(marks).length&&!comment) return alert('សូមចុច ✔ ឬ ✖ យ៉ាងតិចមួយ ឬសរសេរសារ');
   const btn=$('wkRvSave'); btn.disabled=true; btn.textContent='⏳ កំពុងរក្សាទុក…';
   try{
-    const bad=tasksOf(r).filter(t=>marks[t.id]&&marks[t.id].m==='bad').map(t=>t.t+(marks[t.id].n?' — '+marks[t.id].n:''));
+    const bad=tasksOf(r).map((t,i)=>[t,i]).filter(([t])=>marks[t.id]&&marks[t.id].m==='bad').map(([t,i])=>'ចំណុចទី '+(i+1)+' : '+t.t+(marks[t.id].n?' — មេ៖ '+marks[t.id].n:''));
     const rec={type:'workreview',ref:String(r._id),staff:r.staff,date:r.date,shift:r.shift||'',shiftName:r.shiftName||'',list:r.list||'',listName:lnOf(r),marks,comment,at:new Date().toISOString(),ci:r.date,ciAt:new Date().toISOString(),device:'មេ'};
     const j=await api('submit',{type:'workreview',data:rec,key:bossKey()}); if(j&&j.pdfToken) api('savePdf',{id:j.id,token:j.pdfToken,type:'workreview',pdf:''}).catch(()=>{});
     if(old&&old._id) api('delete',{key:bossKey(),id:String(old._id)}).catch(()=>{});
