@@ -98,7 +98,7 @@ function render(){nav();$("hm").innerHTML=ic("menu",26);$("hl").innerHTML=ic("gl
  if(AUTH==="login"){$("nav").innerHTML="";a.innerHTML=vLogin();bindLogin();return}
  if(ME&&ME.expired){$("nav").innerHTML="";a.innerHTML=vLock();lockBind();return}
  PAYC=null;var h;
- if(V.page==="doc")h=vDoc();else if(V.page==="edit")h=vEdit();else if(V.page==="acct")h=vAcct();
+ if(V.page==="doc")h=vDoc();else if(V.page==="edit")h=vEdit();else if(V.page==="acct")h=vAcct();else if(V.page==="ana")h=vAna();
  else if(V.tab==="home")h=vHome();else if(V.tab==="sales")h=vSales();else if(V.tab==="fin")h=vFin();else h=vTax();
  a.innerHTML=trialBar()+h;bindAll();if(!V.page&&V.tab==="home"&&AUTH==="app"&&ME&&ME.role!=="x")homeChatBind()}
 function bindAll(){var a=$("app");
@@ -143,6 +143,7 @@ function vHome(){var cs=curSet(),multi=cs.length>1,td=today(),m=monthRange(0),ha
  if(!has)h+='<div class="note" style="margin-bottom:12px">'+esc(t("h_welcome"))+"</div>";
  var ar0=docs("sale").filter(function(x){return x.cur===mc&&balOf(x)>0&&x.due&&x.due<td});
  if(ar0.length)h+='<button class="alertbar" data-act="goover"><span>'+ic("alert",20)+'</span><b>'+esc(t(ar0.length===1?"hd_alert1":"hd_alert",{n:ar0.length,a:fmt(sumBy(ar0,balOf,mc),mc)}))+"</b><u>"+esc(t("hd_open_sales"))+" →</u></button>";
+ h+='<button class="item anlink" data-act="ana"><span class="th">'+ic("chart",20)+'</span><div><b>'+esc(t("an_open"))+'</b><small>'+esc(t("an_open_sub"))+'</small></div><span>'+ic("arrowin",18)+'</span></button>';
  var S=[],cum=[],ytd=0,k;for(k=-6;k<=0;k++){var r=monthRange(k),p=plCalc(r[0],r[1],mc);S.push({l:mShort(k),inc:p.inc,exp:p.exp})}
  var mo=+td.slice(5,7),run=0;for(k=1;k<=mo;k++){var f=yr+"-"+(k<10?"0":"")+k+"-01",e=isoDate(new Date(+yr,k,0));run+=plCalc(f,e,mc).salesInc;cum.push(run)}ytd=run;
  var pm=plCalc(m[0],m[1],mc),cashAll=sumBy(list("account").filter(function(a){return a.cur===mc}),accBal,mc);
@@ -155,6 +156,38 @@ function vHome(){var cs=curSet(),multi=cs.length>1,td=today(),m=monthRange(0),ha
  var rec=docs("sale").sort(function(a,b){return(b.date+b.no)<(a.date+a.no)?-1:1}).slice(0,5);
  if(rec.length)h+="<h3>"+esc(t("h_recent"))+"</h3>"+rec.map(docItem).join("");
  return h+homeChat()}
+
+/* ---------- sales analysis (dashboard like a BI report: slicers + KPI tiles + charts) ---------- */
+var AN={per:"year",cust:{},prod:{},cur:""};
+var PAL=["#0f766e","#f59e0b","#2563eb","#db2777","#7c3aed","#16a34a","#ea580c","#0891b2","#64748b"];
+function anRange(){var y=+today().slice(0,4);if(AN.per==="year")return[y+"-01-01",y+"-12-31"];if(AN.per==="last")return[(y-1)+"-01-01",(y-1)+"-12-31"];if(AN.per==="month")return monthRange(0);return["0000-01-01","9999-12-31"]}
+function anData(){var r=anRange(),cur=AN.cur||prefs().cur,hasC=Object.keys(AN.cust).length,hasP=Object.keys(AN.prod).length,byC={},byP={},byM={},sale=0,qty=0,n=0,custs={},prods={},allSales=docs("sale").filter(function(x){return x.cur===cur&&x.date>=r[0]&&x.date<=r[1]});
+ allSales.forEach(function(x){var cn=x.cid&&DB.contact[x.cid]?x.cid:"";custs[cn]=cn?cname(cn):t("an_walkin");(x.lines||[]).forEach(function(l){var pn=String(l.n||"").trim()||t("an_noname");prods[pn]=1;
+  if(hasC&&!AN.cust[cn])return;if(hasP&&!AN.prod[pn])return;var a=rnd(num(l.q)*num(l.p),cur);sale+=a;qty+=num(l.q);var cl=custs[cn];byC[cl]=(byC[cl]||0)+a;byP[pn]=(byP[pn]||0)+a;var mk=x.date.slice(0,7);byM[mk]=(byM[mk]||0)+a});if(!hasC&&!hasP||true)n++});
+ var cost=null;if(!hasC&&!hasP){cost=0;docs("bill").forEach(function(x){if(x.cur===cur&&x.date>=r[0]&&x.date<=r[1])cost+=num(x.sub)});cost=rnd(cost,cur)}
+ return{cur:cur,sale:rnd(sale,cur),cost:cost,profit:cost==null?null:rnd(sale-cost,cur),qty:qty,byC:byC,byP:byP,byM:byM,custs:custs,prods:prods,n:allSales.length,r:r}}
+function topN(o,k){var a=Object.keys(o).map(function(x){return{k:x,v:o[x]}}).filter(function(x){return x.v>0}).sort(function(a,b){return b.v-a.v});if(a.length>k){var rest=a.slice(k-1).reduce(function(s,x){return s+x.v},0);a=a.slice(0,k-1);a.push({k:t("an_others"),v:rest})}return a}
+function hbar(items,cur){if(!items.length)return"";var mx=items[0].v||1;return'<div class="hb">'+items.map(function(x,i){return'<div class="hbr"><span class="hbl">'+esc(x.k)+'</span><span class="hbt"><i style="width:'+Math.max(2,x.v/mx*100)+"%;background:"+PAL[i%PAL.length]+'"></i></span><b>'+fmt(x.v,cur)+"</b></div>"}).join("")+"</div>"}
+function pie(items,cur){var tot=items.reduce(function(s,x){return s+x.v},0);if(!tot)return"";var cx=70,cy=70,R=64,r=34,ang=-Math.PI/2,paths="";
+ items.forEach(function(x,i){var f=x.v/tot,a2=ang+f*2*Math.PI,lg=f>.5?1:0;if(f>=.9999){paths+='<circle cx="'+cx+'" cy="'+cy+'" r="'+((R+r)/2)+'" fill="none" stroke="'+PAL[i%PAL.length]+'" stroke-width="'+(R-r)+'"/>'}
+  else{var x1=cx+R*Math.cos(ang),y1=cy+R*Math.sin(ang),x2=cx+R*Math.cos(a2),y2=cy+R*Math.sin(a2),x3=cx+r*Math.cos(a2),y3=cy+r*Math.sin(a2),x4=cx+r*Math.cos(ang),y4=cy+r*Math.sin(ang);
+   paths+='<path d="M'+x1.toFixed(1)+" "+y1.toFixed(1)+" A"+R+" "+R+" 0 "+lg+" 1 "+x2.toFixed(1)+" "+y2.toFixed(1)+" L"+x3.toFixed(1)+" "+y3.toFixed(1)+" A"+r+" "+r+" 0 "+lg+" 0 "+x4.toFixed(1)+" "+y4.toFixed(1)+' Z" fill="'+PAL[i%PAL.length]+'"/>'}ang=a2});
+ return'<div class="pie"><svg viewBox="0 0 140 140" width="140" height="140">'+paths+'</svg><div class="pl">'+items.map(function(x,i){return'<div><i style="background:'+PAL[i%PAL.length]+'"></i><span>'+esc(x.k)+"</span><b>"+Math.round(x.v/tot*100)+"%</b></div>"}).join("")+"</div></div>"}
+function vbars(byM,r,cur){var ks=[],y=+today().slice(0,4),m;if(AN.per==="year"||AN.per==="last"){var yy=AN.per==="year"?y:y-1;for(m=1;m<=12;m++)ks.push(yy+"-"+(m<10?"0":"")+m)}else{ks=Object.keys(byM).sort();if(AN.per==="month")ks=[today().slice(0,7)]}
+ if(!ks.length)return"";var mx=1;ks.forEach(function(k){mx=Math.max(mx,byM[k]||0)});var W=320,H=140,pb=22,pt=16,gw=(W-8)/ks.length,bw=Math.min(22,gw-6),h=H-pb-pt,o="";
+ ks.forEach(function(k,i){var v=byM[k]||0,hh=Math.max(v>0?2:0,h*v/mx),cx=4+gw*i+gw/2;o+='<rect x="'+(cx-bw/2)+'" y="'+(pt+h-hh)+'" width="'+bw+'" height="'+hh+'" rx="3" fill="#0f766e"/>'+(v>0?'<text x="'+cx+'" y="'+(pt+h-hh-4)+'" text-anchor="middle" font-size="8.5" fill="#1d2b2a">'+(v>=1e6?(v/1e6).toFixed(1)+"M":v>=1e3?(v/1e3).toFixed(v>=1e4?0:1)+"k":Math.round(v))+"</text>":"")+'<text x="'+cx+'" y="'+(H-7)+'" text-anchor="middle" font-size="9.5" fill="#64767a">'+(ks.length>8?+k.slice(5):mShort(+k.slice(5)-1-(+today().slice(5,7)-1)))+"</text>"});
+ return'<svg viewBox="0 0 '+W+" "+H+'" width="100%">'+o+"</svg>"}
+function slicer(title,keys,sel,act){var a=Object.keys(keys).sort(function(x,y){return keys[x]<keys[y]?-1:1});return'<div class="slc"><div class="band sm">'+esc(title)+'</div><div class="slcb">'+(a.length?a.map(function(k){return'<button data-act="'+act+'" data-k="'+esc(k)+'" class="'+(sel[k]?"on":"")+'">'+esc(keys[k])+"</button>"}).join(""):'<span class="muted">—</span>')+"</div></div>"}
+function vAna(){var D=anData(),cur=D.cur,cs=curSet(),pk={};Object.keys(D.prods).forEach(function(k){pk[k]=k});
+ var per=[["year","an_per_year"],["last","an_per_last"],["month","an_per_month"],["all","an_per_all"]].map(function(x){return'<button data-act="anaper" data-v="'+x[0]+'" class="'+(AN.per===x[0]?"on":"")+'">'+esc(t(x[1]))+"</button>"}).join("");
+ var curb=cs.length>1?'<div class="slc"><div class="band sm">'+esc(t("an_cur"))+'</div><div class="slcb">'+cs.map(function(c){return'<button data-act="anacur" data-k="'+c+'" class="'+(cur===c?"on":"")+'">'+c+"</button>"}).join("")+"</div></div>":"";
+ var any=Object.keys(AN.cust).length||Object.keys(AN.prod).length;
+ var side='<div class="anside"><div class="slc"><div class="slcb per">'+per+"</div></div>"+curb+slicer(t("an_customer"),D.custs,AN.cust,"anacust")+slicer(t("an_product"),pk,AN.prod,"anaprod")+(any?'<button class="b alt sm full" data-act="anaclr">'+esc(t("an_clear"))+"</button>":"")+"</div>";
+ var tile=function(l,v){return'<div class="tile"><small>'+esc(l)+"</small><b>"+v+"</b></div>"};
+ var main='<div class="band">'+esc(t("an_title"))+" · "+esc(AN.per==="all"?t("an_per_all"):AN.per==="month"?dfmt(D.r[0]).slice(3):D.r[0].slice(0,4))+'</div><div class="tiles">'+tile(t("an_sale"),fmt(D.sale,cur))+tile(t("an_cost"),D.cost==null?"—":fmt(D.cost,cur))+tile(t("an_profit"),D.profit==null?"—":fmt(D.profit,cur))+tile(t("an_qty"),D.qty.toLocaleString("en-US",{maximumFractionDigits:2}))+"</div>"+(D.cost==null?'<p class="muted" style="font-size:12px;margin:-4px 0 8px">'+esc(t("an_cost_note"))+"</p>":"");
+ if(!D.sale)main+='<div class="card" style="text-align:center;padding:30px"><p class="muted">'+esc(t("an_no_data"))+"</p></div>";
+ else main+='<div class="agrid"><div class="card"><div class="band sm">'+esc(t("an_by_cust"))+"</div>"+hbar(topN(D.byC,8),cur)+'</div><div class="card"><div class="band sm">'+esc(t("an_by_prod"))+"</div>"+pie(topN(D.byP,8),cur)+'</div><div class="card"><div class="band sm">'+esc(t("an_by_month"))+"</div>"+vbars(D.byM,D.r,cur)+'</div><div class="card"><div class="band sm">'+esc(t("an_share"))+" · "+esc(t("an_customer"))+"</div>"+pie(topN(D.byC,8),cur)+"</div></div>";
+ return back()+'<div class="anwrap">'+side+'<div class="anmain">'+main+"</div></div>"}
 
 /* ---------- Sales & purchases ---------- */
 function docItem(x){var s=statusOf(x);return'<button class="item" data-act="open" data-id="'+esc(x.id)+'"><span class="th">'+ic("receipt",20)+'</span><div><b>'+esc(x.no||"")+" · "+esc(cname(x.cid))+"</b><small>"+esc(dfmt(x.date))+(x.due?" → "+esc(dfmt(x.due)):"")+'</small></div><div class="amt">'+fmt(x.total,x.cur)+"<small>"+stPill(s)+"</small></div></button>"}
@@ -342,6 +375,12 @@ function docAction(a,id){var x=DB.invoice[id];if(!x)return;x.id=id;docPages(x).t
 function act(a,d){
  if(a==="seg"){V.sub[d.tab]=d.v;V.q="";V.filt="all";render();return}
  if(a==="filt"){V.filt=d.v;render();return}
+ if(a==="ana"){V.page="ana";render();window.scrollTo(0,0);return}
+ if(a==="anaper"){AN.per=d.v;render();return}
+ if(a==="anacur"){AN.cur=d.k;AN.cust={};AN.prod={};render();return}
+ if(a==="anacust"){if(AN.cust[d.k])delete AN.cust[d.k];else AN.cust[d.k]=1;render();return}
+ if(a==="anaprod"){if(AN.prod[d.k])delete AN.prod[d.k];else AN.prod[d.k]=1;render();return}
+ if(a==="anaclr"){AN.cust={};AN.prod={};render();return}
  if(a==="goover"){V.tab="sales";V.sub.sales="inv";V.filt="overdue";V.q="";V.page=null;render();window.scrollTo(0,0);return}
  if(a==="chatfull"){supportDialog();return}
  if(a==="back"){V.page=null;V.ed=null;render();return}
