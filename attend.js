@@ -1,4 +1,4 @@
-/* attend.js v5 */
+/* attend.js v6 */
 /* =====================================================================
    🕒 STAFF ATTENDANCE (Check In / Check Out) — A&J Kampot Hub
    - Staff page:  #f/attend  (tablet / phone, PIN once like other forms)
@@ -16,12 +16,13 @@ const DEF_SHIFTS=[{id:'m',name:'វេនព្រឹក',start:'07:00',end:'15:
 const SHIFT_ICON={m:'🌅',a:'🌇',n:'🌙'};
 let CFG=null;
 function cfgNorm(c){ c=c&&typeof c==='object'?c:{}; const sh=Array.isArray(c.shifts)&&c.shifts.length?c.shifts:DEF_SHIFTS;
-  return {shifts:sh.map(x=>({id:String(x.id),name:String(x.name||''),start:String(x.start||''),end:String(x.end||'')})),staff:(Array.isArray(c.staff)?c.staff:[]).filter(x=>x&&x.name).map(x=>({name:String(x.name),shift:String(x.shift||'')}))}; }
+  return {shifts:sh.map(x=>({id:String(x.id),name:String(x.name||''),start:String(x.start||''),end:String(x.end||'')})),staff:(Array.isArray(c.staff)?c.staff:[]).filter(x=>x&&x.name).map(x=>({name:String(x.name),shift:String(x.shift||'')})),work:c.work&&typeof c.work==='object'?c.work:{}}; } /* work = daily-work checklist + boss feedback (work.js) travels in the same saved config */
 function cfgGet(){ if(!CFG) CFG=cfgNorm(jget(LS_CFG,null)); return CFG; }
 function cfgSet(c){ CFG=cfgNorm(c); jset(LS_CFG,CFG); }
 const shiftById=id=>cfgGet().shifts.find(x=>x.id===id)||null;
 const staffShift=n=>{ const s=cfgGet().staff.find(x=>x.name===n); return s?shiftById(s.shift):null; };
 const shiftLbl=sh=>sh?`${SHIFT_ICON[sh.id]||'🕒'} ${sh.name} ${sh.start}–${sh.end}`:'';
+window.ajCfg={get:()=>cfgGet(),set:c=>cfgSet(c),load:k=>cfgLoad(k)};
 async function cfgLoad(key){ try{ const j=await api('attCfg',{key}); if(j&&j.cfg) cfgSet(j.cfg); return true; }catch(e){ return false; } }
 const jget=(k,d)=>{try{const v=JSON.parse(ls.get(k)||'null');return v==null?d:v}catch(e){return d}};
 const jset=(k,v)=>ls.set(k,JSON.stringify(v));
@@ -189,7 +190,7 @@ window.attCfgShift=(i,v)=>{ EDIT.staff[i].shift=v; dirty(); };
 window.attCfgDel=i=>{ if(!confirm('លុប "'+EDIT.staff[i].name+'" ចេញពីបញ្ជី?\n(កំណត់ត្រាវត្តមានចាស់ៗ នៅដដែល)')) return; EDIT.staff.splice(i,1); drawCfg(); dirty(); };
 window.attCfgSh=(i,k,v)=>{ EDIT.shifts[i][k]=String(v||''); drawCfg(); dirty(); };
 window.attCfgSave=async()=>{ const b=$('attCfgSave'); b.disabled=true; b.textContent='⏳ កំពុងរក្សាទុក…';
-  try{ await api('setAttCfg',{key:bossKey(),cfg:EDIT}); cfgSet(EDIT); EDIT=null; drawCfg(); attBoss(); const m=$('attCfgMsg'); m.textContent='✅ រក្សាទុករួច — ថេប្លេតនឹងឃើញឈ្មោះថ្មីពេលបើកទំព័រ 🕒'; m.style.color='var(--ok)'; }
+  try{ EDIT.work=cfgGet().work; await api('setAttCfg',{key:bossKey(),cfg:EDIT}); cfgSet(EDIT); EDIT=null; drawCfg(); attBoss(); const m=$('attCfgMsg'); m.textContent='✅ រក្សាទុករួច — ថេប្លេតនឹងឃើញឈ្មោះថ្មីពេលបើកទំព័រ 🕒'; m.style.color='var(--ok)'; }
   catch(e){ alert(/Unknown action/.test(e.message)?'ម៉ាស៊ីនមេ (Apps Script) មិនទាន់ Deploy កំណែថ្មី':'រក្សាទុកមិនបាន៖ '+e.message); }
   finally{ const bb=$('attCfgSave'); if(bb){ bb.disabled=false; bb.textContent='💾 រក្សាទុក'; } } };
 function pairUp(list){ // list of punches of ONE staff → shifts
