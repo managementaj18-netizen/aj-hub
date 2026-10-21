@@ -23,22 +23,34 @@ const today=()=>pp(new Date()).date;
 const KH_DAYS=['អាទិត្យ','ច័ន្ទ','អង្គារ','ពុធ','ព្រហស្បតិ៍','សុក្រ','សៅរ៍'];
 const dayName=s=>KH_DAYS[new Date(s+'T12:00:00Z').getUTCDay()];
 const AC=()=>window.ajCfg;
-const DEF_TASKS=['ទទួលវេនពីបុគ្គលិកមុនបានត្រឹមត្រូវ (សម្ភារៈ លុយ កំណត់ត្រា)','សម្អាត និងរៀបចំកន្លែងធ្វើការឲ្យស្អាត','ពិនិត្យសោ ភ្លើង ម៉ាស៊ីនត្រជាក់ មុនប្រគល់វេន','កត់ត្រាបញ្ហា/ចំណាំ ដើម្បីប្រគល់ឲ្យវេនបន្ត'];
 const tid=t=>{ let h=5381; for(const c of String(t)) h=((h<<5)+h+c.charCodeAt(0))|0; return 't'+(h>>>0).toString(36); };
+/* the three A&J forms that were on Google Forms / Deftform (morning shift, housekeeping, room check) — used until the boss saves his own lists */
+const DEF_LISTS=[
+ {id:'d_morning',name:'វេនព្រឹក (អ្នកទទួលភ្ញៀវ)',shifts:['m'],staff:[],tasks:["សំអាតបរិវេណកន្លែងទទួលភ្ញៀវ / ជូតតុ / ជូតសាឡុង / បោសសំអាត", "សំអាតបន្ទប់ទឹកស្រី", "មកដល់កន្លែងធ្វើការងារត្រូវបើកម៉ាស៊ីនកាហ្វេ និងម៉ាស៊ីនផលិតទឹកកក", "ឆែកមើលបន្ទប់ភ្ញៀវត្រៀមចូល និងឆែកមើលបន្ទប់ភ្ញៀវដែលមិនទាន់ចូល (រាល់ថ្ងៃ)", "ធ្វើឯកសារភ្ញៀវចូល និង ISSUE កាតបន្ទប់", "រង់ចាំភ្ញៀវចូល (CHECK IN) ឬរង់ចាំរហូតដល់ភ្ញៀវ (CHECK OUT)", "ត្រូវធ្វើបញ្ជីឯកសារគ្រប់គ្រងស្តុក", "ត្រូវធ្វើបញ្ជីឯកសារចំនួនភ្ញៀវស្នាក់នៅប្រចាំខែ", "សំអាតកញ្ចក់នៅកន្លែងទទួលភ្ញៀវ 2 ថ្ងៃម្ដង (ក្នុងមួយសប្តាហ៍)", "ពេលមានភ្ញៀវចេញរួចត្រូវទៅជួយអ្នករៀបចំ និងសំអាតតាមបន្ទប់", "ត្រូវឧស្សាហ៍ឆែកមើល កុំព្យូទ័រ / អ៊ីមែល / តេឡេក្រាម / messenger ក្រែងមានភ្ញៀវទាក់ទងមក", "សម្រាប់ភ្ញៀវដែលមានដៃគូ ឬមិត្តភក្តិមកជាមួយ ត្រូវសុំអត្តសញ្ញាណប័ណ្ណ ឬអ្វីមួយសម្គាល់ខ្លួន ការពារពេលមានបញ្ហាកើតឡើង", "ប្រសិនបើចាប់ពីម៉ោង 2:00 ទំនេរការងារ អាចទៅអង្គុយប្រចាំការនៅហាង បិទម៉ាស៊ីនកាហ្វេ និងម៉ាស៊ីនទឹកកក ដល់ 4:50", "បើវេនព្រឹកជាប់រវល់ការងារផ្សេងៗ មិនអាចធ្វើការងារចំណុចខាងលើណាមួយ វេនថ្ងៃ ឬវេនល្ងាចជួយជំនួសការងារបន្ត", "ប្រសិនបើជួបបញ្ហាការងារណាមួយ ត្រូវដោះស្រាយភ្លាមៗ ឬរាយការណ៍មកថ្នាក់លើភ្លាម", "ត្រូវផ្ដល់ព័ត៌មានផ្សេងៗដែលវេនយប់ទទួលបាន ទៅឲ្យវេនព្រឹកមុនម៉ោងចប់ការងារ"]},
+ {id:'d_house',name:'អ្នករៀបចំបន្ទប់ (Housekeeping)',shifts:[],staff:[],tasks:["សម្អាតហាងកាហ្វេ ត្រូវសំអាតគ្រប់កន្លែងមានតុ នៅហាងកាហ្វេ", "បោស និងជូតបរិវេណតាមជាន់ និងតាមកាំជណ្ដើររាល់ថ្ងៃ", "សំអាតបន្ទប់ទឹកស្រីរាល់ថ្ងៃ", "ត្រូវដឹងថាមានភ្ញៀវប៉ុន្មានចេញ / មានភ្ញៀវប៉ុន្មានចូល / និងមានភ្ញៀវប៉ុន្មានគេងត", "ឆែកមើលធុងសំរាមតាមជាន់ បើពេញត្រូវផ្លាស់ប្ដូរភ្លាម", "ឆែកមើលបន្ទប់ និងរបស់របរនៅក្នុងបន្ទប់ និងរបស់ដែលភ្ញៀវភ្លេចពេលភ្ញៀវចេញ", "សំអាតបន្ទប់ដែលភ្ញៀវចេញ និងឆែកមើលឡើងវិញក្រោយសំអាតរួច", "ឆែកមើលបន្ទប់ដែលមិនមានភ្ញៀវចូលជារៀងរាល់ថ្ងៃ ថាតើមានធូលី ឬអាចម៍ជីងចក់ឬអត់ បើមានត្រូវសំអាតភ្លាម", "បោសសម្អាតនៅតាមវេរ៉ង់ដាខាងក្រៅខាងជើងរាល់ថ្ងៃ", "ផ្លាស់ប្ដូរទឹកតាមបន្ទប់ឲ្យបាន ពីរថ្ងៃផ្លាស់ប្ដូរមួយដង", "មើលអនាម័យ និងសណ្ដាប់ធ្នាប់គ្រប់ជាន់ទាំងអស់", "ត្រូវចូលដាក់អីវ៉ាន់ឱ្យភ្ញៀវ គេងត ឬភ្ញៀវឲ្យសំអាតបន្ទប់", "សំអាតនៅស្កាយបាឱ្យបានបីថ្ងៃមួយដង", "ស្រោចផ្កានៅតាមជាន់ (3 ថ្ងៃស្រោចម្ដង)", "តុនៅមុខជណ្ដើរយន្តត្រូវសម្អាតឱ្យបានរាល់ថ្ងៃ", "ប្រសិនបើជួបបញ្ហាណាមួយ ត្រូវដោះស្រាយភ្លាមៗ ឬរាយការណ៍មកខាងអ្នកទទួលភ្ញៀវជាបន្ទាន់"]},
+ {id:'d_room',name:'ឆែកបន្ទប់ (Room & Bathroom Checklist)',shifts:[],staff:[],room:true,tasks:["ពិនិត្យសភាពទូទៅក្នុងបន្ទប់ ឱ្យស្អាត និងរៀបរយ", "ពិនិត្យគ្រែ ខ្នើយ ភួយ និងសន្លឹកគ្រែឱ្យស្អាត", "ពិនិត្យម៉ាស៊ីនត្រជាក់ ទូរទស្សន៍ ភ្លើង និង Wi-Fi ឱ្យដំណើរការល្អ", "ពិនិត្យធុងសំរាម និងប្តូរកាបូបសំរាមបើចាំបាច់", "ពិនិត្យកន្សែងងូតទឹក និងកន្សែងដៃឱ្យស្អាត", "ពិនិត្យសាប៊ូ សាប៊ូកក់សក់ និងសម្ភារៈប្រើប្រាស់", "ពិនិត្យក្រដាសអនាម័យឱ្យមានគ្រប់គ្រាន់", "ពិនិត្យបង្គន់ កន្លែងលាងដៃ និងកញ្ចក់ឱ្យស្អាត", "ពិនិត្យទឹក និងបំពង់ទឹកមិនមានការលេចធ្លាយ", "ពិនិត្យទឹកដប កែវ និងសម្ភារៈសម្រាប់ភ្ញៀវ", "ពិនិត្យកូនសោរ ឬកាតបន្ទប់", "ពិនិត្យគ្រឿងសង្ហារឹមក្នុងបន្ទប់ឱ្យស្ថិតក្នុងសភាពល្អ"]}].map(l=>({...l,tasks:l.tasks.map(t=>({id:tid(t),t}))}));
+const ROOM_STATUS=["ស្អាតរួច", "កំពុងសម្អាត", "មានភ្ញៀវ", "ត្រូវជួសជុល"];
+const ROOM_ISSUES=["បន្ទប់មិនស្អាត", "ក្រដាសអនាម័យអស់", "កន្សែងអត់មាន", "សាប៊ូអស់", "ធុងសំរាមពេញ", "គ្រែមិនរៀបចំ", "ម៉ាស៊ីនត្រជាក់មិនត្រជាក់", "ភ្លើងមិនភ្លឺ", "ទូរទស្សន៍មិនដំណើរការ", "ទឹកមិនហូរ", "មានក្លិនមិនល្អ"];
 function wcfg(){ const c=AC().get(); if(!c.work||typeof c.work!=='object') c.work={}; const w=c.work; if(!w.tasks||typeof w.tasks!=='object') w.tasks={}; if(!w.fb||typeof w.fb!=='object') w.fb={}; return w; }
 const shifts=()=>AC().get().shifts;
 const shiftById=id=>shifts().find(x=>x.id===id)||null;
 const staffList=()=>AC().get().staff;
 const staffShift=n=>{ const s=staffList().find(x=>x.name===n); return s?shiftById(s.shift):null; };
-function tasksFor(shiftId){ const w=wcfg(); const mk=a=>(Array.isArray(a)?a:[]).filter(x=>x&&x.t).map(x=>({id:x.id||tid(x.t),t:String(x.t)}));
-  const all=[...mk(w.tasks['*']),...mk(w.tasks[shiftId])]; if(all.length) return all;
-  const any=Object.values(w.tasks).some(a=>Array.isArray(a)&&a.length); return any?[]:DEF_TASKS.map(t=>({id:tid(t),t})); }
+const mkT=a=>(Array.isArray(a)?a:[]).filter(x=>x&&x.t).map(x=>({id:x.id||tid(x.t),t:String(x.t)}));
+const normList=l=>({id:String(l.id),name:String(l.name||'').slice(0,60),shifts:(Array.isArray(l.shifts)?l.shifts:[]).map(String),staff:(Array.isArray(l.staff)?l.staff:[]).map(String),tasks:mkT(l.tasks),room:!!l.room});
+/* checklists: each has a name, the shifts / staff it is for, and its tasks (the old "tasks per shift" config is converted on the fly) */
+function lists(){ const w=wcfg(); if(Array.isArray(w.lists)&&w.lists.length) return w.lists.map(normList);
+  const L=[]; shifts().forEach(sh=>{ const t=mkT([...(w.tasks['*']||[]),...(w.tasks[sh.id]||[])]); if(t.length) L.push({id:'sh_'+sh.id,name:sh.name,shifts:[sh.id],staff:[],tasks:t}); });
+  return L.length?L:DEF_LISTS.map(l=>({...l,shifts:l.shifts.filter(id=>shiftById(id))})); }
+const listById=id=>lists().find(l=>l.id===id)||null;
+const forStaff=(l,n)=>{ const sh=staffShift(n); return l.staff.includes(n)||!!(sh&&l.shifts.includes(sh.id)); };
+const lnOf=r=>(r.listName||r.shiftName||'')+(r.room?' · '+r.room:'');
 const ANS_LBL={y:'✔ ធ្វើរួច',n:'✖ មិនបាន',na:'— មិនពាក់ព័ន្ធ'};
 
 /* ---------- register the form type in the hub ---------- */
 DEFS.work={icon:'📋',short:'ការងារប្រចាំថ្ងៃ',title:'Daily Work Report',full:'របាយការណ៍ការងារប្រចាំថ្ងៃ / Daily Work Report',
   sections:[],sigs:[],onRender:()=>wkRender(),
-  date:r=>r.date||'',room:()=>'',name:r=>r.staff||'',idn:()=>'',extra:r=>r.shiftName||''};
+  date:r=>r.date||'',room:()=>'',name:r=>r.staff||'',idn:()=>'',extra:r=>lnOf(r)};
 if(!TABLET_TYPES.includes('work')) TABLET_TYPES.push('work');
 if(!QR_TYPES.includes('work')) QR_TYPES.splice(QR_TYPES.indexOf('decl'),0,'work');
 setTimeout(()=>{ try{ if($('tabletLinks')&&$('tabletLinks').children.length&&!$('qr_work')) renderTabletLinks(); }catch(e){} },0);
@@ -57,6 +69,7 @@ const css=document.createElement('style'); css.textContent=`
 .wk-b button.on[data-v=na]{background:var(--brand2);border-color:var(--mute);font-weight:700}
 .wk-row input.wk-note{margin-top:8px}
 .wk-row.miss{border-color:var(--bad)}
+.wk-iss{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font-size:14px;margin:0}
 .wk-fb{border-left:5px solid var(--warn);background:var(--warnbg);border-radius:12px;padding:10px 12px;margin:8px 0}
 .wk-fb.seen{opacity:.7}.wk-fb ul{margin:6px 0 0;padding-left:20px}
 .wk-done{text-align:center;padding:26px 12px;border-radius:16px;margin:10px 0;font-size:22px;font-weight:700;background:var(--okbg);color:var(--ok)}
@@ -72,7 +85,7 @@ tr.wk-diff td{background:var(--warnbg)}
 /* =====================================================================
    STAFF SIDE
    ===================================================================== */
-let SEL=null, ANS={}, SHIFT=null, DATE='', doneT=null;
+let SEL=null, ANS={}, LIST=null, DATE='', doneT=null;
 const logGet=()=>jget(LS_LOG,[]).filter(x=>x&&x.id);
 const fbOf=n=>{ const a=wcfg().fb[n]; return Array.isArray(a)?a:[]; };
 const seenAt=n=>(jget(LS_SEEN,{})||{})[n]||'';
@@ -86,7 +99,8 @@ function wkRender(){
 }
 function drawMain(){
   const box=$('wkMain'); if(!box) return;
-  if(SEL) return drawForm(box);
+  if(SEL&&LIST) return drawForm(box);
+  if(SEL) return drawChoose(box);
   const N=staffList().map(x=>x.name);
   if(!N.length){ box.innerHTML=`<div class="alert warn">មិនទាន់មានឈ្មោះបុគ្គលិកទេ។ មេបញ្ចូលឈ្មោះ និងវេន នៅ <b>ទំព័រមេ → 🕒 វត្តមាន → 👥 បុគ្គលិក &amp; វេន</b> ហើយឈ្មោះនឹងចេញនៅទីនេះដោយខ្លួនឯង។</div>`; return; }
   const t=today(); const sentToday=new Set(logGet().filter(x=>x.date===t).map(x=>x.staff));
@@ -96,42 +110,56 @@ function drawMain(){
   box.innerHTML=`<h2 style="margin-top:6px">${esc(DEFS.work.full)}</h2><div style="text-align:center;font-weight:600;margin-bottom:4px">👇 ចុចលើឈ្មោះរបស់អ្នក</div>`+
     groups.filter(g=>g[1].length).map(g=>`<h3 style="margin:14px 0 8px">${esc(g[0])}</h3><div class="wk-names">${g[1].map(btn).join('')}</div>`).join('');
 }
-window.wkPick=n=>{ SEL=n; ANS={}; DATE=today(); const sh=staffShift(n); SHIFT=sh?sh.id:(shifts()[0]||{}).id||''; clearTimeout(doneT); drawMain(); window.scrollTo(0,0); };
-window.wkBack=()=>{ SEL=null; drawMain(); };
+window.wkPick=n=>{ SEL=n; ANS={}; DATE=today(); LIST=null; clearTimeout(doneT);
+  const mine=lists().filter(l=>forStaff(l,n)); if(mine.length===1) LIST=mine[0].id; drawMain(); window.scrollTo(0,0); };
+window.wkPickList=id=>{ LIST=id; ANS={}; drawMain(); window.scrollTo(0,0); };
+function drawChoose(box){
+  const n=SEL, L=lists(), mine=L.filter(l=>forStaff(l,n)), other=L.filter(l=>!forStaff(l,n)), t=today(); const sent=new Set(logGet().filter(x=>x.staff===n&&x.date===t).map(x=>x.list));
+  const btn=l=>`<button class="wk-n ${sent.has(l.id)?'done':''}" data-l="${esc(l.id)}" onclick="wkPickList(this.dataset.l)"><b>${esc(l.name)}</b><small>${sent.has(l.id)?'✅ បានបំពេញថ្ងៃនេះ':l.tasks.length+' ការងារ'}</small></button>`;
+  box.innerHTML=`<div style="text-align:center;font-size:24px;font-weight:700">👤 ${esc(n)}</div>${fbHtml(n)}<h2>ជ្រើសបញ្ជីដែលត្រូវបំពេញ</h2>
+  ${mine.length?`<div class="wk-names">${mine.map(btn).join('')}</div>`:'<div class="muted">មេមិនទាន់កំណត់បញ្ជីសម្រាប់អ្នកទេ — ជ្រើសខាងក្រោម</div>'}
+  ${other.length?`<details style="margin-top:14px" ${mine.length?'':'open'}><summary>បញ្ជីផ្សេងទៀត</summary><div class="wk-names" style="margin-top:8px">${other.map(btn).join('')}</div></details>`:''}
+  <div class="nav2"><button class="btn alt" onclick="wkBack()">← ត្រលប់ក្រោយ</button></div>`;
+  markSeen(n);
+}
+window.wkBack=()=>{ if(SEL&&LIST&&lists().filter(l=>forStaff(l,SEL)).length!==1){ LIST=null; ANS={}; } else { SEL=null; LIST=null; } drawMain(); };
+const fbHtml=n=>{ const fb=fbOf(n).slice(0,5), sn=seenAt(n);
+  return fb.length?`<h3>💬 សារពីមេ</h3>`+fb.map(x=>`<div class="wk-fb ${String(x.at)>sn?'':'seen'}"><b>${esc(dayName(x.d))} ${esc(fmtD(x.d))}${x.s?' · '+esc(x.s):''}</b>${x.m?`<div style="white-space:pre-wrap">${esc(x.m)}</div>`:''}${x.bad&&x.bad.length?`<div style="margin-top:4px">❌ ការងារដែលមេឃើញថាមិនត្រឹមត្រូវ៖</div><ul>${x.bad.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}</div>`).join(''):''; };
+const markSeen=n=>{ const fb=fbOf(n); if(fb.length){ const s=jget(LS_SEEN,{}); s[n]=fb[0].at; jset(LS_SEEN,s); } };
 function drawForm(box){
-  const n=SEL, sh=shiftById(SHIFT), T=tasksFor(SHIFT), fb=fbOf(n).slice(0,5), sn=seenAt(n);
-  const fbHtml=fb.length?`<h3>💬 សារពីមេ</h3>`+fb.map(x=>`<div class="wk-fb ${String(x.at)>sn?'':'seen'}"><b>${esc(dayName(x.d))} ${esc(fmtD(x.d))}${x.s?' · '+esc(x.s):''}</b>${x.m?`<div style="white-space:pre-wrap">${esc(x.m)}</div>`:''}${x.bad&&x.bad.length?`<div style="margin-top:4px">❌ ការងារដែលមេឃើញថាមិនត្រឹមត្រូវ៖</div><ul>${x.bad.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}</div>`).join(''):'';
-  box.innerHTML=`<div style="text-align:center;font-size:24px;font-weight:700">👤 ${esc(n)}</div>${fbHtml}
-  <div class="fg" style="margin-top:10px"><label>ថ្ងៃទី<input type="date" id="wk_d" value="${esc(DATE)}"></label>
-  <label>វេន<select id="wk_s" onchange="wkShift(this.value)">${shifts().map(x=>`<option value="${esc(x.id)}" ${x.id===SHIFT?'selected':''}>${esc(x.name+' '+x.start+'–'+x.end)}</option>`).join('')}</select></label></div>
-  <h2>បញ្ជីការងារ${sh?' · '+esc(sh.name):''}</h2>
-  ${T.length?T.map(x=>`<div class="wk-row" id="wr_${x.id}"><div class="wk-t">${esc(x.t)}</div><div class="wk-b">${['y','n','na'].map(v=>`<button type="button" data-v="${v}" onclick="wkSet('${x.id}','${v}')">${ANS_LBL[v]}</button>`).join('')}</div><input class="wk-note hide" id="wn_${x.id}" placeholder="មូលហេតុ / ចំណាំ (ចាំបាច់)" oninput="wkNote('${x.id}',this.value)"></div>`).join(''):`<div class="alert warn">មេមិនទាន់កំណត់បញ្ជីការងារសម្រាប់វេននេះទេ។</div>`}
+  const n=SEL, li=listById(LIST); if(!li){ LIST=null; return drawChoose(box); } const T=li.tasks;
+  box.innerHTML=`<div style="text-align:center;font-size:24px;font-weight:700">👤 ${esc(n)}</div>${fbHtml(n)}
+  <div class="fg" style="margin-top:10px"><label>ថ្ងៃទី<input type="date" id="wk_d" value="${esc(DATE)}"></label></div>
+  <h2>${esc(li.name)}</h2>
+  ${li.room?`<div class="fg"><label>លេខបន្ទប់<input id="wk_room" inputmode="text" placeholder="ឧ. 201"></label><label>ស្ថានភាពបន្ទប់បន្ទាប់ពីឆែក<select id="wk_rs"><option value="">— ជ្រើស —</option>${ROOM_STATUS.map(x=>`<option>${esc(x)}</option>`).join('')}</select></label></div><h3>⚠️ បញ្ហាដែលរកឃើញ (បើមាន)</h3><div class="row" style="gap:8px">${ROOM_ISSUES.map((x,i)=>`<label class="wk-iss"><input type="checkbox" value="${i}" style="width:auto;margin:0"> ${esc(x)}</label>`).join('')}</div><h3>បញ្ជីពិនិត្យបន្ទប់</h3>`:''}
+  ${T.length?T.map(x=>`<div class="wk-row" id="wr_${x.id}"><div class="wk-t">${esc(x.t)}</div><div class="wk-b">${['y','n','na'].map(v=>`<button type="button" data-v="${v}" onclick="wkSet('${x.id}','${v}')">${ANS_LBL[v]}</button>`).join('')}</div><input class="wk-note hide" id="wn_${x.id}" placeholder="មូលហេតុ / ចំណាំ (ចាំបាច់)" oninput="wkNote('${x.id}',this.value)"></div>`).join(''):`<div class="alert warn">មេមិនទាន់កំណត់ការងារក្នុងបញ្ជីនេះទេ។</div>`}
   <label>ចំណាំបន្ថែម (បើមាន)<textarea id="wk_notes" rows="3" placeholder="បញ្ហា ឬអ្វីដែលមេគួរដឹង"></textarea></label>
   <h3>✍️ ហត្ថលេខា / Signature</h3><div class="sigwrap"><canvas id="wk_sig"></canvas><div class="ph">✍️ ស៊ីញ៉េនៅទីនេះ / Sign here</div></div>
   <div class="row" style="margin-top:8px"><button class="btn alt sm" onclick="sigClear('wk_sig')">លុប / Clear</button></div>
   <div class="nav2"><button class="btn alt" onclick="wkBack()">← ត្រលប់ក្រោយ</button><button class="btn big" id="wkSend" onclick="wkSubmit()">✅ ផ្ញើរបាយការណ៍</button></div>`;
-  initSig('wk_sig'); setTimeout(()=>sigResize('wk_sig'),30);
-  if(fb.length){ const s=jget(LS_SEEN,{}); s[n]=fb[0].at; jset(LS_SEEN,s); }
+  initSig('wk_sig'); setTimeout(()=>sigResize('wk_sig'),30); markSeen(n);
 }
-window.wkShift=v=>{ SHIFT=v; const keepN=$('wk_notes')?$('wk_notes').value:''; ANS={}; DATE=$('wk_d').value||DATE; drawMain(); if($('wk_notes')) $('wk_notes').value=keepN; };
 window.wkSet=(id,v)=>{ const o=ANS[id]||(ANS[id]={v:'',n:''}); o.v=v; const row=$('wr_'+id); row.classList.remove('miss');
   row.querySelectorAll('.wk-b button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); const i=$('wn_'+id); i.classList.toggle('hide',v!=='n'); if(v==='n') i.focus(); };
 window.wkNote=(id,v)=>{ (ANS[id]||(ANS[id]={v:'',n:''})).n=v; };
 window.wkSubmit=async()=>{
-  const n=SEL, sh=shiftById(SHIFT), T=tasksFor(SHIFT), date=($('wk_d').value||DATE||today());
+  const n=SEL, li=listById(LIST), sh=staffShift(n), T=li?li.tasks:[], date=($('wk_d').value||DATE||today());
   if(!/^\d{4}-\d{2}-\d{2}$/.test(date)) return alert('សូមដាក់ថ្ងៃ');
-  if(!T.length) return alert('មេមិនទាន់កំណត់បញ្ជីការងារសម្រាប់វេននេះ');
+  if(!T.length) return alert('មេមិនទាន់កំណត់ការងារក្នុងបញ្ជីនេះ');
+  const room=li.room?($('wk_room').value||'').trim().slice(0,20):'', rs=li.room?$('wk_rs').value:'';
+  if(li.room&&!room){ $('wk_room').focus(); return alert('សូមវាយលេខបន្ទប់'); } if(li.room&&!rs) return alert('សូមជ្រើសស្ថានភាពបន្ទប់');
+  const issues=li.room?[...document.querySelectorAll('.wk-iss input:checked')].map(i=>ROOM_ISSUES[+i.value]):[];
   let first=null; T.forEach(x=>{ const a=ANS[x.id]; const bad=!a||!a.v||(a.v==='n'&&!String(a.n||'').trim()); $('wr_'+x.id).classList.toggle('miss',bad); if(bad&&!first) first=x.id; });
   if(first){ $('wr_'+first).scrollIntoView({behavior:'smooth',block:'center'}); return alert('សូមឆ្លើយគ្រប់ការងារ (បើ ✖ មិនបាន សូមសរសេរមូលហេតុ)'); }
   if(!sigs['wk_sig']||!sigs['wk_sig'].dirty) return alert('សូមស៊ីញ៉េ / Please sign');
-  const dup=logGet().find(x=>x.staff===n&&x.date===date&&x.shift===SHIFT);
-  if(dup&&!confirm(`${n} បានបំពេញវេននេះរួចហើយ (${fmtD(date)}) ម៉ោង ${dup.time}។\nចង់ផ្ញើម្ដងទៀតមែនទេ?`)) return;
+  const dup=logGet().find(x=>x.staff===n&&x.date===date&&x.list===LIST&&(x.room||'')===room);
+  if(dup&&!confirm(`${n} បានបំពេញបញ្ជីនេះរួចហើយ (${fmtD(date)}) ម៉ោង ${dup.time}។\nចង់ផ្ញើម្ដងទៀតមែនទេ?`)) return;
   const now=new Date(), p=pp(now); const id=device()+'-'+now.getTime().toString(36)+'-'+Math.random().toString(36).slice(2,6);
   const items={}; T.forEach(x=>{ const a=ANS[x.id]; items[x.id]={v:a.v,...(a.n&&a.v==='n'?{n:String(a.n).trim().slice(0,300)}:{})}; });
-  const rec={type:'work',staff:n,shift:SHIFT,shiftName:sh?sh.name:'',date,time:p.time,at:now.toISOString(),ci:date,ciAt:now.toISOString(),device:device(),tasks:T,items,notes:($('wk_notes').value||'').trim().slice(0,600),sig:sigData('wk_sig')};
-  const L=logGet(); L.push({id,staff:n,shift:SHIFT,date,time:p.time,sent:false}); jset(LS_LOG,L);
+  const rec={type:'work',staff:n,list:LIST,listName:li.name,...(li.room?{room,roomStatus:rs,issues}:{}),shift:sh?sh.id:'',shiftName:sh?sh.name:'',date,time:p.time,at:now.toISOString(),ci:date,ciAt:now.toISOString(),device:device(),tasks:T,items,notes:($('wk_notes').value||'').trim().slice(0,600),sig:sigData('wk_sig')};
+  const L=logGet(); L.push({id,staff:n,list:LIST,room,date,time:p.time,sent:false}); jset(LS_LOG,L);
   const Q=jget(LS_Q,{}); Q[id]=rec; if(!jset(LS_Q,Q)&&false) return;
-  SEL=null; $('wkMain').innerHTML=`<div class="wk-done">✅ ${esc(n)}<br>បានផ្ញើរបាយការណ៍ម៉ោង ${esc(p.time)}<div style="font-size:15px;font-weight:400;margin-top:8px">អរគុណ!</div></div>`;
+  SEL=null; LIST=null; $('wkMain').innerHTML=`<div class="wk-done">✅ ${esc(n)}<br>បានផ្ញើរបាយការណ៍ម៉ោង ${esc(p.time)}<div style="font-size:15px;font-weight:400;margin-top:8px">អរគុណ!</div></div>`;
   window.scrollTo(0,0); drawLog(); clearTimeout(doneT); doneT=setTimeout(()=>{ if(!SEL) drawMain(); },3500); wkFlush();
 };
 function drawLog(){
@@ -183,32 +211,39 @@ function injectBoss(){
       <div class="row"><input type="date" id="wkCmpD" onchange="wkCmp()" style="width:auto"></div><div id="wkCmp" style="margin-top:10px"></div></div>`;
   const main=document.querySelector('#bossApp main'); const prev=$('t-attend')||$('t-payroll'); prev?prev.after(sec):main.appendChild(sec);
   $('wkCmpD').value=today(); drawCfg();
-  AC().load(bossKey()).then(ok=>{ if(ok){ drawCfg(); wkBoss(); } });
+  AC().load(bossKey()).then(ok=>{ if(ok){ EDL=null; drawCfg(); wkBoss(); } });
 }
 /* ---------- ✅ checklist editor ---------- */
+let EDL=null;
+const newId=()=>'l'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 function drawCfg(){
-  const body=$('wkCfgBody'); if(!body) return; const w=wcfg();
-  const txt=k=>(Array.isArray(w.tasks[k])?w.tasks[k]:[]).map(x=>x.t).join('\n');
-  const groups=[['*','🌐 ការងាររួម (គ្រប់វេន)'],...shifts().map(s=>[s.id,s.name+' '+s.start+'–'+s.end])];
-  const total=groups.reduce((a,g)=>a+(w.tasks[g[0]]||[]).length,0);
-  $('wkCfgSum').textContent=total?`· ${total} ការងារ`:'· ប្រើគំរូសិន';
-  body.innerHTML=`<p class="muted" style="margin-top:0">សរសេរ <b>ការងារមួយជួរមួយ</b> ក្នុងប្រអប់នីមួយៗ រួចចុច 💾។ ការងាររួមចេញគ្រប់វេន ការងារក្នុងវេនចេញតែវេននោះ។ បើទទេទាំងអស់ ប្រព័ន្ធប្រើបញ្ជីគំរូ ៤ ជួរ។</p>`+
-    groups.map(g=>`<label>${esc(g[1])}<textarea id="wkc_${esc(g[0])}" oninput="wkDirty()" placeholder="ឧ. សម្អាតបន្ទប់ទទួលភ្ញៀវ">${esc(txt(g[0]))}</textarea></label>`).join('')+
-    `<div class="row" style="align-items:center;flex-wrap:wrap"><button class="btn big" id="wkCfgSave" onclick="wkCfgSave()">💾 រក្សាទុក</button><span id="wkCfgMsg" class="muted"></span></div>`;
+  const body=$('wkCfgBody'); if(!body) return; if(!EDL) EDL=lists().map(l=>({...l,tasks:l.tasks.map(t=>t.t).join('\n')}));
+  $('wkCfgSum').textContent=`· ${EDL.length} បញ្ជី`;
+  const staff=staffList().map(x=>x.name);
+  body.innerHTML=`<p class="muted" style="margin-top:0">បញ្ជីនីមួយៗមាន <b>ឈ្មោះ</b> (ឧ. វេនព្រឹក, វេនថ្ងៃ, វេនល្ងាច, វេនយប់ ១, ឆែកបន្ទប់ Housekeeping) និង <b>ការងារមួយជួរមួយ</b>។ ជ្រើសថាបញ្ជីនោះសម្រាប់វេនណា ឬបុគ្គលិកណា ហើយគេនឹងឃើញបញ្ជីនោះដោយខ្លួនឯង។ បុគ្គលិកម្នាក់អាចមានច្រើនបញ្ជី។</p>`+
+  EDL.map((l,i)=>`<div class="wk-row"><div class="row" style="gap:8px;flex-wrap:nowrap"><input value="${esc(l.name)}" placeholder="ឈ្មោះបញ្ជី" oninput="wkL(${i},'name',this.value)" style="font-weight:700"><button class="btn alt sm" onclick="wkLDel(${i})">🗑</button></div>
+    <label style="display:flex;gap:6px;align-items:center;margin:8px 0;font-size:14px"><input type="checkbox" style="width:auto;margin:0" ${l.room?'checked':''} onchange="wkL(${i},'room',this.checked)">🚪 ជាការឆែកបន្ទប់ (មានលេខបន្ទប់ + ស្ថានភាព + បញ្ហា)</label><div style="margin:8px 0 2px" class="muted">សម្រាប់វេន៖</div><div class="row" style="gap:10px">${shifts().map(sh=>`<label style="display:flex;gap:6px;align-items:center;margin:0;font-size:14px"><input type="checkbox" style="width:auto;margin:0" ${l.shifts.includes(sh.id)?'checked':''} onchange="wkLSel(${i},'shifts','${esc(sh.id)}',this.checked)">${esc(sh.name)}</label>`).join('')||'<span class="muted">មិនទាន់មានវេន</span>'}</div>
+    ${staff.length?`<details><summary>👤 សម្រាប់បុគ្គលិកជាក់លាក់ ${l.staff.length?'('+l.staff.length+')':''}</summary><div class="row" style="gap:10px">${staff.map(n=>`<label style="display:flex;gap:6px;align-items:center;margin:0;font-size:14px"><input type="checkbox" style="width:auto;margin:0" ${l.staff.includes(n)?'checked':''} onchange="wkLSel(${i},'staff',this.dataset.n,this.checked)" data-n="${esc(n)}">${esc(n)}</label>`).join('')}</div></details>`:''}
+    <label style="margin-top:8px">ការងារ (មួយជួរមួយ)<textarea oninput="wkL(${i},'tasks',this.value)" placeholder="ឧ. សម្អាតបន្ទប់ទទួលភ្ញៀវ">${esc(l.tasks)}</textarea></label></div>`).join('')+
+  `<div class="row" style="align-items:center;flex-wrap:wrap"><button class="btn alt" onclick="wkLAdd()">➕ បន្ថែមបញ្ជីថ្មី</button><button class="btn big" id="wkCfgSave" onclick="wkCfgSave()">💾 រក្សាទុក</button><span id="wkCfgMsg" class="muted"></span></div>`;
 }
 window.wkDirty=()=>{ const m=$('wkCfgMsg'); if(m){ m.textContent='⚠️ មិនទាន់រក្សាទុក'; m.style.color='var(--bad)'; } };
+window.wkL=(i,k,v)=>{ EDL[i][k]=v; wkDirty(); };
+window.wkLSel=(i,k,v,on)=>{ const a=EDL[i][k]; const j=a.indexOf(v); if(on&&j<0) a.push(v); if(!on&&j>=0) a.splice(j,1); wkDirty(); };
+window.wkLAdd=()=>{ EDL.push({id:newId(),name:'',shifts:[],staff:[],tasks:''}); drawCfg(); wkDirty(); const t=$('wkCfgBody').querySelectorAll('.wk-row input[placeholder]'); if(t.length) t[t.length-1].focus(); };
+window.wkLDel=i=>{ if(!confirm('លុបបញ្ជី "'+(EDL[i].name||'គ្មានឈ្មោះ')+'" ?\n(របាយការណ៍ចាស់ៗនៅដដែល)')) return; EDL.splice(i,1); drawCfg(); wkDirty(); };
 async function pushCfg(){ // save the whole config, then read it back to be sure the server kept cfg.work
   const w=wcfg(); AC().set(AC().get());
   await api('setAttCfg',{key:bossKey(),cfg:AC().get()});
-  const j=await api('attCfg',{key:bossKey()});
-  return !!(j&&j.cfg&&j.cfg.work&&JSON.stringify(j.cfg.work.tasks||{})===JSON.stringify(w.tasks)&&JSON.stringify(j.cfg.work.fb||{})===JSON.stringify(w.fb));
+  const j=await api('attCfg',{key:bossKey()}); const r=j&&j.cfg&&j.cfg.work;
+  return !!(r&&JSON.stringify(r.lists||[])===JSON.stringify(w.lists||[])&&JSON.stringify(r.fb||{})===JSON.stringify(w.fb||{}));
 }
 const NOKEEP='⚠️ ម៉ាស៊ីនមេ (Google Apps Script) មិនទាន់រក្សា «បញ្ជីការងារ/សារ» ទេ — ត្រូវដំឡើងកំណែថ្មីរបស់ Apps Script (សូមប្រាប់ Claude)';
 window.wkCfgSave=async()=>{ const b=$('wkCfgSave'); b.disabled=true; b.textContent='⏳ កំពុងរក្សាទុក…'; const w=wcfg();
-  try{ const groups=['*',...shifts().map(s=>s.id)]; const seen=new Set();
-    groups.forEach(k=>{ const lines=($('wkc_'+k).value||'').split(/\n+/).map(x=>x.trim().replace(/\s+/g,' ').slice(0,200)).filter(Boolean);
-      const arr=[]; lines.forEach(t=>{ let id=tid(t); while(seen.has(id)) id+='x'; seen.add(id); arr.push({id,t}); }); if(arr.length) w.tasks[k]=arr; else delete w.tasks[k]; });
-    const kept=await pushCfg(); drawCfg(); const m=$('wkCfgMsg'); m.textContent=kept?'✅ រក្សាទុករួច — ថេប្លេតនឹងឃើញបញ្ជីថ្មីពេលបើកទំព័រ 📋':NOKEEP; m.style.color=kept?'var(--ok)':'var(--bad)'; wkBoss(); }
+  try{ const seen=new Set(); const out=[];
+    EDL.forEach(l=>{ const name=String(l.name||'').trim().replace(/\s+/g,' ').slice(0,60); const lines=String(l.tasks||'').split(/\n+/).map(x=>x.trim().replace(/\s+/g,' ').slice(0,200)).filter(Boolean);
+      if(!name&&!lines.length) return; const tasks=lines.map(t=>{ let id=tid(t); while(seen.has(id)) id+='x'; seen.add(id); return {id,t}; }); out.push({id:l.id,name:name||'បញ្ជី '+(out.length+1),shifts:l.shifts,staff:l.staff,tasks,...(l.room?{room:true}:{})}); });
+    w.lists=out; w.tasks={}; const kept=await pushCfg(); EDL=null; drawCfg(); const m=$('wkCfgMsg'); m.textContent=kept?'✅ រក្សាទុករួច — ថេប្លេតនឹងឃើញបញ្ជីថ្មីពេលបើកទំព័រ 📋':NOKEEP; m.style.color=kept?'var(--ok)':'var(--bad)'; wkBoss(); }
   catch(e){ alert(/Unknown action/.test(e.message)?'ម៉ាស៊ីនមេ (Apps Script) មិនទាន់ Deploy កំណែថ្មី':'រក្សាទុកមិនបាន៖ '+e.message); }
   finally{ const bb=$('wkCfgSave'); if(bb){ bb.disabled=false; bb.textContent='💾 រក្សាទុក'; } } };
 /* ---------- main report ---------- */
@@ -231,19 +266,19 @@ window.wkBoss=function(){
   ROWS=[]; $('wkList').innerHTML=`<tr><th>ថ្ងៃ</th><th>បុគ្គលិក</th><th>វេន</th><th>ធ្វើរួច/សរុប</th><th>មិនបាន</th><th>ការត្រួតពិនិត្យ</th><th class="wk-noprint"></th></tr>`+
     (MS.length?MS.map(r=>{ const s=stat(r), tot=tasksOf(r).length; const ri=ROWS.push(r)-1;
       const rv=!s.rv?'<td class="wk-warn">⏳ មិនទាន់ត្រួត</td>':s.diff?`<td class="wk-bad">⚠️ ខុសគ្នា ${s.diff}/${s.chk}</td>`:`<td class="wk-ok">✅ ត្រឹមត្រូវ${s.chk?' '+s.chk+'/'+s.chk:''}</td>`;
-      return `<tr class="${s.diff?'wk-diff':''}"><td>${esc(dayName(r.date))} ${esc(fmtD(r.date))}<br><small class="muted">${esc(r.time||'')}</small></td><td><b>${esc(r.staff)}</b></td><td class="muted">${esc(r.shiftName||'')}</td><td>${s.y}/${tot}${s.na?' <small class="muted">(+'+s.na+' —)</small>':''}</td><td class="${s.n?'wk-warn':''}">${s.n||'—'}</td>${rv}<td class="wk-noprint" style="white-space:nowrap"><button class="btn sm" onclick="wkReview(${ri})">🔎 ${s.rv?'មើល/កែ':'ត្រួតពិនិត្យ'}</button> <button class="btn alt sm" onclick="wkDel(${ri})">🗑</button></td></tr>`; }).join(''):'<tr><td colspan="7" class="muted">មិនទាន់មានរបាយការណ៍</td></tr>');
+      return `<tr class="${s.diff?'wk-diff':''}"><td>${esc(dayName(r.date))} ${esc(fmtD(r.date))}<br><small class="muted">${esc(r.time||'')}</small></td><td><b>${esc(r.staff)}</b></td><td class="muted">${esc(lnOf(r))}</td><td>${s.y}/${tot}${s.na?' <small class="muted">(+'+s.na+' —)</small>':''}</td><td class="${s.n?'wk-warn':''}">${s.n||'—'}</td>${rv}<td class="wk-noprint" style="white-space:nowrap"><button class="btn sm" onclick="wkReview(${ri})">🔎 ${s.rv?'មើល/កែ':'ត្រួតពិនិត្យ'}</button> <button class="btn alt sm" onclick="wkDel(${ri})">🗑</button></td></tr>`; }).join(''):'<tr><td colspan="7" class="muted">មិនទាន់មានរបាយការណ៍</td></tr>');
   wkCmp();
 };
 /* ---------- compare staff on the same day ---------- */
 window.wkCmp=function(){
   const el=$('wkCmp'); if(!el) return; const d=$('wkCmpD').value||today(); const day=WORK.filter(r=>r.date===d);
   if(!day.length){ el.innerHTML='<span class="muted">គ្មានរបាយការណ៍ថ្ងៃនេះ</span>'; return; }
-  const bySh={}; day.forEach(r=>{ (bySh[r.shift||r.shiftName||'']=bySh[r.shift||r.shiftName||'']||[]).push(r); });
+  const bySh={}; day.forEach(r=>{ const k=r.list||r.shift||'';(bySh[k]=bySh[k]||[]).push(r); });
   el.innerHTML=Object.entries(bySh).map(([k,rs])=>{ const tasks=[]; rs.forEach(r=>tasksOf(r).forEach(t=>{ if(!tasks.some(x=>x.id===t.id)) tasks.push(t); }));
     const cell=(r,t)=>{ const a=(r.items&&r.items[t.id])||null; if(!a) return '<td class="muted">·</td>'; const m=REV[r._id]&&REV[r._id].marks&&REV[r._id].marks[t.id]; const j=judge(a.v,m&&m.m);
       return `<td class="${a.v==='y'?'wk-ok':a.v==='n'?'wk-bad':'muted'}">${a.v==='y'?'✔':a.v==='n'?'✖':'—'}${a.n?`<br><small>${esc(a.n)}</small>`:''}${m?`<br><small class="${j==='same'?'wk-ok':'wk-bad'}">មេ៖ ${m.m==='ok'?'✔ ត្រឹមត្រូវ':'✖ ខុស'}</small>`:''}</td>`; };
-    const nm=(shiftById(k)||{}).name||k||'—';
-    return `<h3>${esc(nm)}</h3><div class="tw"><table><tr><th>ការងារ</th>${rs.map(r=>`<th>${esc(r.staff)}<br><small class="muted">${esc(r.time||'')}</small></th>`).join('')}</tr>`+
+    const nm=lnOf(rs[0])||(shiftById(k)||{}).name||'—';
+    return `<h3>${esc(nm)}</h3><div class="tw"><table><tr><th>ការងារ</th>${rs.map(r=>`<th>${esc(r.staff)}${r.room?' · '+esc(r.room):''}<br><small class="muted">${esc(r.time||'')}</small></th>`).join('')}</tr>`+
       tasks.map(t=>{ const vs=rs.map(r=>((r.items&&r.items[t.id])||{}).v||''); const differ=new Set(vs.filter(Boolean)).size>1;
         return `<tr class="${differ?'wk-diff':''}"><td>${esc(t.t)}${differ?' <b class="wk-warn">⚠️</b>':''}</td>${rs.map(r=>cell(r,t)).join('')}</tr>`; }).join('')+`</table></div>`; }).join('');
 };
@@ -256,10 +291,10 @@ window.wkReview=i=>{
     <div class="row" style="align-items:center;justify-content:space-between;flex-wrap:wrap"><span class="${a.v==='y'?'wk-ok':a.v==='n'?'wk-bad':'muted'}">បុគ្គលិក៖ <b>${esc(ANS_LBL[a.v]||'—')}</b>${a.n?' · '+esc(a.n):''}</span>
     <span class="wk-mk" id="wm_${t.id}"><button type="button" data-m="ok" onclick="wkMark('${t.id}','ok')">✔ ត្រឹមត្រូវ</button><button type="button" data-m="bad" onclick="wkMark('${t.id}','bad')">✖ ខុស</button></span></div>
     <input class="wk-note ${RV.marks[t.id]&&RV.marks[t.id].m==='bad'?'':'hide'}" id="wmn_${t.id}" value="${esc((RV.marks[t.id]||{}).n||'')}" placeholder="មេកត់ពីមូលហេតុ (បើមាន)" oninput="wkMarkNote('${t.id}',this.value)"></div>`; }).join('');
-  $('dB').innerHTML=`<div style="max-width:640px">${r.notes?`<div class="alert warn">📝 ចំណាំបុគ្គលិក៖ ${esc(r.notes)}</div>`:''}${rows}
+  $('dB').innerHTML=`<div style="max-width:640px">${r.room?`<div class="alert ${r.roomStatus==='ត្រូវជួសជុល'?'bad':'ok'}">🚪 បន្ទប់ <b>${esc(r.room)}</b> · ${esc(r.roomStatus||'')}${r.issues&&r.issues.length?'<br>⚠️ '+r.issues.map(esc).join(' · '):''}</div>`:''}${r.notes?`<div class="alert warn">📝 ចំណាំបុគ្គលិក៖ ${esc(r.notes)}</div>`:''}${rows}
     ${r.sig?`<div class="muted" style="margin-top:8px">ហត្ថលេខាបុគ្គលិក</div><img src="${esc(r.sig)}" alt="" style="max-width:260px;background:#fff;border:1px solid var(--line);border-radius:10px">`:''}
     <label style="margin-top:12px">💬 សារទៅបុគ្គលិក (បុគ្គលិកឃើញពេលបើកទំព័រ)<textarea id="wk_cm" rows="3" placeholder="ឧ. សូមសម្អាតបន្ទប់ឲ្យស្អាតជាងនេះ">${esc((old&&old.comment)||'')}</textarea></label>
-    <div class="row" style="flex-wrap:wrap;gap:8px"><button class="btn big" id="wkRvSave" onclick="wkRvSave()">💾 រក្សាទុកការត្រួតពិនិត្យ</button><button class="btn alt" onclick="closeDlg()">បោះបង់</button></div><div id="wkRvMsg" class="muted"></div></div>`;
+    <div class="row" style="flex-wrap:wrap;gap:8px"><button class="btn big" id="wkRvSave" onclick="wkRvSave()">💾 រក្សាទុកការត្រួតពិនិត្យ</button><button class="btn alt" onclick="wkRepPrint()">🖨 បោះពុម្ព / PDF</button><button class="btn alt" onclick="wkRepShare()">📤 ផ្ញើបន្ត</button><button class="btn alt" onclick="closeDlg()">បោះបង់</button></div><div id="wkRvMsg" class="muted"></div></div>`;
   tasksOf(r).forEach(t=>paintMark(t.id)); $('dlg').showModal();
 };
 function paintMark(id){ const w=$('wm_'+id); if(!w) return; const m=(RV.marks[id]||{}).m; w.querySelectorAll('button').forEach(b=>b.classList.toggle('on',b.dataset.m===m)); const n=$('wmn_'+id); if(n) n.classList.toggle('hide',m!=='bad'); }
@@ -272,26 +307,39 @@ window.wkRvSave=async()=>{
   const btn=$('wkRvSave'); btn.disabled=true; btn.textContent='⏳ កំពុងរក្សាទុក…';
   try{
     const bad=tasksOf(r).filter(t=>marks[t.id]&&marks[t.id].m==='bad').map(t=>t.t+(marks[t.id].n?' — '+marks[t.id].n:''));
-    const rec={type:'workreview',ref:String(r._id),staff:r.staff,date:r.date,shift:r.shift||'',shiftName:r.shiftName||'',marks,comment,at:new Date().toISOString(),ci:r.date,ciAt:new Date().toISOString(),device:'មេ'};
+    const rec={type:'workreview',ref:String(r._id),staff:r.staff,date:r.date,shift:r.shift||'',shiftName:r.shiftName||'',list:r.list||'',listName:lnOf(r),marks,comment,at:new Date().toISOString(),ci:r.date,ciAt:new Date().toISOString(),device:'មេ'};
     const j=await api('submit',{type:'workreview',data:rec,key:bossKey()}); if(j&&j.pdfToken) api('savePdf',{id:j.id,token:j.pdfToken,type:'workreview',pdf:''}).catch(()=>{});
     if(old&&old._id) api('delete',{key:bossKey(),id:String(old._id)}).catch(()=>{});
     REV[r._id]={...rec,_id:j.id};
     let kept=true;
     if(comment||bad.length){ const w=wcfg(); const a=(w.fb[r.staff]=Array.isArray(w.fb[r.staff])?w.fb[r.staff]:[]).filter(x=>!(x.ref===String(r._id)));
-      a.unshift({ref:String(r._id),d:r.date,s:r.shiftName||'',m:comment,bad,at:rec.at}); w.fb[r.staff]=a.slice(0,10); kept=await pushCfg(); }
+      a.unshift({ref:String(r._id),d:r.date,s:lnOf(r),m:comment,bad,at:rec.at}); w.fb[r.staff]=a.slice(0,10); kept=await pushCfg(); }
     closeDlg(); wkBoss(); if(!kept) alert(NOKEEP);
   }catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); btn.disabled=false; btn.textContent='💾 រក្សាទុកការត្រួតពិនិត្យ'; }
 };
+/* ---------- 📤 forward one report (print / PDF / share the text) ---------- */
+function repText(r){ const rv=REV[r._id]; const L=[`📋 ${lnOf(r)} — ${r.staff}`,`${dayName(r.date)} ${fmtD(r.date)} ${r.time||''}`,''];
+  tasksOf(r).forEach(t=>{ const a=(r.items&&r.items[t.id])||{}, m=rv&&rv.marks&&rv.marks[t.id]; L.push(`${a.v==='y'?'✔':a.v==='n'?'✖':'—'} ${t.t}${a.n?' ('+a.n+')':''}${m?(m.m==='ok'?' [មេ ✔]':' [មេ ✖'+(m.n?': '+m.n:'')+']'):''}`); });
+  if(r.room) L.push(`🚪 ${r.room} · ${r.roomStatus||''}${r.issues&&r.issues.length?' · ⚠️ '+r.issues.join(', '):''}`);
+  if(r.notes) L.push('','📝 '+r.notes); if(rv&&rv.comment) L.push('','💬 '+rv.comment); return L.join('\n'); }
+window.wkRepShare=async()=>{ const r=RV&&RV.r; if(!r) return; const text=repText(r);
+  try{ if(navigator.share){ await navigator.share({title:'A&J Daily Work — '+r.staff,text}); return; } }catch(e){ if(e&&e.name==='AbortError') return; }
+  try{ await navigator.clipboard.writeText(text); alert('បានចម្លងអត្ថបទ — ដាក់ក្នុង Telegram / WhatsApp បាន'); }catch(e){ prompt('ចម្លងអត្ថបទនេះ៖',text); } };
+window.wkRepPrint=()=>{ const r=RV&&RV.r; if(!r) return; const rv=REV[r._id]; const w=window.open('','_blank'); if(!w) return alert('សូមអនុញ្ញាត pop-up');
+  const rows=tasksOf(r).map(t=>{ const a=(r.items&&r.items[t.id])||{}, m=rv&&rv.marks&&rv.marks[t.id]; return `<tr><td>${esc(t.t)}</td><td>${esc(ANS_LBL[a.v]||'—')}${a.n?'<br><small>'+esc(a.n)+'</small>':''}</td><td>${m?(m.m==='ok'?'✔ ត្រឹមត្រូវ':'✖ ខុស'+(m.n?'<br><small>'+esc(m.n)+'</small>':'')):'—'}</td></tr>`; }).join('');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>A&J ${esc(r.staff)} ${esc(r.date)}</title><style>body{font-family:'Kantumruy Pro',system-ui,sans-serif;padding:18px;color:#111}table{width:100%;border-collapse:collapse;margin:8px 0 14px;font-size:13px}th,td{border:1px solid #ccc;padding:6px;text-align:left;vertical-align:top}th{background:#f1f1ee}img.sg{max-width:240px;border:1px solid #ccc}</style></head><body>`+
+    docHead('របាយការណ៍ការងារប្រចាំថ្ងៃ / Daily Work Report')+`<p><b>${esc(r.staff)}</b> · ${esc(lnOf(r))} · ${esc(dayName(r.date))} ${esc(fmtD(r.date))} ${esc(r.time||'')}</p>${r.room?`<p>🚪 បន្ទប់ <b>${esc(r.room)}</b> · ${esc(r.roomStatus||'')}${r.issues&&r.issues.length?' · ⚠️ '+esc(r.issues.join(', ')):''}</p>`:''}<table><tr><th>ការងារ</th><th>បុគ្គលិក</th><th>មេ</th></tr>${rows}</table>`+
+    (r.notes?`<p>📝 ${esc(r.notes)}</p>`:'')+(rv&&rv.comment?`<p>💬 ${esc(rv.comment)}</p>`:'')+(r.sig?`<p>ហត្ថលេខាបុគ្គលិក<br><img class="sg" src="${esc(r.sig)}"></p>`:'')+`<script>setTimeout(()=>print(),500)<\/script></body></html>`); w.document.close(); };
 window.wkDel=async i=>{ const r=ROWS[i]; if(!r) return;
-  if(!confirm(`🗑 លុបរបាយការណ៍នេះ?\n${r.staff} · ${fmtD(r.date)} · ${r.shiftName||''}\n(ទៅក្នុងធុងសំរាម — អាចយកមកវិញបាន)`)) return;
+  if(!confirm(`🗑 លុបរបាយការណ៍នេះ?\n${r.staff} · ${fmtD(r.date)} · ${lnOf(r)}\n(ទៅក្នុងធុងសំរាម — អាចយកមកវិញបាន)`)) return;
   try{ await api('delete',{key:bossKey(),id:String(r._id)}); }catch(e){ return alert('លុបមិនបាន៖ '+e.message); }
   WORK=WORK.filter(x=>String(x._id)!==String(r._id)); wkBoss(); };
 window.wkCsv=()=>{
   const q=v=>'"'+String(v??'').replace(/"/g,'""')+'"';
   const MS=WORK.filter(r=>String(r.date).startsWith(wkM)&&(!wkS||r.staff===wkS)).sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time));
-  const rows=[['Date','Staff','Shift','Task','Staff answer','Staff note','Boss check','Boss note','Result','Boss comment']];
+  const rows=[['Date','Staff','Checklist','Task','Staff answer','Staff note','Boss check','Boss note','Result','Boss comment','Room','Room status','Room issues']];
   MS.forEach(r=>{ const rv=REV[r._id]; tasksOf(r).forEach(t=>{ const a=(r.items&&r.items[t.id])||{}, m=rv&&rv.marks&&rv.marks[t.id]; const j=judge(a.v,m&&m.m);
-    rows.push([r.date,r.staff,r.shiftName||'',t.t,{y:'Done',n:'Not done',na:'N/A'}[a.v]||'',a.n||'',m?(m.m==='ok'?'Right':'Wrong'):'',m&&m.n||'',j==='false'?'FALSE REPORT':j==='diff'?'DIFFERENT':j==='same'?'Same':'',rv&&rv.comment||'']); }); });
+    rows.push([r.date,r.staff,lnOf(r),t.t,{y:'Done',n:'Not done',na:'N/A'}[a.v]||'',a.n||'',m?(m.m==='ok'?'Right':'Wrong'):'',m&&m.n||'',j==='false'?'FALSE REPORT':j==='diff'?'DIFFERENT':j==='same'?'Same':'',rv&&rv.comment||'',r.room||'',r.roomStatus||'',(r.issues||[]).join('; ')]); }); });
   const blob=new Blob(['﻿'+rows.map(r=>r.map(q).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`AJ-DailyWork-${wkM}${wkS?'-'+wkS:''}.csv`; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},500); };
 window.wkPrint=()=>{
