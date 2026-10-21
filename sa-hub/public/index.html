@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="km"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f2a44">
+<title>S&amp;A Hub · Soramma</title>
+<meta name="description" content="S&A Hub — all Soramma apps in one place: Laundry, Scan, Finance.">
+<link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f4f1ea;--ink:#1d2433;--mute:#6a7185;--navy:#1f2a44;--gold:#f1d58a;--line:#e3dfd4;--card:#fff}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Kantumruy Pro",system-ui,sans-serif;line-height:1.5}
+header{background:var(--navy);color:#fff;border-bottom:3px solid var(--gold);padding:calc(14px + env(safe-area-inset-top)) 20px 14px;display:flex;align-items:center;gap:12px}
+header img{width:44px;height:44px}header b{font-size:20px;line-height:1.15}header small{display:block;font-weight:400;opacity:.75;font-size:12px;letter-spacing:.05em}
+.lang{margin-left:auto;display:flex;gap:6px}.lang button{border:1px solid #ffffff55;background:none;color:#fff;border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}.lang button.on{background:var(--gold);color:var(--navy);border-color:var(--gold);font-weight:700}
+main{max-width:980px;margin:0 auto;padding:28px 18px 60px}
+.hero h1{font-size:clamp(26px,5vw,40px);line-height:1.2;margin:6px 0 8px}.hero h1 span{color:#9a7b1c}.hero p{color:var(--mute);margin:0 0 26px;max-width:640px;font-size:16px}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:16px}
+.app{background:var(--card);border-radius:20px;padding:18px;box-shadow:0 1px 3px #0002;display:flex;flex-direction:column;gap:10px;border:1px solid var(--line);text-decoration:none;color:inherit;transition:transform .12s,box-shadow .12s}
+.app:hover{transform:translateY(-3px);box-shadow:0 8px 20px #1f2a4426}
+.app img{width:64px;height:64px;border-radius:16px;box-shadow:0 2px 6px #0003}
+.app h2{margin:2px 0 0;font-size:19px}.app p{margin:0;color:var(--mute);font-size:14px;flex:1}
+.app .go{align-self:flex-start;background:var(--navy);color:#fff;border-radius:12px;padding:10px 16px;font-weight:600;font-size:14px}
+.app .host{font-size:12px;color:#9aa0b3;letter-spacing:.02em}
+.app.soon{border-style:dashed;background:transparent;box-shadow:none;cursor:default;opacity:.8}.app.soon:hover{transform:none;box-shadow:none}
+.app.soon .ph{width:64px;height:64px;border-radius:16px;border:2px dashed #c9c3b0;display:flex;align-items:center;justify-content:center;font-size:28px;color:#b8b19a}
+.app.soon .go{background:#e6e1d2;color:#6a7185}
+.note{margin-top:34px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px 18px;display:flex;gap:14px;flex-wrap:wrap;align-items:center}.note b{font-size:15px}.note a{color:#9a7b1c;font-weight:700;text-decoration:none}.note p{margin:0;color:var(--mute);font-size:14px;flex:1;min-width:220px}
+footer{text-align:center;color:var(--mute);font-size:13px;padding:0 18px calc(26px + env(safe-area-inset-bottom))}
+</style></head><body>
+<header><img src="logo-for-dark.svg" alt="S&amp;A"><b>S&amp;A Hub<small id="by">BY SORAMMA</small></b><div class="lang"><button data-l="km">ខ្មែរ</button><button data-l="en">EN</button></div></header>
+<main>
+<section class="hero"><h1 id="h1"></h1><p id="sub"></p></section>
+<div class="grid" id="apps"></div>
+<div class="note"><div><b id="ct"></b></div><p id="ctp"></p><a href="mailto:support@soramma.app">support@soramma.app</a></div>
+</main>
+<footer id="ft"></footer>
+<script>
+/* To add a new Soramma app: add one line to APPS (name, address, icon file, texts in km / en). */
+var APPS=[
+ {id:"laundry",name:"Soramma Laundry",url:"https://laundry.soramma.app",icon:"app-laundry.png",km:"គ្រប់គ្រងហាងបោកអ៊ុត៖ ការបញ្ជាទិញ អតិថិជន បង្កាន់ដៃ និងបុគ្គលិក។",en:"Run a laundry shop: orders, customers, receipts and staff."},
+ {id:"scan",name:"Soramma Scan",url:"https://scan.soramma.app",icon:"app-scan.png",km:"ស្កេនលិខិតឆ្លងដែន អត្តសញ្ញាណប័ណ្ណ និងឯកសារ អានអក្សរដោយស្វ័យប្រវត្តិ បោះពុម្ព និង PDF។",en:"Scan passports, ID cards and documents; auto-read, print and PDF."},
+ {id:"finance",name:"Soramma Finance",url:"https://finance.soramma.app",icon:"app-finance.png",km:"វិក្កយបត្រ វិក្កយបត្រទិញ សាច់ប្រាក់ ធនាគារ របាយការណ៍ VAT និងក្រាហ្វការលក់។",en:"Invoices, bills, cash and bank, VAT reports and sales charts."}
+];
+var TX={km:{by:"ដោយ SORAMMA",h1:"កម្មវិធី <span>Soramma</span> ទាំងអស់ នៅកន្លែងតែមួយ",sub:"S&A Hub ប្រមូលកម្មវិធីរបស់គ្រួសារ S&A ទាំងអស់។ កម្មវិធីនីមួយៗមានគណនី និងទិន្នន័យដាច់ដោយឡែក។ ជ្រើសកម្មវិធីដែលអ្នកចង់ប្រើ។",open:"បើក →",soon:"ជាបន្តបន្ទាប់",soont:"កម្មវិធីថ្មី",soonp:"កម្មវិធីថ្មីៗនឹងមកដល់ឆាប់ៗនេះ។",ct:"ត្រូវការជំនួយ?",ctp:"សរសេរមកកាន់ក្រុម Soramma។ យើងឆ្លើយតបឆាប់បំផុត។",ft:"© Soramma · S&A"},
+ en:{by:"BY SORAMMA",h1:"All <span>Soramma</span> apps in one place",sub:"S&A Hub gathers every app from the S&A family. Each app has its own accounts and data. Pick the one you need.",open:"Open →",soon:"Coming soon",soont:"New apps",soonp:"More apps are on the way.",ct:"Need help?",ctp:"Write to the Soramma team. We reply as soon as we can.",ft:"© Soramma · S&A"}};
+var L=(function(){try{return localStorage.getItem("sa_lang")}catch(e){return null}})()||((navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en");
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function draw(){var t=TX[L];document.documentElement.lang=L;document.getElementById("by").textContent=t.by;document.getElementById("h1").innerHTML=t.h1;document.getElementById("sub").textContent=t.sub;
+ document.getElementById("ct").textContent=t.ct;document.getElementById("ctp").textContent=t.ctp;document.getElementById("ft").textContent=t.ft;
+ document.querySelectorAll(".lang button").forEach(function(b){b.classList.toggle("on",b.dataset.l===L)});
+ document.getElementById("apps").innerHTML=APPS.map(function(a){return'<a class="app" href="'+esc(a.url)+'" data-app="'+a.id+'"><img src="'+a.icon+'" alt=""><h2>'+esc(a.name)+"</h2><p>"+esc(a[L])+'</p><span class="host">'+esc(a.url.replace("https://",""))+'</span><span class="go">'+esc(t.open)+"</span></a>"}).join("")+
+  '<div class="app soon"><div class="ph">+</div><h2>'+esc(t.soont)+"</h2><p>"+esc(t.soonp)+'</p><span class="go">'+esc(t.soon)+"</span></div>"}
+document.querySelector(".lang").onclick=function(e){var b=e.target.closest("button");if(!b)return;L=b.dataset.l;try{localStorage.setItem("sa_lang",L)}catch(x){}draw()};
+draw();
+</script></body></html>
