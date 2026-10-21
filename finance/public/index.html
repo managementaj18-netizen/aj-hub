@@ -58,13 +58,32 @@ table.t{width:100%;border-collapse:collapse;font-size:14px}table.t th,table.t td
 .amt-pos{color:var(--ok)}.amt-neg{color:var(--bad)}
 .fab{position:fixed;right:16px;bottom:calc(84px + env(safe-area-inset-bottom));z-index:7;box-shadow:0 4px 12px #0003;border-radius:99px!important;padding:13px 18px!important}
 @media(min-width:760px){.kpis{grid-template-columns:repeat(4,minmax(0,1fr))}.qa{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* dashboard */
+.dhead{margin:2px 0 14px}.dhead small{display:block;color:var(--mute);letter-spacing:.06em;text-transform:uppercase;font-size:11px}.dhead h1{margin:2px 0 2px;font-size:26px;line-height:1.2}.dhead h1 span{color:var(--ac)}.dhead p{margin:0;color:var(--mute)}
+.dgrid{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;margin-bottom:12px}.dgrid .card{margin:0}
+.dhero{background:linear-gradient(160deg,#fff,#eefaf7)}.dhero small,.hchat small{color:var(--mute);font-size:12px;display:block}.dhero .big{font-size:34px;font-weight:700;line-height:1.15;margin:4px 0;letter-spacing:-.5px}.dhero .big em{font-style:normal;font-size:12px;font-weight:600;background:var(--skybg);color:var(--ac);border-radius:99px;padding:2px 9px;margin-left:8px;vertical-align:middle}.dhero .mut2{margin-bottom:6px}
+.legend{display:flex;gap:6px;align-items:center;font-size:12px;color:var(--mute);margin-top:2px}.legend i{width:10px;height:10px;border-radius:3px;display:inline-block;margin-left:8px}.legend i:first-child{margin-left:0}
+.alertbar{display:flex;gap:10px;align-items:center;width:100%;text-align:left;border:1px solid #f1d49a;background:var(--warnbg);color:var(--warn);border-radius:14px;padding:11px 14px;margin-bottom:12px;font:inherit;cursor:pointer}.alertbar b{flex:1;font-weight:600;color:#7a4504;font-size:14px}.alertbar u{text-decoration:none;font-weight:700;white-space:nowrap}
+.hchat{margin-top:6px}.hc-list{max-height:210px;overflow:auto;margin-top:6px}
+@media(min-width:900px){
+ body{--sbw:224px}
+ header #hm{display:none}
+ nav{top:68px;bottom:0;right:auto;width:var(--sbw);flex-direction:column;justify-content:flex-start;gap:4px;padding:14px 12px 16px;border-top:0;border-right:1px solid var(--line)}
+ nav button{flex:none;display:flex;align-items:center;gap:12px;text-align:left;font-size:15px;padding:12px 14px;border-radius:12px}
+ nav button span{margin:0}nav button.on{background:var(--skybg)}
+ main{max-width:none;margin:0 0 0 var(--sbw);padding:20px 28px 60px}
+ main>*{max-width:1040px}
+ .dgrid{grid-template-columns:minmax(0,1.15fr) minmax(0,1fr)}
+ .fab{right:28px;bottom:28px}
+ .toast{bottom:28px}
+}
 @media print{header,nav,main,#drawer,#ov,.toast{display:none!important}}
 </style></head><body>
 <header><button class="ic" id="hm" aria-label="Menu"></button><img src="logo-for-dark.svg" alt="S&amp;A" class="lg"><b>Soramma Finance<small id="hsub">by Soramma</small></b><button class="ic" id="hl" aria-label="Language"></button></header>
 <div id="ov" class="hide"></div><aside id="drawer"></aside>
 <main id="app"></main><nav id="nav"></nav>
 <dialog id="dlg"><div class="dbody" id="dbody"></div></dialog>
-<script src="i18n.js?v=1"></script><script src="lib.js?v=1"></script><script src="common.js?v=1"></script><script src="app.js?v=1"></script>
+<script src="i18n.js?v=2"></script><script src="lib.js?v=1"></script><script src="common.js?v=1"></script><script src="app.js?v=2"></script>
 <script>
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
 </script>

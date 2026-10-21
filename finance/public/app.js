@@ -57,7 +57,7 @@ var V={tab:"home",sub:{sales:"inv",fin:"bills",tax:"vat"},filt:"all",q:"",page:n
 ensurePer();function ensurePer(){var r=monthRange(0);V.from=r[0];V.to=r[1]}
 var TABS=[["home","home","nav_home"],["sales","receipt","nav_sales"],["fin","bank","nav_finance"],["tax","percent","nav_tax"]];
 P.home='<path d="M3 11 12 3l9 8M5 10v10h5v-6h4v6h5V10"/>';P.receipt='<path d="M5 3h14v18l-3-2-2 2-2-2-2 2-2-2-3 2zM8 8h8M8 12h8M8 16h5"/>';P.bank='<path d="M3 10 12 4l9 6M5 10v8M9 10v8M15 10v8M19 10v8M3 20h18"/>';P.percent='<path d="M19 5 5 19"/><circle cx="7" cy="7" r="2.5"/><circle cx="17" cy="17" r="2.5"/>';
-P.users='<circle cx="9" cy="8" r="3.5"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 0 1 0 7M18 15c2.5.6 4 2.4 4 6"/>';P.wallet='<path d="M3 7a2 2 0 0 1 2-2h13v4M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2zM16 14h2"/>';P.chart='<path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/>';P.briefcase='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>';P.hr='<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6M17 3l2 2 3-3"/>';P.edit='<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>';P.arrowin='<path d="M12 3v14M6 11l6 6 6-6M4 21h16"/>';P.arrowout='<path d="M12 21V7M6 13l6-6 6 6M4 3h16"/>';P.swap='<path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/>';
+P.alert='<path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17.5v.01"/>';P.users='<circle cx="9" cy="8" r="3.5"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M16 4.5a3.5 3.5 0 0 1 0 7M18 15c2.5.6 4 2.4 4 6"/>';P.wallet='<path d="M3 7a2 2 0 0 1 2-2h13v4M3 7v11a2 2 0 0 0 2 2h15V9H5a2 2 0 0 1-2-2zM16 14h2"/>';P.chart='<path d="M4 20V4M4 20h16M8 16v-4M12 16V8M16 16v-6"/>';P.briefcase='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2M3 13h18"/>';P.hr='<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6M17 3l2 2 3-3"/>';P.edit='<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>';P.arrowin='<path d="M12 3v14M6 11l6 6 6-6M4 21h16"/>';P.arrowout='<path d="M12 21V7M6 13l6-6 6 6M4 3h16"/>';P.swap='<path d="M7 4 3 8l4 4M3 8h14M17 20l4-4-4-4M21 16H7"/>';
 function nav(){$("nav").innerHTML=TABS.map(function(x){return'<button class="'+(V.tab===x[0]&&!V.page?"on":V.tab===x[0]?"on":"")+'" data-t="'+x[0]+'"><span>'+ic(x[1],24)+"</span>"+esc(t(x[2]))+"</button>"}).join("")+'<button data-t="__menu"><span>'+ic("menu",24)+"</span>"+esc(t("nav_menu"))+"</button>";
  $("nav").onclick=function(e){var b=e.target.closest("button");if(!b)return;if(b.dataset.t==="__menu"){openDrawer();return}V.tab=b.dataset.t;V.page=null;render();window.scrollTo(0,0)}}
 function openDrawer(){var d=$("drawer");
@@ -100,7 +100,7 @@ function render(){nav();$("hm").innerHTML=ic("menu",26);$("hl").innerHTML=ic("gl
  PAYC=null;var h;
  if(V.page==="doc")h=vDoc();else if(V.page==="edit")h=vEdit();else if(V.page==="acct")h=vAcct();
  else if(V.tab==="home")h=vHome();else if(V.tab==="sales")h=vSales();else if(V.tab==="fin")h=vFin();else h=vTax();
- a.innerHTML=trialBar()+h;bindAll()}
+ a.innerHTML=trialBar()+h;bindAll();if(!V.page&&V.tab==="home"&&AUTH==="app"&&ME&&ME.role!=="x")homeChatBind()}
 function bindAll(){var a=$("app");
  a.onclick=function(e){var b=e.target.closest("[data-act]");if(!b)return;act(b.dataset.act,b.dataset)};
  var q=$("q");if(q){q.oninput=function(e){V.q=e.target.value;var p=e.target.selectionStart;render();var n=$("q");if(n){n.focus();n.setSelectionRange(p,p)}}}
@@ -122,16 +122,39 @@ function plCalc(f,to,c){var inc=0,exp=0,incC={},expC={};
  var salesInc=inc,billExp=exp;
  list("txn").forEach(function(x){if(x.inv||x.xf||x.cur!==c||x.date<f||x.date>to)return;var a=num(x.amt),k=x.cat||"none";if(x.dir==="in"){incC[k]=(incC[k]||0)+a;inc+=a}else{expC[k]=(expC[k]||0)+a;exp+=a}});
  return{inc:rnd(inc,c),exp:rnd(exp,c),profit:rnd(inc-exp,c),salesInc:rnd(salesInc,c),billExp:rnd(billExp,c),incC:incC,expC:expC}}
-function vHome(){var cs=curSet(),multi=cs.length>1,td=today(),m=monthRange(0),has=list("invoice").length||list("txn").length;
- var h='<div class="qa">'+qa("newdoc","receipt","q_invoice",{k:"sale"})+qa("newdoc","briefcase","q_bill",{k:"bill"})+qa("tx","arrowin","q_in",{dir:"in"})+qa("tx","arrowout","q_out",{dir:"out"})+"</div>";
+function mShort(off){var d=new Date();d=new Date(d.getFullYear(),d.getMonth()+off,1);return d.toLocaleDateString(LANG==="km"?"km-KH":"en-GB",{month:"short"})}
+function barChart(S,c){var W=320,H=132,pb=22,pt=8,n=S.length,mx=1;S.forEach(function(x){mx=Math.max(mx,x.inc,x.exp)});var gw=(W-8)/n,bw=Math.min(15,gw/2-3),h=H-pb-pt,o="";
+ for(var g=0;g<=3;g++){var y=pt+h-h*g/3;o+='<line x1="4" x2="'+(W-4)+'" y1="'+y+'" y2="'+y+'" stroke="#e1ecea" stroke-width="1"/>'}
+ S.forEach(function(x,i){var cx=4+gw*i+gw/2,hi=Math.max(x.inc>0?2:0,h*x.inc/mx),he=Math.max(x.exp>0?2:0,h*x.exp/mx),last=i===n-1;
+  o+='<rect x="'+(cx-bw-1)+'" y="'+(pt+h-hi)+'" width="'+bw+'" height="'+hi+'" rx="3" fill="#0f766e"'+(last?"":' opacity=".85"')+"/>"+'<rect x="'+(cx+1)+'" y="'+(pt+h-he)+'" width="'+bw+'" height="'+he+'" rx="3" fill="#f59e0b"'+(last?"":' opacity=".85"')+"/>"+
+  '<text x="'+cx+'" y="'+(H-6)+'" text-anchor="middle" font-size="10" fill="'+(last?"#0f766e":"#64767a")+'" font-weight="'+(last?700:400)+'">'+esc(x.l)+"</text>"});
+ return'<svg viewBox="0 0 '+W+" "+H+'" width="100%" role="img" aria-label="chart">'+o+"</svg>"}
+function areaChart(V2){var W=320,H=96,pt=6,pb=4,n=V2.length,mx=1;V2.forEach(function(v){mx=Math.max(mx,v)});if(n<2)V2=[0].concat(V2),n=V2.length;var h=H-pt-pb,pts=V2.map(function(v,i){return[4+(W-8)*i/(n-1),pt+h-h*v/mx]}),ln=pts.map(function(p,i){return(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)}).join(" ");
+ return'<svg viewBox="0 0 '+W+" "+H+'" width="100%" preserveAspectRatio="none" role="img" aria-label="trend"><defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5fd0c0" stop-opacity=".55"/><stop offset="1" stop-color="#5fd0c0" stop-opacity="0"/></linearGradient></defs><path d="'+ln+" L"+(W-4)+" "+(H-pb)+" L4 "+(H-pb)+' Z" fill="url(#ag)"/><path d="'+ln+'" fill="none" stroke="#0f766e" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg>'}
+function homeChat(){var L=HC||[];return'<div class="card hchat"><div class="row"><b>'+ic("send",18)+" "+esc(t("hd_ask"))+'</b><span class="sp"></span><button class="b alt sm" data-act="chatfull">'+esc(t("hd_ask_more"))+'</button></div><div id="hc_list" class="hc-list">'+(L.length?bubHtml(L.slice(-3)):'<p class="muted" style="margin:6px 0">'+esc(t("hd_ask_none"))+"</p>")+'</div><div class="row" style="align-items:flex-end;margin-top:8px"><textarea id="hc_t" rows="2" placeholder="'+esc(t("hd_ask_ph"))+'" style="margin:0;flex:1"></textarea><button class="b" id="hc_go">'+ic("send",18)+"</button></div></div>"}
+var HC=null;
+function homeChatBind(){var go=$("hc_go");if(!go)return;var load=function(){api("GET","support").then(function(r){HC=r.messages||[];var l=$("hc_list");if(l){l.innerHTML=HC.length?bubHtml(HC.slice(-3)):'<p class="muted" style="margin:6px 0">'+esc(t("hd_ask_none"))+"</p>";l.scrollTop=l.scrollHeight}if(SUP){SUP=0;badge()}}).catch(function(){})};
+ if(HC===null)load();
+ go.onclick=function(){var v=$("hc_t").value.trim();if(!v)return;go.disabled=true;api("POST","support",{text:v}).then(function(r){HC=r.messages||[];$("hc_t").value="";go.disabled=false;var l=$("hc_list");if(l){l.innerHTML=bubHtml(HC.slice(-3));l.scrollTop=l.scrollHeight}toast(t("hd_ask_sent"))}).catch(function(e){go.disabled=false;toast(t(e&&e.code==="too_many"?"too_many":"net_err"))})};
+ var q=$("hc_t");q.onkeydown=function(e){if(e.key==="Enter"&&(e.ctrlKey||e.metaKey))go.onclick()}}
+function vHome(){var cs=curSet(),multi=cs.length>1,td=today(),m=monthRange(0),has=list("invoice").length||list("txn").length,mc=cs.indexOf(prefs().cur)>=0?prefs().cur:cs[0],yr=td.slice(0,4),nm=ME&&ME.name?ME.name:"";
+ var h='<div class="dhead"><small>'+esc(biz().name||"Soramma Finance")+" · "+esc(dfmt(td))+"</small><h1>"+esc(t("hd_welcome"))+(nm?", <span>"+esc(nm)+"</span>":"")+"</h1><p>"+esc(t("hd_sub"))+"</p></div>";
+ h+='<div class="qa">'+qa("newdoc","receipt","q_invoice",{k:"sale"})+qa("newdoc","briefcase","q_bill",{k:"bill"})+qa("tx","arrowin","q_in",{dir:"in"})+qa("tx","arrowout","q_out",{dir:"out"})+"</div>";
  if(!has)h+='<div class="note" style="margin-bottom:12px">'+esc(t("h_welcome"))+"</div>";
+ var ar0=docs("sale").filter(function(x){return x.cur===mc&&balOf(x)>0&&x.due&&x.due<td});
+ if(ar0.length)h+='<button class="alertbar" data-act="goover"><span>'+ic("alert",20)+'</span><b>'+esc(t(ar0.length===1?"hd_alert1":"hd_alert",{n:ar0.length,a:fmt(sumBy(ar0,balOf,mc),mc)}))+"</b><u>"+esc(t("hd_open_sales"))+" →</u></button>";
+ var S=[],cum=[],ytd=0,k;for(k=-6;k<=0;k++){var r=monthRange(k),p=plCalc(r[0],r[1],mc);S.push({l:mShort(k),inc:p.inc,exp:p.exp})}
+ var mo=+td.slice(5,7),run=0;for(k=1;k<=mo;k++){var f=yr+"-"+(k<10?"0":"")+k+"-01",e=isoDate(new Date(+yr,k,0));run+=plCalc(f,e,mc).salesInc;cum.push(run)}ytd=run;
+ var pm=plCalc(m[0],m[1],mc),cashAll=sumBy(list("account").filter(function(a){return a.cur===mc}),accBal,mc);
+ h+='<div class="dgrid"><div class="card dhero"><small>'+esc(t("hd_rev_ytd"))+"</small><div class=\"big\">"+fmt(ytd,mc)+'<em>'+mc+'</em></div><small class="mut2">'+esc(t("hd_rev_note"))+"</small>"+areaChart(cum)+"</div>"+
+  '<div class="card"><small>'+esc(t("hd_chart"))+'</small>'+barChart(S,mc)+'<div class="legend"><i style="background:#0f766e"></i>'+esc(t("hd_inc"))+'<i style="background:#f59e0b"></i>'+esc(t("hd_exp"))+'</div><div class="row" style="margin-top:6px"><div><small class="muted">'+esc(t("hd_profit_m"))+'</small><b class="'+(pm.profit<0?"amt-neg":"amt-pos")+'" style="display:block;font-size:18px">'+fmt(pm.profit,mc)+'</b></div><span class="sp"></span><div style="text-align:right"><small class="muted">'+esc(t("hd_cash_total"))+'</small><b style="display:block;font-size:18px">'+fmt(cashAll,mc)+"</b></div></div></div></div>";
  cs.forEach(function(c){var ar=docs("sale").filter(function(x){return x.cur===c&&balOf(x)>0}),ov=ar.filter(function(x){return x.due&&x.due<td}),ap=docs("bill").filter(function(x){return x.cur===c&&balOf(x)>0}),
   cash=sumBy(list("account").filter(function(a){return a.cur===c}),accBal,c),pl=plCalc(m[0],m[1],c);
   h+=curTitle(c,multi)+'<div class="kpis">'+kpi(t("h_receivable"),fmt(sumBy(ar,balOf,c),c))+kpi(t("h_overdue"),fmt(sumBy(ov,balOf,c),c),ov.length?"warn":"")+kpi(t("h_payable"),fmt(sumBy(ap,balOf,c),c))+kpi(t("h_cash"),fmt(cash,c),"hl")+"</div>"+
-  '<div class="card"><b>'+esc(t("h_month"))+'</b><table class="t"><tr><td>'+esc(t("h_income"))+'</td><td class="r">'+fmt(pl.inc,c)+'</td></tr><tr><td>'+esc(t("h_expense"))+'</td><td class="r">'+fmt(pl.exp,c)+'</td></tr><tr class="tot"><td>'+esc(t("h_profit"))+'</td><td class="r">'+money(pl.profit,c)+"</td></tr></table></div>"});
+  '<div class="card"><b>'+esc(t("h_month"))+'</b><table class="t"><tr><td>'+esc(t("h_income"))+'</td><td class="r">'+fmt(pl.inc,c)+'</td></tr><tr><td>'+esc(t("h_expense"))+'</td><td class="r">'+fmt(pl.exp,c)+'</td></tr><tr class="tot"><td>'+esc(t("h_profit"))+'</td><td class="r '+(pl.profit<0?"amt-neg":"amt-pos")+'">'+fmt(pl.profit,c)+"</td></tr></table></div>"});
  var rec=docs("sale").sort(function(a,b){return(b.date+b.no)<(a.date+a.no)?-1:1}).slice(0,5);
  if(rec.length)h+="<h3>"+esc(t("h_recent"))+"</h3>"+rec.map(docItem).join("");
- return h}
+ return h+homeChat()}
 
 /* ---------- Sales & purchases ---------- */
 function docItem(x){var s=statusOf(x);return'<button class="item" data-act="open" data-id="'+esc(x.id)+'"><span class="th">'+ic("receipt",20)+'</span><div><b>'+esc(x.no||"")+" · "+esc(cname(x.cid))+"</b><small>"+esc(dfmt(x.date))+(x.due?" → "+esc(dfmt(x.due)):"")+'</small></div><div class="amt">'+fmt(x.total,x.cur)+"<small>"+stPill(s)+"</small></div></button>"}
@@ -319,6 +342,8 @@ function docAction(a,id){var x=DB.invoice[id];if(!x)return;x.id=id;docPages(x).t
 function act(a,d){
  if(a==="seg"){V.sub[d.tab]=d.v;V.q="";V.filt="all";render();return}
  if(a==="filt"){V.filt=d.v;render();return}
+ if(a==="goover"){V.tab="sales";V.sub.sales="inv";V.filt="overdue";V.q="";V.page=null;render();window.scrollTo(0,0);return}
+ if(a==="chatfull"){supportDialog();return}
  if(a==="back"){V.page=null;V.ed=null;render();return}
  if(a==="open"){V.page="doc";V.pid=d.id;render();window.scrollTo(0,0);return}
  if(a==="newdoc"){newDoc(d.k);return}
