@@ -17,7 +17,7 @@
 <script src="photo-fix.js" defer></script>
 <script src="scan-docs.js" defer></script>
 <script src="attend.js?v=6" defer></script>
-<script src="work.js?v=6" defer></script>
+<script src="work.js?v=7" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -1868,6 +1868,7 @@ function paperCheckin(c){
 }
 function paperGeneric(r){
   const d=DEFS[r.type]; if(!d) return '';
+  if(d.paper) return d.paper(r);
   const [en,...rest]=String(d.full||d.title).split(' / ');
   let h=`<div class="paper">${paperHead(r.ref||r.bookingId||'',dmy(fDate(r))||(r.ciAt?new Date(r.ciAt).toLocaleDateString('en-GB'):''))}${paperBand(en.toUpperCase(),rest.join(' · '))}<div class="pbody">`;
   for(const s of d.sections){
@@ -2004,7 +2005,7 @@ function autoPdf(type,data,id,token){
 /* boss: catch-up — every signed form that has no PDF in Google Drive yet is rendered and saved (no duplicates).
    Runs by itself when the boss page opens (at most once a day) and from the ☁️ button. */
 const _hasSig=r=>Object.keys(r).some(k=>/sig/i.test(k)&&r[k]);
-function pdfMissing(){ const P=S.pdfs||{}; return [...allForms(),...(S.payroll||[])].filter(r=>r&&!P[docId(r)]&&!P[r._id]&&_hasSig(r)&&(r.type==='checkin'||DEFS[r.type])); }
+function pdfMissing(){ const P=S.pdfs||{}; return [...allForms(),...(S.payroll||[]),...(S.workRecs||[])].filter(r=>r&&!P[docId(r)]&&!P[r._id]&&_hasSig(r)&&(r.type==='checkin'||DEFS[r.type])); }
 let _catchRun=false;
 async function pdfCatchup(manual){ if(_catchRun||ROLE!=='boss'||!bossKey()) return; const st=t=>{const e=$('pdfCatchStat'); if(e) e.textContent=t;};
   if(!manual){ try{ const last=+ls.get('ajhub_pdfcatch')||0; if(Date.now()-last<20*3600e3) return; }catch(e){} }
