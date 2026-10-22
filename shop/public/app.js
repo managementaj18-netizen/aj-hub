@@ -73,7 +73,7 @@ function nav(){$("nav").innerHTML=TABS.map(function(x){return'<button class="'+(
  $("nav").onclick=function(e){var b=e.target.closest("button");if(!b)return;if(b.dataset.t==="__menu"){openDrawer();return}V.tab=b.dataset.t;V.page=null;V.q="";render();window.scrollTo(0,0)}}
 function openDrawer(){var d=$("drawer");
  d.innerHTML='<div class="dh"><img src="logo-for-dark.svg" alt=""><b>Soramma Shop<small style="display:block;font-weight:400;opacity:.75;font-size:12px">by Soramma</small></b><button id="dx" aria-label="close">'+ic("x",22)+'</button></div>'+
- (ME?'<button class="mi" data-t="__cust">'+ic("users",20)+esc(t("sh_customers"))+'</button><button class="mi" data-t="__exp">'+ic("wallet",20)+esc(t("sh_expenses"))+'</button><button class="mi" data-t="__pf">'+ic("sliders",20)+esc(t("sh_settings"))+"</button><hr>":"")+
+ (ME?'<button class="mi" data-t="__cust">'+ic("users",20)+esc(t("sh_customers"))+'</button><button class="mi" data-t="__exp">'+ic("wallet",20)+esc(t("sh_expenses"))+'</button><button class="mi" data-t="__demo">'+ic("zap",20)+esc(LANG==="km"?"ទិន្នន័យគំរូ":"Sample data")+'</button><button class="mi" data-t="__pf">'+ic("sliders",20)+esc(t("sh_settings"))+"</button><hr>":"")+
  '<button class="mi" data-t="__lang">'+ic("globe",20)+esc(t("language"))+" · "+esc((LANGS.filter(function(l){return l[0]===LANG})[0]||["","English"])[1])+"</button>"+
  (ME?'<button class="mi" data-t="__sup">'+ic("send",20)+esc(t("support"))+(SUP&&ME.role!=="owner"?'<span class="dot">'+SUP+"</span>":"")+"</button>":"")+
  (ME&&ME.role==="owner"?'<button class="mi" data-t="__inbox">'+ic("text",20)+esc(t("inbox"))+(SUP?'<span class="dot">'+SUP+"</span>":"")+"</button>":"")+
@@ -82,7 +82,7 @@ function openDrawer(){var d=$("drawer");
  (ME?'<hr><div style="padding:6px 18px"><b>'+esc(t("signed_as",{n:ME.name}))+'</b>'+(ME.role==="owner"?' <span class="pill ok">ADMIN</span>':"")+'</div><button class="mi" data-t="__logout">'+ic("lock",20)+esc(t("logout"))+"</button>":"")+
  '<div class="muted" style="font-size:12px;padding:12px 18px">'+esc(t("privacy_note"))+"</div>";
  d.onclick=function(e){var b=e.target.closest("button");if(!b)return;if(b.id==="dx"){closeDrawer();return}var k=b.dataset.t;if(!k)return;closeDrawer();
-  if(k==="__lang")langDialog(false);else if(k==="__set")settingsDialog();else if(k==="__prof")profileDialog();else if(k==="__pf")prefsDialog();else if(k==="__sup")supportDialog();else if(k==="__inbox")inboxDialog();
+  if(k==="__lang")langDialog(false);else if(k==="__set")settingsDialog();else if(k==="__prof")profileDialog();else if(k==="__pf")prefsDialog();else if(k==="__demo")demoDialog();else if(k==="__sup")supportDialog();else if(k==="__inbox")inboxDialog();
   else if(k==="__cust")customersDialog();else if(k==="__exp")expensesDialog();
   else if(k==="__logout"){if(confirm(t("logout")+"?"))api("POST","logout").catch(function(){}).then(function(){TOK="";save(K_TOK,"");location.reload()})}};
  $("ov").classList.remove("hide");d.classList.add("open")}
@@ -301,4 +301,25 @@ function act(a,d){
  if(a==="csv"){csvSales();return}
  if(a==="chatfull"){supportDialog();return}
 }
+
+/* ---------- sample data for demos / training (original names; every record id starts with "demo_") ---------- */
+var DEMO_P=[["Iced coffee","កាហ្វេទឹកកក",2.5,0.9,"Drinks",40],["Hot coffee","កាហ្វេក្តៅ",2,0.7,"Drinks",40],["Milk tea","តែទឹកដោះគោ",2.2,0.8,"Drinks",30],["Fresh orange juice","ទឹកក្រូចស្រស់",2.8,1.1,"Drinks",25],["Bottled water","ទឹកបរិសុទ្ធ",0.5,0.2,"Drinks",60],["Butter croissant","នំក្រូស្សង់",1.8,0.8,"Food",18],["Chocolate cake slice","នំខេកសូកូឡា",3,1.3,"Food",12],["Chicken sandwich","សាំងវិចមាន់",3.5,1.6,"Food",14],["Fried rice","បាយឆា",3.2,1.4,"Food",0],["French fries","ដំឡូងបារាំងបំពង់",2,0.8,"Food",20]];
+var DEMO_NAMES=[["Sokha","សុខា"],["Dara","ដារ៉ា"],["Vanna","វណ្ណា"]];
+function demoCount(){return list("product").filter(function(x){return String(x.id).indexOf("demo_")===0}).length}
+function demoLoad(){
+ var p=prefs(),seed=7,rnd01=function(){seed=(seed*9301+49297)%233280;return seed/233280},ids=[];
+ DEMO_P.forEach(function(d,i){var id="demo_p"+i;ids.push(id);put("product",id,{name:LANG==="km"?d[1]:d[0],price:d[2],cost:d[3],cat:d[4],sku:"88"+(1000+i),track:d[5]?1:0,stock0:d[5],low:d[5]?5:"",off:0})});
+ DEMO_NAMES.forEach(function(n,i){put("customer","demo_c"+i,{name:LANG==="km"?n[1]:n[0],phone:""})});
+ var k=0,hours=[8,9,10,11,12,13,15,16,17,18,19];
+ for(var day=6;day>=0;day--){var d=new Date();d.setDate(d.getDate()-day);var n=day===0?5:9+Math.floor(rnd01()*6);
+  for(var j=0;j<n;j++){var lines=[],cnt=1+Math.floor(rnd01()*3),sub=0,net=0;
+   for(var q=0;q<cnt;q++){var pi=Math.floor(rnd01()*DEMO_P.length),d0=DEMO_P[pi],qty=1+Math.floor(rnd01()*2);lines.push({pid:ids[pi],n:LANG==="km"?d0[1]:d0[0],q:qty,p:d0[2],c:d0[3]});sub+=qty*d0[2]}
+   sub=Math.round(sub*100)/100;var t0=new Date(d.getFullYear(),d.getMonth(),d.getDate(),hours[Math.floor(rnd01()*hours.length)],Math.floor(rnd01()*60)),pay=rnd01()<0.7?"cash":"bank";
+   k++;put("sale","demo_s"+k,{no:"DEMO-"+("000"+k).slice(-3),at:t0.getTime(),date:isoDate(t0),cur:p.cur,lines:lines,sub:sub,disc:0,tax:0,net:sub,total:sub,pay:pay,recv:sub,change:0,cid:rnd01()<0.3?"demo_c"+Math.floor(rnd01()*3):"",by:ME?ME.name:""})}}
+ SM=null}
+function demoClear(){["product","sale","customer","stock","expense"].forEach(function(kd){Object.keys(DB[kd]).forEach(function(id){if(String(id).indexOf("demo_")===0)del(kd,id)})});SM=null}
+function demoDialog(){var n=demoCount(),km=LANG==="km";
+ dlg('<h2>'+ic("zap")+" "+esc(km?"ទិន្នន័យគំរូ":"Sample data")+'</h2><p class="muted">'+esc(km?"បញ្ចូលទំនិញ អតិថិជន និងការលក់ 7 ថ្ងៃ សម្រាប់បង្ហាញ ឬបង្ហាត់បុគ្គលិក។ ទិន្នន័យពិតរបស់អ្នកមិនប៉ះពាល់ទេ ហើយអាចលុបបានគ្រប់ពេល។":"Adds products, customers and 7 days of sales for demos or staff training. Your real data is not touched and you can remove it any time.")+'</p>'+(n?'<p><b>'+esc(km?"មានទិន្នន័យគំរូរួចហើយ":"Sample data is loaded")+"</b></p>":"")+
+  '<div class="row" style="margin-top:12px"><button class="b alt sm" id="dm_x">'+esc(t("close"))+'</button><span class="sp"></span>'+(n?'<button class="b bad sm" id="dm_rm">'+esc(km?"លុបទិន្នន័យគំរូ":"Remove sample data")+"</button>":'<button class="b sm" id="dm_go">'+esc(km?"បញ្ចូលទិន្នន័យគំរូ":"Load sample data")+"</button>")+"</div>",function(){
+  $("dm_x").onclick=closeDlg;if($("dm_go"))$("dm_go").onclick=function(){demoLoad();closeDlg();toast(km?"បានបញ្ចូលទិន្នន័យគំរូ":"Sample data loaded");render()};if($("dm_rm"))$("dm_rm").onclick=function(){if(confirm(km?"លុបទិន្នន័យគំរូទាំងអស់?":"Remove all sample data?")){demoClear();closeDlg();render()}}})}
 boot();
