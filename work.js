@@ -189,6 +189,7 @@ window.wkSubmit=async()=>{
   const L=logGet(); L.push({id,staff:n,list:LIST,room,date,time:p.time,sent:false}); jset(LS_LOG,L);
   const Q=jget(LS_Q,{}); Q[id]=rec; jset(LS_Q,Q);
   jset(LS_LAST,n); const me=myNames().filter(x=>x!==n); me.unshift(n); jset(LS_ME,me.slice(0,3));
+  { const u=jget(LS_UNL,{})||{}; if(GROUP&&u[GROUP]){ delete u[GROUP]; jset(LS_UNL,u); } }
   GROUP=null; LIST=null; $('wkMain').innerHTML=`<div class="wk-done">✅ ${esc(n)}<br>បានផ្ញើរបាយការណ៍ម៉ោង ${esc(p.time)}<div style="font-size:15px;font-weight:400;margin-top:8px">អរគុណ!</div></div>`;
   window.scrollTo(0,0); drawLog(); clearTimeout(doneT); doneT=setTimeout(()=>{ if(!LIST) drawMain(); },3500); wkFlush();
 };
