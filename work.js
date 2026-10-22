@@ -130,7 +130,7 @@ function drawMain(){
   <div class="wk-names">${G.map((g,i)=>`<button class="wk-n ${g.lists.every(l=>sent.has(l.id))?'done':''}" onclick="wkGroup(${i})"><b>${unlockedG(g)?'':'🔒 '}${esc(g.k)}</b><small>${g.lists.length>1?g.lists.length+' បែប':g.lists[0].tasks.length+' ការងារ'}</small></button>`).join('')}</div>
   ${R.length?`<h3 style="margin:18px 0 8px">🚪 ឆែកបន្ទប់</h3><div class="wk-names">${R.map(l=>`<button class="wk-n" onclick="wkPickList('${esc(l.id)}')"><b>${esc(titleOf(l))}</b><small>${l.tasks.length} ចំណុច</small></button>`).join('')}</div>`:''}`;
 }
-const normCode=c=>String(c||'').toUpperCase().replace(/[\s\-_]/g,'');
+const normCode=c=>String(c||'').toUpperCase().replace(/[\s\-_]/g,'').replace(/O/g,'0');
 const groupCode=g=>{ const l=g.lists.find(x=>x.code); return l?l.code:''; };
 const unlockedG=g=>{ const c=groupCode(g); return !c||normCode((jget(LS_UNL,{})||{})[g.k])===normCode(c); };
 window.wkGroup=i=>{ const g=groupsOf()[i]; if(!g) return; GROUP=g.k; ANS={}; DATE=today(); if(!unlockedG(g)) return drawCode(g,i); if(g.lists.length===1) LIST=g.lists[0].id; drawMain(); window.scrollTo(0,0); };
