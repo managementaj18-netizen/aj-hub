@@ -114,7 +114,7 @@ function startApp(){AUTH="app";api("GET","sync").then(function(r){ME=r.user;PINF
 function boot(){render();
  if(TOK){AUTH="app";ME=load("tax_me",null);if(ME)loadLocal();openMonth(V.ym);render();api("GET","sync").then(function(r){ME=r.user;PINFO=r;SUP=r.sup||0;save("tax_me",ME);render();timers();return flush()}).then(pull).catch(function(e){if(e&&e.code==="auth")sessionEnd();else if(ME)timers()});return}
  api("GET","ping").then(function(p){NEEDSETUP=!!p.setup;PINFO=p;AUTH="login";render()}).catch(function(){NOBACK=true;AUTH="login";render()})}
-function render(){nav();$("hm").innerHTML=ic("menu",26);$("hl").innerHTML=ic("globe",24);document.documentElement.lang=LANG;var a=$("app");
+function render(){document.body.classList.toggle("nologin",AUTH!=="app"||!!(ME&&ME.expired));nav();$("hm").innerHTML=ic("menu",26);$("hl").innerHTML=ic("globe",24);document.documentElement.lang=LANG;var a=$("app");
  if($("hsub"))$("hsub").textContent="A&J Kampot Boutique"+(AUTH==="app"&&ME&&ME.role==="owner"?" · ADMIN":"");
  $("hm").style.visibility=AUTH==="app"?"visible":"hidden";
  if(AUTH==="boot"){$("nav").innerHTML="";a.innerHTML='<p class="muted" style="text-align:center;padding:40px">'+esc(t("loading"))+"</p>";return}

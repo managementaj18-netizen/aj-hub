@@ -55,7 +55,7 @@ function userDialog(id){var u=AU.filter(function(x){return x.id===id})[0];if(!u)
 /* ---------- login ---------- */
 var LOGMODE="login";
 function vLogin(){var su=NEEDSETUP||LOGMODE==="signup";
- return'<div class="card"><div style="text-align:center"><img src="logo-for-light.svg" alt="" style="width:64px;height:64px"></div><h2 style="text-align:center">'+esc(t(NEEDSETUP?"setup_title":su?"signup_title":"login_title"))+"</h2>"+
+ return'<div class="card"><div style="text-align:center"><img src="aj-logo-dark.png" alt="" style="width:64px;height:64px"></div><h2 style="text-align:center">'+esc(t(NEEDSETUP?"setup_title":su?"signup_title":"login_title"))+"</h2>"+
  (NOBACK?'<p class="note">'+esc(t("no_backend"))+"</p>":
  (su&&!NEEDSETUP?'<p class="note">'+esc(t("trial_note",{n:PINFO.trialDays||3}))+"</p>":"")+
  (su?'<label>'+esc(t("f_name"))+'<input id="a_name" autocomplete="name" autocapitalize="words"></label>':"")+
@@ -89,7 +89,7 @@ function inboxDialog(){$("dbody").innerHTML='<h2>'+ic("send")+" "+esc(t("inbox")
 function badge(){var h=$("hm");if(!h)return;var d=h.querySelector(".dot");if(d)d.remove();if(SUP>0){var e=document.createElement("span");e.className="dot";e.style.cssText="position:absolute;margin:-8px 0 0 -6px;min-width:10px;height:10px;padding:0;font-size:0";h.style.position="relative";h.appendChild(e)}}
 function pollSup(){if(document.hidden||!TOK)return;api("GET","sync").then(function(r){SUP=r.sup||0;if(ME&&r.user){var was=ME.expired;ME.expired=r.user.expired;ME.expires=r.user.expires;if(was&&!ME.expired)render()}badge()}).catch(function(){})}
 
-function biz(){return{name:(ME&&ME.biz)||"",info:(ME&&ME.bizInfo)||"",logo:(ME&&ME.bizLogo)||new URL("logo-for-light.svg",location.href).href}}
+function biz(){return{name:(ME&&ME.biz)||"",info:(ME&&ME.bizInfo)||"",logo:(ME&&ME.bizLogo)||new URL("aj-logo-dark.png",location.href).href}}
 function profileDialog(){var b=biz(),logo=(ME&&ME.bizLogo)||"";b.info=(ME&&ME.bizInfo)||"";
  $("dbody").innerHTML='<h2>'+ic("user")+" "+esc(t("profile"))+'</h2><label>'+esc(t("acc_name"))+'<input id="p_uname" value="'+esc((ME&&ME.name)||"")+'" autocapitalize="words"></label><label>'+esc(t("f_phone"))+'<input id="p_uphone" type="tel" value="'+esc((ME&&ME.phone)||"")+'"></label><label>'+esc(t("biz_name"))+'<input id="p_name" value="'+esc((ME&&ME.biz)||"")+'" placeholder=""></label><label>'+esc(t("biz_info"))+'<input id="p_info" value="'+esc(b.info)+'"></label><div style="margin:8px 0"><b>'+esc(t("biz_logo"))+'</b><div id="p_prev" style="margin:6px 0;min-height:60px">'+(logo?'<img src="'+logo+'" style="max-height:80px;max-width:200px">':"")+'</div><input id="p_file" type="file" accept="image/*" style="display:none"><button class="b alt sm" id="p_pick">'+esc(t("logo_pick"))+'</button> <button class="b alt sm" id="p_del">'+esc(t("logo_remove"))+'</button></div><div class="row" style="margin-top:12px"><span class="sp"></span><button class="b alt sm" id="p_x">'+esc(t("cancel"))+'</button><button class="b sm" id="p_ok">'+esc(t("save"))+"</button></div>";
  if(!$("dlg").open)$("dlg").showModal();$("dlg").oncancel=null;$("dbody").onclick=null;
