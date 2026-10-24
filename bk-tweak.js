@@ -10,6 +10,9 @@
   var OTA_RE = /booking|agoda|trip|expedia|airbnb|ctrip|hostelworld|traveloka/i;
   var METHODS = [["acleda", "ACLEDA"], ["aba", "ABA"], ["cash", "សាច់ប្រាក់ · Cash"], ["wing", "Wing"], ["ota", "OTA បង់ · via OTA"], ["other", "ផ្សេងៗ · Other"]];
   var showCancelled = false;
+  var srcFilter = null; // tap a source card → show only that source's bookings
+  var MAIN_SRC = ["Booking.com", "Expedia", "Trip.com", "Agoda"]; // always shown, even at $0
+  var SRC_COLOR = { "Booking.com": "#003580", "Expedia": "#fdb913", "Trip.com": "#287dfa", "Agoda": "#e2242b", "Traveloka": "#0194f3", "Airbnb": "#ff5a5f", "ភ្ញៀវផ្ទាល់ · Direct": "#1d2433" };
   function num(v) { return Number(v) || 0; }
   function r2(v) { return Math.round(v * 100) / 100; }
   function isOta(b) { return OTA_RE.test(String(b.source || "")); }
@@ -96,7 +99,7 @@
       document.getElementById("bkPrevM").onclick = function () { shift(-1); };
       document.getElementById("bkNextM").onclick = function () { shift(1); };
       document.getElementById("bkPrintM").onclick = function () {
-        var parts = ["bkStats", "bkPay", "bkOta"].map(function (id) { var e = document.getElementById(id); return e ? e.outerHTML : ""; }).join("");
+        var parts = ["bkStats", "bkSrc", "bkPay", "bkOta"].map(function (id) { var e = document.getElementById(id); return e ? e.outerHTML : ""; }).join("");
         var tbl = document.getElementById("tBk"), list = tbl ? '<table class="lst">' + tbl.innerHTML + "</table>" : "";
         var w = window.open("", "_blank"); if (!w) return alert("សូមអនុញ្ញាត Pop-up");
         w.document.write('<!doctype html><meta charset="utf-8"><title>A&J Booking Report ' + esc(label) + '</title><link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">' +
@@ -111,8 +114,44 @@
       ["ទទួលបានហើយ", money(got)], ["ភ្ញៀវផ្ទាល់ នៅខ្វះ", money(dDue)], ["OTA ជំពាក់", money(oOwe)]]
       .map(function (x) { return '<div class="card stat"><b>' + x[1] + '</b><span>' + x[0] + '</span></div>'; }).join("");
 
+    // 🌐 money by source (Booking.com / Expedia / Trip.com / Agoda / … / Direct) — tap a card to see its bookings
+    var srcBox = ensureBox("bkSrc", "bkStats");
+    if (srcBox) {
+      var bySrc = {};
+      MAIN_SRC.forEach(function (k) { bySrc[k] = { n: 0, nights: 0, tot: 0, got: 0, owe: 0, up: 0 }; });
+      act.forEach(function (b) {
+        var k = group(b), o = bySrc[k] || (bySrc[k] = { n: 0, nights: 0, tot: 0, got: 0, owe: 0, up: 0 });
+        o.n++; o.nights += num(b.nights); o.tot += num(b.totalPrice); o.got += received(b);
+        if (isOta(b) ? stayed(b) : true) o.owe += due(b); else o.up += due(b);
+      });
+      var order = MAIN_SRC.concat(Object.keys(bySrc).filter(function (k) { return MAIN_SRC.indexOf(k) < 0 && k.indexOf("Direct") < 0; }).sort())
+        .concat(Object.keys(bySrc).filter(function (k) { return k.indexOf("Direct") >= 0; }));
+      if (srcFilter && !bySrc[srcFilter]) srcFilter = null;
+      var otaTot = 0, otaN = 0; Object.keys(bySrc).forEach(function (k) { if (k.indexOf("Direct") < 0) { otaTot += bySrc[k].tot; otaN += bySrc[k].n; } });
+      var card = function (k) {
+        var o = bySrc[k], on = srcFilter === k, c = SRC_COLOR[k] || "#6b7280";
+        return '<button type="button" class="card" data-src="' + esc(k) + '" style="text-align:left;cursor:pointer;min-width:150px;flex:1 1 150px;margin:0;padding:10px 12px;border:2px solid ' + (on ? c : 'transparent') + ';border-left:6px solid ' + c + ';' + (on ? 'background:#f2f5fb;' : '') + 'font:inherit;color:inherit">' +
+          '<div style="font-weight:700">' + esc(k) + '</div>' +
+          '<div style="font-size:20px;font-weight:700;margin:2px 0">' + money(r2(o.tot)) + '</div>' +
+          '<div class="muted" style="font-size:12px">' + o.n + ' booking · ' + o.nights + ' យប់</div>' +
+          (o.owe > 0.004 ? '<div style="font-size:12px;color:#b42318">' + (k.indexOf("Direct") >= 0 ? 'នៅខ្វះ ' : 'ជំពាក់ ') + money(r2(o.owe)) + '</div>' : (o.n ? '<div style="font-size:12px;color:#067647">✅ ទទួលបាន ' + money(r2(o.got)) + '</div>' : '')) + '</button>';
+      };
+      var sel = srcFilter && bySrc[srcFilter];
+      srcBox.innerHTML = '<div class="card" style="margin:10px 0"><div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px"><b>🌐 ទឹកលុយតាម OTA / ប្រភព · Money by source</b><span class="muted">OTA សរុប: <b>' + money(r2(otaTot)) + '</b> · ' + otaN + ' booking</span></div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:8px">' + order.map(card).join("") + '</div>' +
+        (sel ? '<div style="margin-top:8px;padding:8px 10px;background:#f2f5fb;border-radius:8px;display:flex;flex-wrap:wrap;gap:6px 16px;align-items:center"><b>' + esc(srcFilter) + '</b>' +
+          '<span>Booking: <b>' + sel.n + '</b></span><span>យប់: <b>' + sel.nights + '</b></span><span>តម្លៃសរុប: <b>' + money(r2(sel.tot)) + '</b></span><span>ទទួលបានហើយ: <b>' + money(r2(sel.got)) + '</b></span>' +
+          '<span style="color:#b42318">នៅខ្វះ / ជំពាក់: <b>' + money(r2(sel.owe)) + '</b></span>' + (sel.up > 0.004 ? '<span class="muted">មិនទាន់មកដល់: ' + money(r2(sel.up)) + '</span>' : '') +
+          '<a href="#" id="bkSrcAll" style="margin-left:auto">✕ បង្ហាញទាំងអស់</a></div>' : '<div class="muted" style="font-size:12px;margin-top:6px">ចុចលើប្រអប់ ដើម្បីមើល Booking របស់ OTA នោះខែនេះ (បញ្ជីខាងក្រោម)</div>') + '</div>';
+      [].forEach.call(srcBox.querySelectorAll("[data-src]"), function (el) {
+        el.onclick = function () { srcFilter = srcFilter === el.dataset.src ? null : el.dataset.src; window.renderBookings();
+          var t = document.getElementById("tBk"); if (srcFilter && t) t.scrollIntoView({ behavior: "smooth", block: "start" }); };
+      });
+      var all2 = document.getElementById("bkSrcAll"); if (all2) all2.onclick = function (e) { e.preventDefault(); srcFilter = null; window.renderBookings(); };
+    }
+
     // 💰 money received by payment method × source
-    var payBox = ensureBox("bkPay", "bkStats");
+    var payBox = ensureBox("bkPay", "bkSrc") || ensureBox("bkPay", "bkStats");
     if (payBox) {
       var cols = ["ភ្ញៀវផ្ទាល់ · Direct"], grid = {}, colTot = {}, rowTot = {}, grand = 0;
       act.forEach(function (b) {
@@ -153,6 +192,7 @@
     }
 
     var rows = showCancelled ? all : act;
+    if (srcFilter) rows = rows.filter(function (b) { return group(b) === srcFilter; });
     var row = function (b) {
       return '<tr style="cursor:pointer' + (cancelled(b) ? ';opacity:.45' : '') + '" data-bk="' + esc(b.bkId || "") + '"><td class="nw">' + fmtD(b.start) + '</td><td class="nw">' + fmtD(bkEnd(b)) + '</td><td><b>' + esc(b.room) + '</b></td><td>' + esc(b.guest) +
         '</td><td>' + esc(b.source || "") + (isOta(b) ? ' <span class="pill" style="background:#e0e8ff;color:#1f3a8a;font-size:10px">OTA</span>' : "") +
