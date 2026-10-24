@@ -7,8 +7,10 @@
      A summary shows how much came in by each method, split by Direct / Booking.com / Agoda / Trip.com … */
 (function () {
   "use strict";
-  var OTA_RE = /booking|agoda|trip|expedia|airbnb|ctrip|hostelworld|traveloka/i;
-  var METHODS = [["acleda", "ACLEDA"], ["aba", "ABA"], ["cash", "សាច់ប្រាក់ · Cash"], ["wing", "Wing"], ["ota", "OTA បង់ · via OTA"], ["other", "ផ្សេងៗ · Other"]];
+  var OTA_RE = /booking|agoda|trip|expedia|airbnb|ctrip|hostelworld|traveloka|travelocity|hotels\.com|orbitz/i;
+  // OTAs that always take the guest's money themselves and pay the hotel later (owner's rule)
+  var OTA_COLLECTS = /agoda|trip|ctrip|expedia|travelocity|hotels\.com|orbitz/i;
+  var METHODS = [["acleda", "ACLEDA"], ["aba", "ABA"], ["cash", "សាច់ប្រាក់ · Cash"], ["wing", "Wing"], ["ota", "OTA ប្រមូល (មិនទាន់ផ្ទេរ) · OTA collected"], ["otapaid", "OTA ផ្ទេរមកហើយ · OTA paid out"], ["other", "ផ្សេងៗ · Other"]];
   var showCancelled = false;
   var srcFilter = null; // tap a source card → show only that source's bookings
   var MAIN_SRC = ["Booking.com", "Expedia", "Trip.com", "Agoda"]; // always shown, even at $0
@@ -19,13 +21,13 @@
   function stayed(b) { return /checked/i.test(String(b.status || "")); }
   function cancelled(b) { return /cancel/i.test(String(b.status || "")); }
   function mLabel(k) { for (var i = 0; i < METHODS.length; i++) if (METHODS[i][0] === k) return METHODS[i][1]; return "មិនបញ្ជាក់ · Not set"; }
-  function mShort(k) { return ({ acleda: "ACLEDA", aba: "ABA", cash: "Cash", wing: "Wing", ota: "OTA", other: "Other" })[k] || "?"; }
+  function mShort(k) { return ({ acleda: "ACLEDA", aba: "ABA", cash: "Cash", wing: "Wing", ota: "OTA (មិនទាន់ផ្ទេរ)", otapaid: "OTA ផ្ទេររួច", other: "Other" })[k] || "?"; }
   function otaName(b) {
     var s = String(b.source || "");
     if (/booking/i.test(s)) return "Booking.com";
     if (/agoda/i.test(s)) return "Agoda";
     if (/trip|ctrip/i.test(s)) return "Trip.com";
-    if (/expedia/i.test(s)) return "Expedia";
+    if (/expedia|travelocity|hotels\.com|orbitz/i.test(s)) return "Expedia";
     if (/airbnb/i.test(s)) return "Airbnb";
     if (/traveloka/i.test(s)) return "Traveloka";
     return s || "OTA";
@@ -34,16 +36,18 @@
   // every payment of a booking, with its method ("" = not recorded)
   function pays(b) {
     var out = [];
-    if (num(b.dep)) out.push({ amt: num(b.dep), m: b.depM || "", k: "dep" });
-    if (num(b.bal)) out.push({ amt: num(b.bal), m: b.balM || "", k: "bal" });
+    var dm = OTA_COLLECTS.test(String(b.source || "")) ? "ota" : "";
+    if (num(b.dep)) out.push({ amt: num(b.dep), m: b.depM || dm, k: "dep" });
+    if (num(b.bal)) out.push({ amt: num(b.bal), m: b.balM || dm, k: "bal" });
     var rec = out.reduce(function (s, p) { return s + p.amt; }, 0), paid = num(b.paidAmount);
-    if (paid > rec + 0.004) out.push({ amt: r2(paid - rec), m: "", k: "old" });
+    if (paid > rec + 0.004) out.push({ amt: r2(paid - rec), m: dm, k: "old" });
     // owner's rule: a direct guest who is checked in / out has paid in full
     var tot = num(b.totalPrice), got = Math.max(paid, rec);
     if (!isOta(b) && stayed(b) && tot > got + 0.004) out.push({ amt: r2(tot - got), m: "", k: "assumed" });
     return out;
   }
-  function received(b) { return pays(b).reduce(function (s, p) { return s + p.amt; }, 0); }
+  function received(b) { return pays(b).reduce(function (s, p) { return s + (p.m === "ota" ? 0 : p.amt); }, 0); }
+  function otaHeld(b) { return pays(b).reduce(function (s, p) { return s + (p.m === "ota" ? p.amt : 0); }, 0); }
   function due(b) { return Math.max(r2(num(b.totalPrice) - received(b)), 0); }
 
   /* ---------- list ---------- */
@@ -157,6 +161,7 @@
       act.forEach(function (b) {
         var g = group(b); if (cols.indexOf(g) < 0) cols.push(g);
         pays(b).forEach(function (p) {
+          if (p.m === "ota") return; // still with the OTA — shown in the OTA table
           var k = p.m || "";
           grid[k] = grid[k] || {}; grid[k][g] = (grid[k][g] || 0) + p.amt;
           colTot[g] = (colTot[g] || 0) + p.amt; rowTot[k] = (rowTot[k] || 0) + p.amt; grand += p.amt;
@@ -177,18 +182,18 @@
     if (box) {
       var by = {};
       ota.forEach(function (b) {
-        var k = otaName(b), o = by[k] || (by[k] = { n: 0, stayed: 0, upcoming: 0, viaOta: 0, atHotel: 0, owe: 0 });
+        var k = otaName(b), o = by[k] || (by[k] = { n: 0, stayed: 0, upcoming: 0, viaOta: 0, held: 0, atHotel: 0, owe: 0 });
         var t = num(b.totalPrice);
         o.n++;
-        pays(b).forEach(function (p) { if (p.m === "ota") o.viaOta += p.amt; else o.atHotel += p.amt; });
+        pays(b).forEach(function (p) { if (p.m === "otapaid") o.viaOta += p.amt; else if (p.m === "ota") o.held += p.amt; else o.atHotel += p.amt; });
         if (stayed(b)) { o.stayed += t; o.owe += due(b); } else o.upcoming += t;
       });
       var keys = Object.keys(by).sort();
       box.innerHTML = keys.length ? '<div class="card" style="margin:10px 0"><b>🌐 OTA — ប្រាក់ដែល OTA នីមួយៗជំពាក់ · Money owed by each OTA</b>' +
-        '<div style="overflow-x:auto"><table style="width:100%;margin-top:8px"><tr><th>OTA</th><th>Booking</th><th>ស្នាក់រួច / កំពុងស្នាក់</th><th>ភ្ញៀវបង់នៅសណ្ឋាគារ</th><th>OTA ផ្ទេរមកហើយ</th><th style="color:#b42318">OTA នៅជំពាក់</th><th>មិនទាន់មកដល់</th></tr>' +
-        keys.map(function (k) { var o = by[k]; return '<tr><td><b>' + esc(k) + '</b></td><td>' + o.n + '</td><td>' + money(r2(o.stayed)) + '</td><td>' + money(r2(o.atHotel)) + '</td><td>' + money(r2(o.viaOta)) +
+        '<div style="overflow-x:auto"><table style="width:100%;margin-top:8px"><tr><th>OTA</th><th>Booking</th><th>ស្នាក់រួច / កំពុងស្នាក់</th><th>ភ្ញៀវបង់នៅសណ្ឋាគារ</th><th>OTA ប្រមូលពីភ្ញៀវ (មិនទាន់ផ្ទេរ)</th><th>OTA ផ្ទេរមកហើយ</th><th style="color:#b42318">OTA នៅជំពាក់</th><th>មិនទាន់មកដល់</th></tr>' +
+        keys.map(function (k) { var o = by[k]; return '<tr><td><b>' + esc(k) + '</b></td><td>' + o.n + '</td><td>' + money(r2(o.stayed)) + '</td><td>' + money(r2(o.atHotel)) + '</td><td>' + money(r2(o.held)) + '</td><td>' + money(r2(o.viaOta)) +
           '</td><td><b style="color:#b42318">' + money(r2(o.owe)) + '</b></td><td class="muted">' + money(r2(o.upcoming)) + '</td></tr>'; }).join("") +
-        '</table></div><div class="muted" style="font-size:12px;margin-top:6px">ភ្ញៀវ OTA បង់នៅ Reception ➜ កត់ក្នុង 💳 ជា Cash / ABA / ACLEDA។ ពេល OTA ផ្ទេរលុយមក ➜ កត់ជា "OTA បង់"។</div></div>' : "";
+        '</table></div><div class="muted" style="font-size:12px;margin-top:6px">ភ្ញៀវ OTA បង់នៅ Reception ➜ កត់ក្នុង 💳 ជា Cash / ABA / ACLEDA។ Agoda / Expedia / Trip.com ប្រមូលលុយពីភ្ញៀវ ➜ "OTA ប្រមូល (មិនទាន់ផ្ទេរ)" = OTA នៅជំពាក់សណ្ឋាគារ។ ពេល OTA ផ្ទេរលុយមកដល់គណនីយើង ➜ ប្ដូរទៅ "OTA ផ្ទេរមកហើយ"។</div></div>' : "";
     }
 
     var rows = showCancelled ? all : act;
@@ -250,7 +255,7 @@
           '<label>វិធីបង់ · Method' + sel("bkp_balM", b.balM || "") + '</label></div>' +
           '<div class="row" style="margin:6px 0 0;gap:6px;flex-wrap:wrap"><button type="button" class="btn alt sm" id="bkp_half">50% កក់</button><button type="button" class="btn alt sm" id="bkp_rest">បង់នៅសល់</button></div>' +
           '<p class="muted" id="bkp_hint" style="margin:6px 0 0"></p>' +
-          '<p class="muted" style="font-size:12px;margin:4px 0 0">OTA: ភ្ញៀវបង់នៅ Reception ➜ ជ្រើស Cash / ABA / ACLEDA · OTA ផ្ទេរលុយមក ➜ ជ្រើស "OTA បង់"</p>';
+          '<p class="muted" style="font-size:12px;margin:4px 0 0">OTA: ភ្ញៀវបង់នៅ Reception ➜ ជ្រើស Cash / ABA / ACLEDA · OTA ប្រមូលលុយ ➜ "OTA ប្រមូល (មិនទាន់ផ្ទេរ)" · OTA ផ្ទេរលុយមកដល់យើង ➜ "OTA ផ្ទេរមកហើយ"</p>';
         fg.parentNode.insertBefore(div, fg.nextSibling);
         ["bkp_dep", "bkp_depM", "bkp_bal", "bkp_balM", "bk_total"].forEach(function (x) { var el = document.getElementById(x); if (el) el.addEventListener("input", syncPaid); if (el) el.addEventListener("change", syncPaid); });
         var tot = function () { return Number((document.getElementById("bk_total") || {}).value) || (num(b.totalPrice)); };
