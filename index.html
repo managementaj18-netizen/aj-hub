@@ -19,6 +19,7 @@
 <script src="scan-docs.js" defer></script>
 <script src="attend.js?v=6" defer></script>
 <script src="work.js?v=9" defer></script>
+<script src="msg.js?v=1" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -921,7 +922,7 @@ function route(){
   const h=location.hash.replace('#',''); clearTimeout(window._rt);
   ['vHome','vTablet','vForm','vBoss','vStaff','vLock','vView'].forEach(v=>$(v).classList.add('hide'));
   const T=TAB(); $('lockBtn').classList.toggle('hide',!T);
-  if(T&&!unlocked()&&h!=='boss'&&h!=='payroll'&&h!=='view'&&h!=='f/attend'&&h!=='f/work'&&h!=='f/'+T.form&&!(T.form==='checkin'&&h==='tablet')&&!(PAIR.includes(T.form)&&['f/booking','f/checkin','tablet'].includes(h))){ history.replaceState(null,'','#f/'+T.form); return route(); }
+  if(T&&!unlocked()&&h!=='boss'&&h!=='payroll'&&h!=='view'&&h!=='f/attend'&&h!=='f/work'&&h!=='f/msg'&&h!=='f/'+T.form&&!(T.form==='checkin'&&h==='tablet')&&!(PAIR.includes(T.form)&&['f/booking','f/checkin','tablet'].includes(h))){ history.replaceState(null,'','#f/'+T.form); return route(); }
   const ft=h==='tablet'?'checkin':(h.startsWith('f/')?h.slice(2):'');
   if(ft&&(ft==='checkin'||(DEFS[ft]&&!DEFS[ft].bossOnly))&&!deviceKey()) return tabletSetup(ft);
   if(h==='tablet'||h==='f/checkin'){ $('vTablet').classList.remove('hide'); initTabletCommon(); const first=!ciInit; initCheckin(); applyPrefill('checkin'); flowSwitch('checkin');
