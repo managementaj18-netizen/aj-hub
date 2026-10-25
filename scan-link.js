@@ -240,7 +240,7 @@
       .then(function (res) { return res.json(); })
       .then(function (j) {
         if (!j.ok) { photoQ = ""; return; }
-        var G = j.guests || [];
+        var G = (j.guests || []).filter(function (g) { return g.doc_type !== "Companion" && !/^C-/.test(String(g.passport_no || "")) && String(g.passport_no || "") !== "-"; });
         if (d) G = G.filter(function (g) { return !g.checkout_date || g.checkout_date > d; });
         var SP = window.__ajScanPass; if (SP && SP.q === q && SP.list.length) G = G.filter(function (g) { return SP.list.indexOf(String(g.passport_no || "").replace(/\s/g, "").toUpperCase()) >= 0; });
         if (!G.length) return;
@@ -293,7 +293,7 @@
       .then(function (res) { return res.json(); })
       .then(function (j) {
         if (!j.ok) { banner(j.error === "Bad key" ? "⚠️ Scan QR ចាស់ — សូមស្កេន QR ថ្មីពី Passport Scan" : "", false); return; }
-        var G = j.guests || [];
+        var G = (j.guests || []).filter(function (g) { return g.doc_type !== "Companion" && !/^C-/.test(String(g.passport_no || "")) && String(g.passport_no || "") !== "-"; });
         window.__ajScanPass = { q: r + "|" + d, list: G.map(function (g) { return String(g.passport_no || "").replace(/\s/g, "").toUpperCase(); }) };
         if (!G.length) { if (fbQ === r + "|" + d) { lastQ = q; return; } banner("📷 មិនទាន់មានការស្កេនសម្រាប់បន្ទប់ " + r + " ថ្ងៃនេះ — ចុច 📷 ស្កេន ID / Passport", false); lastQ = ""; fillPhotos(r, d, true); return; }
         var first = G[0];
@@ -343,4 +343,194 @@
   document.addEventListener("visibilitychange", function () {
     if (!document.hidden && /#f\/checkin/.test(location.hash)) { lastQ = ""; lookup(false); }
   });
+})();
+
+/* A&J Hub ⇄ Passport Scan — Companion form #f/companion (v1)
+   When a room number is entered, fill the companion's name, phone, ID no., nationality and
+   photos (face → Photo box, ID → ID box) from the companions scanned for that room on that date
+   in the A&J Guest Scan app; also fills the registered guest's name. Fills EMPTY fields only.
+   "📷 ស្កេនដៃគូ" opens the Guest Scan app's Add-companion screen inside the form (staff link). */
+(function () {
+  "use strict";
+  var GUEST = "https://aj-kampot-guest.pages.dev/";
+  var SCAN_API = "https://aj-kampot-scan.pages.dev/api";
+  var PRINT = "https://aj-kampot-print.pages.dev/api/";
+  var ON = /#f\/companion/;
+  function $(id) { return document.getElementById(id); }
+  function key() { try { return localStorage.getItem("aj_scankey") || ""; } catch (e) { return ""; } }
+  function staffK() { try { var l = localStorage.getItem("aj_scan_stafflink") || ""; return l ? new URL(l).searchParams.get("k") || "" : ""; } catch (e) { return ""; } }
+  function fire(el, ev) { el.dispatchEvent(new Event(ev, { bubbles: true })); }
+  function setVal(el, v) { if (el && v && !String(el.value || "").trim()) { el.value = v; fire(el, "input"); fire(el, "change"); return true; } return false; }
+  function isComp(g) { return g && (g.doc_type === "Companion" || /^C-/.test(String(g.passport_no || ""))); }
+  function idNo(p) { p = String(p || ""); return /^C-#/.test(p) ? "" : p.replace(/^C-/, ""); }
+  function fullName(g) { return [g.given_names, g.surname].filter(Boolean).join(" ").trim(); }
+  function roomVal() { var r = $("g_room"); return r ? r.value.trim().replace(/^room\s*/i, "") : ""; }
+  function dateVal() { var d = $("g_regDate"); return d && d.value ? d.value : ""; }
+
+  function banner(msg, ok) {
+    var b = $("ajCompBanner"); if (!b) return;
+    b.style.background = ok ? "#e7f6ec" : "#f3f4f6"; b.style.color = ok ? "#15803d" : "#555";
+    b.innerHTML = msg; b.style.display = msg ? "block" : "none";
+  }
+  function addCard() {
+    var room = $("g_room"); if (!room || $("ajCompCard")) return;
+    var host = $("gp_photo"); host = host && host.closest(".sec, section, fieldset, .card") || (room.closest("label, .f, div") || {}).parentNode;
+    if (!host) return;
+    var css = "padding:12px 16px;border-radius:12px;border:0;font-weight:700;font-size:15px;cursor:pointer;";
+    var c = document.createElement("div");
+    c.id = "ajCompCard";
+    c.style.cssText = "margin:10px 0;padding:12px;border:2px dashed #f9a8d4;border-radius:14px;background:#fdf2f8";
+    c.innerHTML = '<div style="font-size:14px;color:#9d174d;line-height:1.5">ដាក់<b>លេខបន្ទប់</b> → ឈ្មោះ ទូរស័ព្ទ និងរូបដៃគូ ដែលបានស្កេនក្នុង app Scan នឹងចូល form ដោយខ្លួនឯង។ មិនទាន់ស្កេន? ចុច <b>📷 ស្កេនដៃគូ</b>។</div>' +
+      '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" id="ajCompScan" style="' + css + 'background:#db2777;color:#fff;flex:1;min-width:180px">📷 ស្កេនដៃគូ</button>' +
+      '<button type="button" id="ajCompRe" style="' + css + 'background:#e5e7eb;color:#111">🔄 ទាញម្តងទៀត</button></div>' +
+      '<div id="ajCompPick" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>' +
+      '<div id="ajCompBanner" style="display:none;margin-top:8px;padding:10px 12px;border-radius:12px;font-size:14px;font-weight:600"></div>';
+    var h = host.querySelector && host.querySelector("h2, h3");
+    if (host.id === "gfBody" || !h) { var sec = room.closest("label, .f, div"); sec.parentNode.insertBefore(c, sec.nextSibling); }
+    else host.insertBefore(c, h.nextSibling);
+    $("ajCompScan").onclick = openPanel;
+    $("ajCompRe").onclick = function () { lastQ = ""; lookup(true); };
+  }
+
+  var timer = null;
+  function openPanel() {
+    var room = $("g_room");
+    if (room && !room.value.trim()) {
+      var rn = prompt("លេខបន្ទប់? · Room no.?", ""); if (!rn || !rn.trim()) return;
+      room.value = rn.trim().replace(/^room\s*/i, ""); fire(room, "input"); fire(room, "change");
+    }
+    var k = staffK();
+    if (!k) { alert("សូមដាក់ Staff link ជាមុន (⚙️ នៅលើ Check-in form) · Set the staff link first"); return; }
+    var pn = $("ajCompPanel");
+    if (!pn) {
+      pn = document.createElement("div"); pn.id = "ajCompPanel";
+      pn.style.cssText = "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:10px";
+      pn.innerHTML = '<div style="background:#fff;border-radius:16px;width:100%;max-width:520px;height:100%;max-height:900px;display:flex;flex-direction:column;overflow:hidden">' +
+        '<div style="display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid #eee"><b id="ajCompTitle" style="flex:1;font-size:15px">👥 ស្កេនដៃគូ</b>' +
+        '<button type="button" id="ajCompDone" style="padding:10px 16px;border:0;border-radius:12px;background:#15803d;color:#fff;font-weight:700;font-size:14px">✓ រួចរាល់</button></div>' +
+        '<iframe id="ajCompFrame" allow="camera" style="flex:1;border:0;width:100%"></iframe></div>';
+      document.body.appendChild(pn);
+      $("ajCompDone").onclick = closePanel;
+    }
+    var r = roomVal();
+    $("ajCompTitle").textContent = "👥 ស្កេនដៃគូ · បន្ទប់ " + r + " · ថតរូប → Save → ✓ រួចរាល់";
+    $("ajCompFrame").src = GUEST + "?k=" + encodeURIComponent(k) + "#comp/new?room=" + encodeURIComponent(r);
+    pn.style.display = "flex";
+    clearInterval(timer); timer = setInterval(function () { lastQ = ""; lookup(false); }, 4000);
+  }
+  function closePanel() {
+    var pn = $("ajCompPanel"); if (pn) { pn.style.display = "none"; $("ajCompFrame").src = "about:blank"; }
+    clearInterval(timer); lastQ = ""; lookup(true);
+  }
+
+  // split the stacked photo (dark label bar above each photo) into separate pictures
+  function splitStack(blob) {
+    return new Promise(function (res) {
+      var url = URL.createObjectURL(blob), img = new Image();
+      img.onerror = function () { res([]); };
+      img.onload = function () {
+        var W = img.naturalWidth, H = img.naturalHeight, c = document.createElement("canvas");
+        c.width = W; c.height = H; var x = c.getContext("2d"); x.drawImage(img, 0, 0); URL.revokeObjectURL(url);
+        var d = x.getImageData(0, 0, W, H).data;
+        var rowMean = function (y) { var s = 0, n = 0; for (var i = y * W * 4; i < (y + 1) * W * 4; i += 16) { s += d[i] + d[i + 1] + d[i + 2]; n++; } return s / n / 3; };
+        var bands = [], st = -1, y;
+        for (y = 0; y < H; y++) { var dark = rowMean(y) < 25; if (dark && st < 0) st = y; if (!dark && st >= 0) { if (y - st >= 6) bands.push([st, y]); st = -1; } }
+        if (st >= 0) bands.push([st, H]);
+        var heads = [];
+        bands.forEach(function (b) { var l = heads[heads.length - 1]; if (l && b[0] - l[1] <= 22) l[1] = b[1]; else heads.push([b[0], b[1]]); });
+        var segs = [], prev = 0;
+        heads.forEach(function (h) { if (h[0] - prev > 150) segs.push([prev, h[0]]); prev = h[1]; });
+        if (H - prev > 150) segs.push([prev, H]);
+        if (segs.length < 1) segs = [[0, H]];
+        res(segs.map(function (sg) {
+          var h = sg[1] - sg[0], x0 = 0, x1 = W;
+          var colMean = function (cx) { var s = 0, n = 0; for (var yy = sg[0]; yy < sg[1]; yy += 4) { var i = (yy * W + cx) * 4; s += d[i] + d[i + 1] + d[i + 2]; n++; } return s / n / 3; };
+          while (x0 < W - 50 && colMean(x0) < 20) x0 += 2;
+          while (x1 > x0 + 50 && colMean(x1 - 1) < 20) x1 -= 2;
+          var o = document.createElement("canvas"); o.width = x1 - x0; o.height = h;
+          o.getContext("2d").drawImage(c, x0, sg[0], x1 - x0, h, 0, 0, x1 - x0, h);
+          return o.toDataURL("image/jpeg", 0.8);
+        }));
+      };
+      img.src = url;
+    });
+  }
+  function putPhoto(k, u) {
+    if (typeof G === "undefined" || !G.photos || G.photos[k] || !u) return false;
+    G.photos[k] = u; var box = $("gp_" + k); if (box && typeof showThumb === "function") showThumb(box, u);
+    return true;
+  }
+  function fillPhotos(c) {
+    if (c.has_img != 1) return Promise.resolve(0);
+    return fetch(PRINT + "hub_img?key=" + encodeURIComponent(key()) + "&id=" + c.id, { credentials: "omit" })
+      .then(function (r) { return r.ok ? r.blob() : null; })
+      .then(function (b) { return b ? splitStack(b) : []; })
+      .then(function (parts) {
+        var labels = String(c.docs || "").split(/\s*,\s*/), n = 0;
+        parts.forEach(function (u, i) {
+          var isId = /ID card|document/i.test(labels[i] || "") && !/Companion photo/i.test(labels[i] || "");
+          if (putPhoto(isId ? "idPhoto" : "photo", u) || putPhoto(isId ? "photo" : "idPhoto", u)) n++;
+        });
+        return n;
+      }).catch(function () { return 0; });
+  }
+
+  var cache = { q: "", list: [], guests: [] };
+  function fill(c) {
+    setVal($("g_name"), fullName(c));
+    setVal($("g_phone"), c.phone);
+    setVal($("g_idNo"), idNo(c.passport_no));
+    var nat = $("g_nat");
+    if (nat && !nat.value && typeof setNat === "function") { var nm = "Cambodia"; try { if (c.nat2) nm = new Intl.DisplayNames(["en"], { type: "region" }).of(c.nat2); } catch (e) {} setNat(nat, nm); fire(nat, "change"); }
+    if (cache.guests[0]) setVal($("g_guestName"), fullName(cache.guests[0]));
+    banner("✅ ដៃគូ <b>" + fullName(c).replace(/</g, "&lt;") + "</b> បានចូល form — សូមពិនិត្យ ហើយឲ្យគាត់ចុះហត្ថលេខា", true);
+    fillPhotos(c).then(function (n) { if (n) { var b = $("ajCompBanner"); if (b) b.innerHTML += " · 📷 រូប " + n; } });
+  }
+  function picker(list) {
+    var p = $("ajCompPick"); if (!p) return;
+    p.innerHTML = "";
+    if (list.length < 2) return;
+    list.forEach(function (c) {
+      var b = document.createElement("button"); b.type = "button";
+      b.textContent = "👥 " + fullName(c);
+      b.style.cssText = "padding:8px 12px;border-radius:999px;border:1px solid #f9a8d4;background:#fff;color:#9d174d;font-weight:600;cursor:pointer";
+      b.onclick = function () { ["g_name", "g_phone", "g_idNo"].forEach(function (id) { var el = $(id); if (el) el.value = ""; }); if (typeof G !== "undefined" && G.photos) { ["photo", "idPhoto"].forEach(function (k) { delete G.photos[k]; var box = $("gp_" + k); if (box) { var im = box.querySelector("img"); if (im) im.remove(); } }); } fill(c); };
+      p.appendChild(b);
+    });
+  }
+  var lastQ = "", busy = false;
+  function lookup(manual) {
+    if (busy || !$("g_room")) return;
+    if (!key()) { if (manual) banner("⚠️ Tablet មិនទាន់ភ្ជាប់ Passport Scan — សូមស្កេន QR ពី Settings", false); return; }
+    var r = roomVal(), d = dateVal(), q = r + "|" + d;
+    if (!r) { if (manual) banner("សូមដាក់លេខបន្ទប់ជាមុន · Enter room no. first", false); return; }
+    if (q === lastQ) return;
+    lastQ = q; busy = true;
+    var kk = encodeURIComponent(key()), rr = encodeURIComponent(r);
+    Promise.all([
+      fetch(PRINT + "hub_room?key=" + kk + "&room=" + rr + (d ? "&date=" + d : ""), { credentials: "omit" }).then(function (x) { return x.json(); }),
+      fetch(SCAN_API + "?a=room_lookup&key=" + kk + "&room=" + rr + (d ? "&date=" + d : ""), { credentials: "omit" }).then(function (x) { return x.json(); }).catch(function () { return {}; }),
+      fetch(PRINT + "hub_room?key=" + kk + "&room=" + rr, { credentials: "omit" }).then(function (x) { return x.json(); }).catch(function () { return {}; })
+    ]).then(function (a) {
+      var all = (a[0] && a[0].guests) || [], info = (a[1] && a[1].guests) || [];
+      var byNo = {}; info.forEach(function (g) { byNo[String(g.passport_no || "")] = g; });
+      var list = all.filter(isComp).map(function (c) { var g = byNo[String(c.passport_no || "")]; if (g) c.nat2 = g.nat2; return c; }).sort(function (x, y) { return y.id - x.id; });
+      cache = { q: q, list: list, guests: ((a[2] && a[2].guests) || all).filter(function (g) { return !isComp(g); }).sort(function (x, y) { return y.id - x.id; }) };
+      picker(list);
+      if (!list.length) { if (cache.guests[0]) setVal($("g_guestName"), fullName(cache.guests[0])); banner("👥 មិនទាន់មានដៃគូស្កេនសម្រាប់បន្ទប់ " + r + " ថ្ងៃនេះ — ចុច 📷 ស្កេនដៃគូ", false); lastQ = ""; return; }
+      fill(list[0]);
+    }).catch(function () { lastQ = ""; }).then(function () { busy = false; });
+  }
+
+  var seen = "", stable = 0;
+  setInterval(function () {
+    if (!ON.test(location.hash)) { lastQ = ""; seen = ""; return; }
+    var room = $("g_room"); if (!room) return;
+    addCard();
+    var v = room.value.trim() + "|" + dateVal();
+    if (!room.value.trim()) { lastQ = ""; banner("", false); }
+    if (v !== seen) { seen = v; stable = 0; return; }
+    if (++stable >= 2 && room.value.trim()) lookup(false);
+  }, 750);
+  document.addEventListener("visibilitychange", function () { if (!document.hidden && ON.test(location.hash)) { lastQ = ""; lookup(false); } });
 })();
