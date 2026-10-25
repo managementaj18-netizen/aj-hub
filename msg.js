@@ -1,4 +1,4 @@
-/* msg.js v1 */
+/* msg.js v2 */
 /* =====================================================================
    💬 MESSAGES & REQUEST REPLIES — A&J Kampot Hub
    - Boss page:  tab "💬 សារ & សំណើ" inside #boss
@@ -48,7 +48,7 @@ const toLbl=t=>{ if(!t||t.k==='all') return '📢 បុគ្គលិកទា
   if(t.k==='p') return '👤 '+t.v; if(t.k==='d') return '👥 ផ្នែក '+lbl(t.v);
   if(t.k==='s'){ const s=shifts().find(x=>x.id===t.v); return '🕒 '+(s?s.name:t.v); } return ''; };
 const forMe=(m,n)=>{ const t=m.to||{k:'all'}; return t.k==='all'||(t.k==='p'&&t.v===n)||(t.k==='s'&&t.v&&t.v===shiftOf(n))||(t.k==='d'&&t.v&&t.v===deptOf(n)); };
-const canon=n=>{ n=String(n||'').trim().replace(/\s+/g,' '); const L=staffNames(), low=n.toLowerCase(); if(!n) return '';
+const canon=n=>{ n=String(n||'').trim().replace(/\s+/g,' '); const L=staffNames(), low=n.toLowerCase(); if(!n) return ''; const al=W().msgAlias||{}; if(al[low]&&L.includes(al[low])) return al[low];
   return L.find(x=>x.toLowerCase()===low)||L.find(x=>low&&(x.toLowerCase().includes(low)||low.includes(x.toLowerCase())))||n; };
 const newId=()=>'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 
@@ -185,13 +185,15 @@ function reqCard(r,i){ const rp=replyOf(r._id), who=canon(r.name);
   if(rp) return `<div class="mg-card ${rp.cat}">${info}<div class="mg-req">${rp.cat==='ok'?'✅ អនុញ្ញាត':'❌ មិនអនុញ្ញាត'} · ${esc(when(rp.at))} → ${esc(toLbl(rp.to))}${rp.m?`<br>${esc(rp.m)}`:''}</div>
     <div class="mg-act"><button class="btn alt sm" onclick="mgDel('${esc(rp.id)}')">↩ ដកចម្លើយ</button><button class="btn alt sm" onclick="openRecord('${esc(r._id)}')">📄 មើលហ្វម</button></div></div>`;
   return `<div class="mg-card warn">${info}
-    <label style="margin-top:8px;display:block;font-size:13px">ផ្ញើចម្លើយទៅ</label><select id="mgRto_${i}">${[...new Set([who,...staffNames()])].filter(Boolean).map(n=>`<option ${n===who?'selected':''}>${esc(n)}</option>`).join('')}</select>
+    <label style="margin-top:8px;display:block;font-size:13px">ផ្ញើចម្លើយទៅ</label><select id="mgRto_${i}">${staffNames().includes(who)?'':`<option value="" selected>⚠️ ជ្រើសឈ្មោះបុគ្គលិក (ហ្វមសរសេរ «${esc(r.name||'')}»)</option>`}${staffNames().map(n=>`<option ${n===who?'selected':''}>${esc(n)}</option>`).join('')}</select>
     <textarea id="mgRtx_${i}" rows="2" maxlength="${MAX_TXT}" placeholder="ហេតុផល / ចំណាំ (មិនចាំបាច់)" style="margin-top:6px"></textarea>
     <div class="mg-chips">${REPLY_EX.ok.map(t=>`<button onclick="$('mgRtx_${i}').value=this.textContent">${esc(t)}</button>`).join('')}${REPLY_EX.no.map(t=>`<button onclick="$('mgRtx_${i}').value=this.textContent">${esc(t)}</button>`).join('')}</div>
     <div class="mg-act"><button class="btn" style="background:var(--ok);border-color:var(--ok)" onclick="mgReply(${i},'ok')">✅ អនុញ្ញាត</button><button class="btn" style="background:var(--bad);border-color:var(--bad)" onclick="mgReply(${i},'no')">❌ មិនអនុញ្ញាត</button><button class="btn alt sm" onclick="openRecord('${esc(r._id)}')">📄 មើលហ្វម</button></div></div>`; }
 window.mgReply=async(i,st)=>{ const r=LEAVES[i]; if(!r) return; const to=$('mgRto_'+i).value, t=$('mgRtx_'+i).value.trim().slice(0,MAX_TXT);
+  if(!to) return alert('សូមជ្រើសឈ្មោះបុគ្គលិកដែលត្រូវផ្ញើចម្លើយទៅ (ឈ្មោះក្នុងហ្វមមិនដូចក្នុងបញ្ជីបុគ្គលិក)');
   if(st==='no'&&!t&&!confirm('មិនទាន់សរសេរហេតុផលទេ។ ផ្ញើ «មិនអនុញ្ញាត» ដោយគ្មានហេតុផល?')) return;
   try{ await freshCfg(); const w=W();
+    const nk=String(r.name||'').trim().replace(/\s+/g,' ').toLowerCase(); if(nk&&nk!==to.toLowerCase()){ w.msgAlias=w.msgAlias&&typeof w.msgAlias==='object'?w.msgAlias:{}; w.msgAlias[nk]=to; }
     if(to&&!w.msgDept[to]&&r.position&&DEPTS.includes(r.position)) w.msgDept[to]=r.position;
     w.msg=msgs().filter(m=>m.ref!==String(r._id));
     w.msg.unshift({id:newId(),at:new Date().toISOString(),to:{k:'p',v:to},cat:st,m:t,ref:String(r._id),
