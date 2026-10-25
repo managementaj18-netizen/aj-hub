@@ -386,7 +386,7 @@
       '<div id="ajCompPick" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px"></div>' +
       '<div id="ajCompBanner" style="display:none;margin-top:8px;padding:10px 12px;border-radius:12px;font-size:14px;font-weight:600"></div>';
     var h = host.querySelector && host.querySelector("h2, h3");
-    if (host.id === "gfBody" || !h) { var sec = room.closest("label, .f, div"); sec.parentNode.insertBefore(c, sec.nextSibling); }
+    if (host.id === "gfBody" || !h) { var sec = room.closest(".fg") || room.closest("label, .f, div"); sec.parentNode.insertBefore(c, sec.nextSibling); }
     else host.insertBefore(c, h.nextSibling);
     $("ajCompScan").onclick = openPanel;
     $("ajCompRe").onclick = function () { lastQ = ""; lookup(true); };
