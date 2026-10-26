@@ -1,4 +1,4 @@
-/* msg.js v3 */
+/* msg.js v4 */
 /* =====================================================================
    💬 MESSAGES & REQUEST REPLIES — A&J Kampot Hub
    - Boss page:  tab "💬 សារ & សំណើ" inside #boss
@@ -72,11 +72,26 @@ const css=document.createElement('style'); css.textContent=`
 .mg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
 `; document.head.appendChild(css);
 
+const money=$=>{ $=String($||'').trim(); return /^[\d.,]+$/.test($)?'$'+$:$; };
+/* 💵 salary cut / ⚠️ policy charge shown on a message (pay: 'none' | 'cut') */
+function payHtml(m){ if(!m.pay&&!m.charge) return '';
+  const a=m.pay==='cut'?`💵 <b style="color:var(--bad)">កាត់ប្រាក់ខែ</b>${m.cut?' — '+esc(money(m.cut)):''}`:(m.pay==='none'?'💵 <b style="color:var(--ok)">មិនកាត់ប្រាក់ខែ</b>':'');
+  const b=m.charge?`⚠️ <b style="color:var(--bad)">ពិន័យតាមគោលការណ៍ (Policy charge)</b> — ${esc(money(m.charge))}<br><span class="muted" style="font-size:13px">ព្រោះស្នើសុំ/ធ្វើក្នុងពេលដែលគោលការណ៍ក្រុមហ៊ុនមិនអនុញ្ញាត — ពិន័យនេះបូកបន្ថែមពីលើការកាត់ប្រាក់ខែ</span>`:'';
+  return `<div class="mg-req" style="background:${m.pay==='cut'||m.charge?'var(--badbg)':'var(--okbg)'}">${[a,b].filter(Boolean).join('<br>')}</div>`; }
+/* the 💵 / ⚠️ inputs (boss side) */
+const payInputs=id=>`<div class="mg-pay" style="margin-top:8px"><label style="font-size:13px;display:block">💵 ប្រាក់ខែ</label>
+  <div class="mg-chips"><button data-p="none" onclick="mgPay('${id}','none',this)">✅ មិនកាត់ប្រាក់ខែ</button><button data-p="cut" onclick="mgPay('${id}','cut',this)">✂️ កាត់ប្រាក់ខែ</button></div>
+  <input id="${id}_cut" class="hide" placeholder="កាត់ប៉ុន្មាន? ឧ. 5 ឬ ១ ថ្ងៃ / ២ម៉ោង" maxlength="40">
+  <label style="font-size:13px;display:block;margin-top:6px">⚠️ ពិន័យតាមគោលការណ៍ (Policy charge) — បំពេញតែពេលគោលការណ៍មិនអនុញ្ញាត ប៉ុន្តែនៅតែធ្វើ</label>
+  <input id="${id}_chg" placeholder="ចំនួនពិន័យ ឧ. 10 (ទុកទទេ = គ្មាន)" maxlength="40"><input type="hidden" id="${id}_pay" value=""></div>`;
+window.mgPay=(id,v,b)=>{ const h=$(id+'_pay'); const on=h.value!==v; h.value=on?v:''; b.parentElement.querySelectorAll('button').forEach(x=>x.classList.toggle('on',on&&x.dataset.p===v)); $(id+'_cut').classList.toggle('hide',!(on&&v==='cut')); };
+const payOf=id=>{ const o={}, p=$(id+'_pay')&&$(id+'_pay').value; if(p) o.pay=p; const c=($(id+'_cut')||{}).value; if(p==='cut'&&c&&c.trim()) o.cut=c.trim().slice(0,40); const g=($(id+'_chg')||{}).value; if(g&&g.trim()) o.charge=g.trim().slice(0,40); return o; };
+const payClear=id=>{ ['_cut','_chg','_pay'].forEach(k=>{ if($(id+k)) $(id+k).value=''; }); const w=$(id+'_pay'); if(w) w.closest('.mg-pay').querySelectorAll('button').forEach(x=>x.classList.remove('on')); if($(id+'_cut')) $(id+'_cut').classList.add('hide'); };
 function msgCard(m,isNew,boss){ const c=CATS[m.cat]||CATS.info; const r=m.req;
   return `<div class="mg-card ${esc(m.cat||'info')}${isNew?' new':''}"><div class="mg-h"><b>${c[0]} ${esc(c[1])}${isNew?' <span class="pill warn">ថ្មី</span>':''}</b><span class="mg-to">${esc(when(m.at))}</span></div>
   <div class="mg-to">ពីមេ → ${esc(toLbl(m.to))}${m.who?` · 👤 សម្រាប់៖ <b>${esc(m.who)}</b>`:''}</div>
   ${r?`<div class="mg-req">📄 <b>សំណើ៖</b> ${esc(lbl(r.type||''))}${r.from?' · '+esc(fmtD(r.from)):''}${r.to&&r.to!==r.from?' → '+esc(fmtD(r.to)):''}${r.days?' ('+esc(r.days)+' ថ្ងៃ)':''}${r.reason?`<br><span class="muted">មូលហេតុ៖ ${esc(r.reason)}</span>`:''}</div>`:''}
-  ${m.m?`<div class="mg-txt">${m.cat==='ok'||m.cat==='no'?'<b>ចម្លើយ / ហេតុផល៖</b> ':''}${esc(m.m)}</div>`:''}
+  ${m.m?`<div class="mg-txt">${m.cat==='ok'||m.cat==='no'?'<b>ចម្លើយ / ហេតុផល៖</b> ':''}${esc(m.m)}</div>`:''}${payHtml(m)}
   ${boss?`<div class="mg-act"><button class="btn alt sm" style="color:var(--bad)" onclick="mgDel('${esc(m.id)}')">🗑 លុប</button></div>`:''}</div>`; }
 
 /* =====================================================================
@@ -154,7 +169,7 @@ function injectBoss(){
       <input id="mgWho" maxlength="60" placeholder="👤 សម្រាប់អ្នកណា? (ឈ្មោះ — មិនចាំបាច់)" style="margin-top:6px">
       <label style="margin-top:8px;display:block">ប្រភេទ</label><div class="mg-chips" id="mgCat"></div>
       <label style="margin-top:4px;display:block">ឧទាហរណ៍ (ចុចដើម្បីបញ្ចូល ហើយកែបាន)</label><div class="mg-chips" id="mgEx"></div>
-      <textarea id="mgTxt" maxlength="${MAX_TXT}" rows="4" placeholder="សរសេរសារ…"></textarea>
+      <textarea id="mgTxt" maxlength="${MAX_TXT}" rows="4" placeholder="សរសេរសារ…"></textarea>${payInputs('mgNew')}
       <button class="btn big" id="mgSend" onclick="mgSend()" style="margin-top:8px">📤 ផ្ញើ</button><p id="mgSendMsg" class="muted"></p></div>
       <h2>📜 សារបានផ្ញើ</h2><div id="mgSent"></div></div>
   </div>`;
@@ -172,8 +187,8 @@ function parseTo(v){ if(!v||v==='all') return {k:'all'}; const i=v.indexOf('|');
 window.mgSend=async()=>{ const t=$('mgTxt').value.trim().slice(0,MAX_TXT); if(!t) return alert('សូមសរសេរសារ'); const to=parseTo($('mgTo').value), who=$('mgWho').value.trim().slice(0,60);
   if(!confirm(`ផ្ញើសារទៅ ${toLbl(to)}${who?' · '+who:''}?`)) return;
   const b=$('mgSend'); b.disabled=true; b.textContent='⏳ កំពុងផ្ញើ…';
-  try{ await freshCfg(); W().msg.unshift({id:newId(),at:new Date().toISOString(),to,...(who?{who}:{}),cat:CAT,m:t}); const ok=await pushMsgs();
-    $('mgSendMsg').textContent=ok?'✅ ផ្ញើរួច — បុគ្គលិកនឹងឃើញពេលបើក «💬 សារពីមេ»':NOKEEP; $('mgSendMsg').style.color=ok?'var(--ok)':'var(--bad)'; if(ok){ $('mgTxt').value=''; $('mgWho').value=''; } mgBoss(); }
+  try{ await freshCfg(); W().msg.unshift({id:newId(),at:new Date().toISOString(),to,...(who?{who}:{}),cat:CAT,m:t,...payOf('mgNew')}); const ok=await pushMsgs();
+    $('mgSendMsg').textContent=ok?'✅ ផ្ញើរួច — បុគ្គលិកនឹងឃើញពេលបើក «💬 សារពីមេ»':NOKEEP; $('mgSendMsg').style.color=ok?'var(--ok)':'var(--bad)'; if(ok){ $('mgTxt').value=''; $('mgWho').value=''; payClear('mgNew'); } mgBoss(); }
   catch(e){ alert('ផ្ញើមិនបាន៖ '+e.message); }
   b.disabled=false; b.textContent='📤 ផ្ញើ'; };
 window.mgDel=async id=>{ if(!confirm('🗑 លុបសារនេះ? បុគ្គលិកនឹងលែងឃើញ។')) return;
@@ -184,19 +199,19 @@ function grpOpts(sel){ return `<option value="all" ${sel==='all'?'selected':''}>
 function reqCard(r,i){ const rp=replyOf(r._id);
   const info=`<b>${esc(r.name||'—')}</b> <span class="muted">${esc(lbl(r.position||''))}</span><br>📄 ${esc(lbl(r.leaveType||''))}${r.halfday?' · '+esc(lbl(r.halfday)):''}${r.other?' · '+esc(r.other):''}<br>📅 ${esc(fmtD(r.fromDate))}${r.toDate&&r.toDate!==r.fromDate?' → '+esc(fmtD(r.toDate)):''}${r.totalDays?' · '+esc(r.totalDays)+' ថ្ងៃ':''}
     ${r.reason?`<div class="mg-txt" style="font-size:14px">💭 ${esc(r.reason)}</div>`:''}${r.covering?`<div class="muted" style="font-size:13px">អ្នកជំនួស៖ ${esc(r.covering)}</div>`:''}`;
-  if(rp) return `<div class="mg-card ${rp.cat}">${info}<div class="mg-req">${rp.cat==='ok'?'✅ អនុញ្ញាត':'❌ មិនអនុញ្ញាត'} · ${esc(when(rp.at))} → ${esc(toLbl(rp.to))}${rp.m?`<br>${esc(rp.m)}`:''}</div>
+  if(rp) return `<div class="mg-card ${rp.cat}">${info}<div class="mg-req">${rp.cat==='ok'?'✅ អនុញ្ញាត':'❌ មិនអនុញ្ញាត'} · ${esc(when(rp.at))} → ${esc(toLbl(rp.to))}${rp.m?`<br>${esc(rp.m)}`:''}</div>${payHtml(rp)}
     <div class="mg-act"><button class="btn alt sm" onclick="mgDel('${esc(rp.id)}')">↩ ដកចម្លើយ</button><button class="btn alt sm" onclick="openRecord('${esc(r._id)}')">📄 មើលហ្វម</button></div></div>`;
   const def=DEPTS.includes(r.position)?'d|'+r.position:'all';
   return `<div class="mg-card warn">${info}
     <label style="margin-top:8px;display:block;font-size:13px">ផ្ញើចម្លើយទៅ (វេន / ផ្នែក)</label><select id="mgRto_${i}">${grpOpts(def)}</select>
-    <textarea id="mgRtx_${i}" rows="2" maxlength="${MAX_TXT}" placeholder="ហេតុផល / ចំណាំ (មិនចាំបាច់)" style="margin-top:6px"></textarea>
+    <textarea id="mgRtx_${i}" rows="2" maxlength="${MAX_TXT}" placeholder="ហេតុផល / ចំណាំ (មិនចាំបាច់)" style="margin-top:6px"></textarea>${payInputs('mgRp_'+i)}
     <div class="mg-chips">${REPLY_EX.ok.map(t=>`<button onclick="$('mgRtx_${i}').value=this.textContent">${esc(t)}</button>`).join('')}${REPLY_EX.no.map(t=>`<button onclick="$('mgRtx_${i}').value=this.textContent">${esc(t)}</button>`).join('')}</div>
     <div class="mg-act"><button class="btn" style="background:var(--ok);border-color:var(--ok)" onclick="mgReply(${i},'ok')">✅ អនុញ្ញាត</button><button class="btn" style="background:var(--bad);border-color:var(--bad)" onclick="mgReply(${i},'no')">❌ មិនអនុញ្ញាត</button><button class="btn alt sm" onclick="openRecord('${esc(r._id)}')">📄 មើលហ្វម</button></div></div>`; }
 window.mgReply=async(i,st)=>{ const r=LEAVES[i]; if(!r) return; const to=parseTo($('mgRto_'+i).value), t=$('mgRtx_'+i).value.trim().slice(0,MAX_TXT);
   if(st==='no'&&!t&&!confirm('មិនទាន់សរសេរហេតុផលទេ។ ផ្ញើ «មិនអនុញ្ញាត» ដោយគ្មានហេតុផល?')) return;
   try{ await freshCfg(); const w=W();
     w.msg=msgs().filter(m=>m.ref!==String(r._id));
-    w.msg.unshift({id:newId(),at:new Date().toISOString(),to,who:String(r.name||'').slice(0,60),cat:st,m:t,ref:String(r._id),
+    w.msg.unshift({id:newId(),at:new Date().toISOString(),to,who:String(r.name||'').slice(0,60),cat:st,m:t,ref:String(r._id),...payOf('mgRp_'+i),
       req:{type:r.leaveType||'',from:r.fromDate||'',to:r.toDate||'',days:r.totalDays||'',reason:String(r.reason||'').slice(0,200)}});
     const ok=await pushMsgs(); if(!ok) alert(NOKEEP); mgBoss(); }
   catch(e){ alert('ផ្ញើមិនបាន៖ '+e.message); } };
