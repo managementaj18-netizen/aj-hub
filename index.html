@@ -922,7 +922,7 @@ function route(){
   const h=location.hash.replace('#',''); clearTimeout(window._rt);
   ['vHome','vTablet','vForm','vBoss','vStaff','vLock','vView'].forEach(v=>$(v).classList.add('hide'));
   const T=TAB(); $('lockBtn').classList.toggle('hide',!T);
-  if(T&&!unlocked()&&h!=='boss'&&h!=='payroll'&&h!=='view'&&h!=='f/attend'&&h!=='f/work'&&h!=='f/msg'&&h!=='f/'+T.form&&!(T.form==='checkin'&&h==='tablet')&&!(PAIR.includes(T.form)&&['f/booking','f/checkin','tablet'].includes(h))){ history.replaceState(null,'','#f/'+T.form); return route(); }
+  if(T&&!unlocked()&&h!=='boss'&&h!=='payroll'&&h!=='view'&&h!=='f/attend'&&h!=='f/work'&&h!=='f/msg'&&h!=='f/leave'&&h!=='f/'+T.form&&!(T.form==='checkin'&&h==='tablet')&&!(PAIR.includes(T.form)&&['f/booking','f/checkin','tablet'].includes(h))){ history.replaceState(null,'','#f/'+T.form); return route(); }
   const ft=h==='tablet'?'checkin':(h.startsWith('f/')?h.slice(2):'');
   if(ft&&(ft==='checkin'||(DEFS[ft]&&!DEFS[ft].bossOnly))&&!deviceKey()) return tabletSetup(ft);
   if(h==='tablet'||h==='f/checkin'){ $('vTablet').classList.remove('hide'); initTabletCommon(); const first=!ciInit; initCheckin(); applyPrefill('checkin'); flowSwitch('checkin');
