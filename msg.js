@@ -1,4 +1,4 @@
-/* msg.js v4 */
+/* msg.js v5 */
 /* =====================================================================
    💬 MESSAGES & REQUEST REPLIES — A&J Kampot Hub
    - Boss page:  tab "💬 សារ & សំណើ" inside #boss
@@ -110,7 +110,8 @@ function mgRender(){ const host=$('gfBody'); if(!host) return; ME='';
 function drawStaff(){ const box=$('mgMain'); if(!box) return;
   if(!ME){ const G=groups(), mine=jget(LS_ME,[]);
     box.innerHTML=`<h2 style="margin-top:6px">💬 សារពីមេ / Messages</h2>
-    <div style="text-align:center;font-weight:600">👇 ចុចវេន ឬ ផ្នែករបស់អ្នក</div>
+    ${polSection()}
+    <div style="text-align:center;font-weight:600;margin-top:16px">👇 ចុចវេន ឬ ផ្នែករបស់អ្នក</div>
     <div class="mg-names">${G.map((g,i)=>{ const u=unread(g.k); return `<button onclick="mgMe(${i})"><b>${mine.includes(g.k)?'★ ':''}${g.ic} ${esc(g.n)}</b>${u?`<span class="mg-badge">${u}</span>`:''}<small>${esc(g.sub)}</small></button>`; }).join('')}</div>
     <h3 style="margin-top:18px">📢 សារទូទៅរបស់ក្រុមហ៊ុន <span class="muted" style="font-size:13px;font-weight:400">— អ្នកណាក៏មើលបាន</span></h3>${(()=>{ const A=msgs().filter(m=>!m.to||m.to.k==='all'), h0=0; const h=A.map(m=>msgCard(m,!seenAny(m.id))).join(''); markSeen('all',A.map(m=>m.id)); return h||'<p class="muted">មិនទាន់មាន</p>'; })()}
     <p class="muted" style="font-size:13px">📄 ចង់ស្នើសុំច្បាប់ / ប្ដូរវេន / ឈប់? → <a href="#f/leave">បំពេញ «លិខិតស្នើសុំ»</a> ហើយត្រឡប់មកទីនេះដើម្បីមើលចម្លើយពីមេ (ក្នុងផ្នែករបស់អ្នក)។</p>`;
@@ -132,7 +133,7 @@ if(!QR_TYPES.includes('msg')) QR_TYPES.splice(QR_TYPES.indexOf('decl'),0,'msg');
 /* banner on the staff pages (Request form, Daily work, Attendance): "💬 សារពីមេ" + unread count for this device's names */
 function staffBanner(){ const h=location.hash; if(!/^#f\/(leave|work|attend)$/.test(h)) return;
   const host=$('gfBody'); if(!host||host.querySelector('.mg-ban')) return;
-  const mine=jget(LS_ME,[]).filter(k=>grpByKey(k)); const u=mine.reduce((s,n)=>s+unread(n),0)+unread('all');
+  const mine=jget(LS_ME,[]).filter(k=>grpByKey(k)); const ps=polSeen(); const u=mine.reduce((s,n)=>s+unread(n),0)+unread('all')+pols().filter(p=>!ps.has(p.id+'@'+(p.at||''))).length;
   host.insertAdjacentHTML('afterbegin',`<a class="mg-ban" href="#f/msg"><div class="alert ${u?'warn':'ok'}" style="margin:6px 0">💬 <b>សារពីមេ / ចម្លើយសំណើ</b>${u?` <span class="mg-badge">${u} ថ្មី</span>`:''} — ចុចមើល →</div></a>`); }
 function bannerSoon(){ [400,1500,4000].forEach(t=>setTimeout(staffBanner,t)); }
 window.addEventListener('hashchange',bannerSoon);
@@ -142,6 +143,71 @@ window.addEventListener('hashchange',_wantLoad);
 /* =====================================================================
    BOSS SIDE — tab 💬 សារ & សំណើ
    ===================================================================== */
+
+/* =====================================================================
+   📜 COMPANY POLICIES — letters from management (read only, no staff signature)
+   Stored in cfg.work.pol (boss can add / edit); built-in default until the boss saves his own list.
+   Body format: a line starting with "# " is a heading, other lines are paragraphs.
+   ===================================================================== */
+const DEF_POL=[{id:'p_probation',no:'A&J-POL-001',at:'2026-10-26',title:'គោលការណ៍ស្តីពីបុគ្គលិកសាកល្បង និងបុគ្គលិកពេញសិទ្ធិ',
+body:`# មាត្រា ១ — បុគ្គលិកសាកល្បង
+១. បុគ្គលិកថ្មីទាំងអស់ត្រូវឆ្លងកាត់រយៈពេលសាកល្បងជាមុនសិន។ ជាធម្មតារយៈពេលនេះមានពី ២ ទៅ ៣ ខែ ហើយក្រុមហ៊ុនអាចពន្យារបានតាមការចាំបាច់។
+២. ក្នុងរយៈពេលសាកល្បង ក្រុមហ៊ុនវាយតម្លៃលើ៖ សមត្ថភាពការងារ · ការគោរពម៉ោងការងារ និងវិន័យ · ឥរិយាបថចំពោះភ្ញៀវ និងសហការី · ការទទួលខុសត្រូវ និងភាពស្មោះត្រង់។
+៣. ការស្នើសុំច្បាប់ ការសុំចេញមុនម៉ោង ការអវត្តមាន និងកំហុសការងារ នឹងត្រូវយកមកពិចារណាក្នុងការវាយតម្លៃ។
+៤. ពេលចប់រយៈពេលសាកល្បង ក្រុមហ៊ុននឹងសម្រេចជ្រើសមួយក្នុងចំណោមបីយ៉ាងនេះ៖ តែងតាំងជាបុគ្គលិកពេញសិទ្ធិ · ពន្យាររយៈពេលសាកល្បង · ឬបញ្ចប់ការងារ។
+# មាត្រា ២ — បុគ្គលិកពេញសិទ្ធិ
+១. បុគ្គលិកដែលបានតែងតាំងជាបុគ្គលិកពេញសិទ្ធិ អាចទទួលបានអត្ថប្រយោជន៍តាមគោលការណ៍ក្រុមហ៊ុន ដូចជា៖ ឯកសណ្ឋានក្រុមហ៊ុន · ការដំឡើងប្រាក់ខែ · និងអត្ថប្រយោជន៍ផ្សេងៗដែលក្រុមហ៊ុនកំណត់។
+២. អត្ថប្រយោជន៍ទាំងនេះផ្ដល់ជូនលុះត្រាតែបុគ្គលិកបំពេញលក្ខខណ្ឌទាំងអស់ដែលក្រុមហ៊ុនបានកំណត់។ ពេលវេលា និងកម្រិតនៃអត្ថប្រយោជន៍ គឺអាស្រ័យលើលទ្ធផលការងាររបស់បុគ្គលិកម្នាក់ៗ។
+# មាត្រា ៣ — ការវាយតម្លៃ និងការសម្រេច
+១. ក្រុមហ៊ុនតាមដាន និងវាយតម្លៃបុគ្គលិកគ្រប់រូបជាប្រចាំ ដោយយុត្តិធម៌ និងស្មើភាពគ្នា។
+២. ក្រុមហ៊ុនយល់ថាបុគ្គលិកទាំងអស់ចង់ដឹងអំពីវឌ្ឍនភាពការងាររបស់ខ្លួន។ ការពិនិត្យលើការតែងតាំង ការដំឡើងប្រាក់ខែ និងអត្ថប្រយោជន៍ ធ្វើឡើងតាមដំណើរការវាយតម្លៃរបស់ក្រុមហ៊ុន ហើយថ្នាក់ដឹកនាំនឹងជូនដំណឹងដល់បុគ្គលិកដោយផ្ទាល់នៅពេលសមស្រប។
+៣. សូមបុគ្គលិកទាំងអស់បន្តយកចិត្តទុកដាក់បំពេញការងារឲ្យបានល្អ ព្រោះការខិតខំ និងលទ្ធផលការងាររបស់អ្នក គឺជាមូលដ្ឋានសំខាន់បំផុតក្នុងការពិចារណារបស់ក្រុមហ៊ុន។
+# អវសានបញ្ញត្តិ
+គោលការណ៍នេះចូលជាធរមានចាប់ពីថ្ងៃចេញផ្សាយ។ ក្រុមហ៊ុនរក្សាសិទ្ធិកែប្រែ ឬបន្ថែមគោលការណ៍នេះតាមការចាំបាច់ ហើយនឹងជូនដំណឹងដល់បុគ្គលិកទាំងអស់។`}];
+const pols=()=>{ const w=W(); return Array.isArray(w.pol)?w.pol.filter(p=>p&&p.id&&p.title):DEF_POL; };
+const LS_POLSEEN='ajmsg_polseen';
+const polSeen=()=>new Set(jget(LS_POLSEEN,[]));
+const polBody=b=>String(b||'').split(/\n+/).map(l=>l.trim()).filter(Boolean).map(l=>/^#\s*/.test(l)?`<h3 style="margin:16px 0 6px">${esc(l.replace(/^#\s*/,''))}</h3>`:`<p style="margin:6px 0;line-height:1.75;text-align:justify">${esc(l)}</p>`).join('');
+function polLetter(p){ return `<div class="mg-letter">${docHead('')}
+  <div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px;font-size:13px;margin:10px 0 4px"><span>លេខ / No: <b>${esc(p.no||'')}</b></span><span>កាលបរិច្ឆេទ / Date: <b>${esc(fmtD(p.at||''))}</b></span></div>
+  <div style="text-align:center;margin:14px 0 4px;font-weight:700;font-size:15px">លិខិតជូនដំណឹងពីថ្នាក់ដឹកនាំ</div>
+  <h2 style="text-align:center;margin:0 0 6px">${esc(p.title)}</h2>
+  <p style="margin:10px 0">ជូនចំពោះ៖ បុគ្គលិកទាំងអស់នៃ A&amp;J Kampot Boutique</p>
+  ${polBody(p.body)}
+  <div style="display:flex;justify-content:flex-end;margin-top:28px"><div style="text-align:center;min-width:220px">ធ្វើនៅកំពត ថ្ងៃទី ${esc(fmtD(p.at||''))}<br><b>ថ្នាក់ដឹកនាំ</b><br>A&amp;J Kampot Boutique<div style="height:70px"></div></div></div></div>`; }
+window.mgPolView=i=>{ const p=pols()[i]; if(!p) return; const box=$('mgMain'); if(!box) return;
+  const s=polSeen(); s.add(p.id+'@'+(p.at||'')); jset(LS_POLSEEN,[...s].slice(-100));
+  box.innerHTML=`<div class="row" style="justify-content:space-between;flex-wrap:wrap;gap:6px"><button class="btn alt sm" onclick="mgMe(-1)">← ត្រឡប់</button><button class="btn sm" onclick="mgPolPrint(${i})">🖨 បោះពុម្ព / ⬇ PDF</button></div><div class="card" style="margin-top:10px">${polLetter(p)}</div>`; window.scrollTo(0,0); };
+window.mgPolPrint=(i,list)=>{ const p=(list||pols())[i]; if(!p) return; const w=window.open('','_blank'); if(!w) return alert('សូមអនុញ្ញាត pop-up');
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${esc(p.no||'')} ${esc(p.title)}</title><link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
+  <style>body{font-family:'Kantumruy Pro',system-ui,sans-serif;color:#111;max-width:760px;margin:0 auto;padding:24px;font-size:14px}.doc-h{text-align:center}.doc-h img{width:110px}.doc-h .bn{font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:700}.doc-h .muted{display:block;color:#666;font-size:12px}.doc-h b{display:block}@page{size:A4;margin:16mm}</style></head><body>${polLetter(p)}<script>document.fonts&&document.fonts.ready.then(()=>setTimeout(()=>print(),300))<\/script></body></html>`); w.document.close(); };
+function polSection(){ const P=pols(); if(!P.length) return ''; const S=polSeen();
+  return `<h3 style="margin-top:16px">📜 គោលការណ៍ក្រុមហ៊ុន <span class="muted" style="font-size:13px;font-weight:400">— លិខិតពីថ្នាក់ដឹកនាំ សូមអាន</span></h3>`+
+    P.map((p,i)=>`<div class="mg-card info"><div class="mg-h"><b>📜 ${esc(p.title)}${S.has(p.id+'@'+(p.at||''))?'':' <span class="pill warn">ថ្មី</span>'}</b><span class="mg-to">${esc(p.no||'')} · ${esc(fmtD(p.at||''))}</span></div>
+    <div class="mg-act"><button class="btn sm" onclick="mgPolView(${i})">📖 អាន</button><button class="btn alt sm" onclick="mgPolPrint(${i})">🖨 PDF</button></div></div>`).join(''); }
+
+/* boss editor */
+let PED=null;
+function drawPolBoss(){ const box=$('mgPol'); if(!box) return; const P=pols();
+  if(PED){ box.innerHTML=`<label>ចំណងជើង</label><input id="pdT" value="${esc(PED.title||'')}" maxlength="120">
+    <div class="row" style="gap:8px;margin-top:6px"><div style="flex:1"><label>លេខ / No</label><input id="pdN" value="${esc(PED.no||'')}" maxlength="30"></div><div style="flex:1"><label>កាលបរិច្ឆេទ</label><input id="pdD" type="date" value="${esc(PED.at||'')}"></div></div>
+    <label style="margin-top:6px;display:block">ខ្លឹមសារ <span class="muted" style="font-size:12px">(បន្ទាត់ចាប់ផ្ដើមដោយ «# » = ចំណងជើងតូច)</span></label><textarea id="pdB" rows="14">${esc(PED.body||'')}</textarea>
+    <div class="mg-act"><button class="btn" id="pdSave" onclick="mgPolSave()">💾 រក្សាទុក & ផ្សាយ</button><button class="btn alt" onclick="mgPolPrev()">👁 មើល PDF</button><button class="btn alt" onclick="PEDx()">បោះបង់</button></div>`; return; }
+  box.innerHTML=(P.map((p,i)=>`<div class="mg-card info"><div class="mg-h"><b>📜 ${esc(p.title)}</b><span class="mg-to">${esc(p.no||'')} · ${esc(fmtD(p.at||''))}</span></div>
+    <div class="mg-act"><button class="btn alt sm" onclick="mgPolPrint(${i})">🖨 PDF</button><button class="btn alt sm" onclick="mgPolEdit(${i})">✏️ កែ</button><button class="btn alt sm" style="color:var(--bad)" onclick="mgPolDel(${i})">🗑 លុប</button></div></div>`).join('')||'<p class="muted">មិនទាន់មាន</p>')+
+    `<button class="btn alt sm" style="margin-top:8px" onclick="mgPolEdit(-1)">➕ គោលការណ៍ថ្មី</button>`; }
+window.PEDx=()=>{ PED=null; drawPolBoss(); };
+window.mgPolEdit=i=>{ const P=pols(); PED=i>=0?{...P[i],_i:i}:{id:'p'+Date.now().toString(36),no:'A&J-POL-'+String(P.length+1).padStart(3,'0'),at:new Date().toISOString().slice(0,10),title:'',body:'',_i:-1}; drawPolBoss(); };
+const pedRead=()=>({id:PED.id,no:$('pdN').value.trim().slice(0,30),at:$('pdD').value,title:$('pdT').value.trim().slice(0,120),body:$('pdB').value.trim().slice(0,6000)});
+window.mgPolPrev=()=>mgPolPrint(0,[pedRead()]);
+async function savePols(list){ await freshCfg(); W().pol=list; AC().set(AC().get()); await api('setAttCfg',{key:bossKey(),cfg:AC().get()});
+  const j=await api('attCfg',{key:bossKey()}); const ok=!!(j&&j.cfg&&j.cfg.work&&JSON.stringify(j.cfg.work.pol||null)===JSON.stringify(list)); if(j&&j.cfg) AC().set(j.cfg); return ok; }
+window.mgPolSave=async()=>{ const p=pedRead(); if(!p.title||!p.body) return alert('សូមបំពេញចំណងជើង និងខ្លឹមសារ'); const b=$('pdSave'); b.disabled=true; b.textContent='⏳…';
+  try{ const L=pols().slice(); if(PED._i>=0) L[PED._i]=p; else L.unshift(p); const ok=await savePols(L); if(!ok) alert(NOKEEP); PED=null; drawPolBoss(); }
+  catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); b.disabled=false; b.textContent='💾 រក្សាទុក & ផ្សាយ'; } };
+window.mgPolDel=async i=>{ const P=pols(); if(!P[i]||!confirm('🗑 លុបគោលការណ៍ «'+P[i].title+'»? បុគ្គលិកនឹងលែងឃើញ។')) return;
+  try{ const ok=await savePols(P.filter((_,k)=>k!==i)); if(!ok) alert(NOKEEP); drawPolBoss(); }catch(e){ alert('លុបមិនបាន៖ '+e.message); } };
+
 let LEAVES=[];
 const replyOf=id=>msgs().find(m=>m.ref===String(id));
 async function pushMsgs(){ /* save the whole config, then read back to be sure the server kept the messages */
@@ -171,7 +237,8 @@ function injectBoss(){
       <label style="margin-top:4px;display:block">ឧទាហរណ៍ (ចុចដើម្បីបញ្ចូល ហើយកែបាន)</label><div class="mg-chips" id="mgEx"></div>
       <textarea id="mgTxt" maxlength="${MAX_TXT}" rows="4" placeholder="សរសេរសារ…"></textarea>${payInputs('mgNew')}
       <button class="btn big" id="mgSend" onclick="mgSend()" style="margin-top:8px">📤 ផ្ញើ</button><p id="mgSendMsg" class="muted"></p></div>
-      <h2>📜 សារបានផ្ញើ</h2><div id="mgSent"></div></div>
+      <div class="card" style="margin-top:14px"><h2 style="margin-top:0">📜 គោលការណ៍ក្រុមហ៊ុន <span class="muted" style="font-size:13px;font-weight:400">លិខិតពីថ្នាក់ដឹកនាំ · បុគ្គលិកអានប៉ុណ្ណោះ (មិនស៊ីញ៉េ)</span></h2><div id="mgPol"></div></div>
+      <h2>📨 សារបានផ្ញើ</h2><div id="mgSent"></div></div>
   </div>`;
   const main=document.querySelector('#bossApp main'); const prev=$('t-work')||$('t-attend'); prev?prev.after(sec):main.appendChild(sec);
   freshCfg().then(mgBoss);
@@ -222,7 +289,7 @@ function mgBoss(){ if(!$('t-msg')) return;
   $('mgDone').innerHTML=D.slice(0,30).join('')||'<p class="muted">មិនទាន់មាន</p>';
   $('mgSent').innerHTML=msgs().filter(m=>!m.ref).slice(0,30).map(m=>msgCard(m,false,true)).join('')||'<p class="muted">មិនទាន់មានសារ</p>';
   const n=pendingCount(); const tn=$('mgTabN'); if(tn) tn.innerHTML=n?`<span class="mg-badge">${n}</span>`:'';
-  drawCompose();
+  drawCompose(); if(!PED) drawPolBoss();
   const tile=document.querySelector('#launcher [data-mg] .ts'); if(tile) tile.textContent=n?`⏳ ${n} សំណើរង់ចាំ`:'ផ្ញើសារទៅបុគ្គលិក'; }
 
 /* collect the staff Request Forms (newest first, last 90 days) whenever the boss data reloads */
