@@ -1,4 +1,4 @@
-/* msg.js v2 */
+/* msg.js v3 */
 /* =====================================================================
    💬 MESSAGES & REQUEST REPLIES — A&J Kampot Hub
    - Boss page:  tab "💬 សារ & សំណើ" inside #boss
@@ -6,15 +6,15 @@
        • send a message to one staff, a shift, a department or everyone (with ready examples)
        • list of sent messages (delete), and each staff member's department
    - Staff page: #f/msg  (tablet / phone, PIN once like the other forms)
-       staff taps own name → sees messages for them, their shift, their department, everyone
-       (personal messages are only shown under that person's name)
+       staff tap their SHIFT or DEPARTMENT (not a name — names change) → messages for that group + everyone;
+       the boss can add a name ("👤 សម្រាប់") on a message so the right person knows it is for them
    Messages live in the attendance config (cfg.work.msg) — the same saved config that already
    carries the daily-work feedback, so every tablet loads it with the staff list. No new server.
    ===================================================================== */
 (function(){
 'use strict';
 const TZ='Asia/Phnom_Penh';
-const LS_ME='ajmsg_me', LS_SEEN='ajmsg_seen';
+const LS_ME='ajmsg_grp', LS_SEEN='ajmsg_seen';
 const MAX_MSG=40, MAX_DAYS=60, MAX_TXT=600;
 const jget=(k,d)=>{try{const v=JSON.parse(ls.get(k)||'null');return v==null?d:v}catch(e){return d}};
 const jset=(k,v)=>ls.set(k,JSON.stringify(v));
@@ -38,18 +38,19 @@ const REPLY_EX={ok:['អនុញ្ញាត។ សូមប្រាប់អ�
                  no:['មិនអាចអនុញ្ញាតបានទេ ព្រោះថ្ងៃនោះភ្ញៀវពេញ / ខ្វះបុគ្គលិក។','សូមស្នើសុំជាមុនយ៉ាងតិច ៣ ថ្ងៃ។','សូមរកអ្នកជំនួសសិន រួចស្នើសុំម្ដងទៀត។']};
 
 function W(){ const c=AC().get(); if(!c.work||typeof c.work!=='object') c.work={}; const w=c.work;
-  if(!Array.isArray(w.msg)) w.msg=[]; if(!w.msgDept||typeof w.msgDept!=='object') w.msgDept={}; return w; }
+  if(!Array.isArray(w.msg)) w.msg=[]; return w; }
 const msgs=()=>W().msg.filter(x=>x&&x.id&&x.at);
-const staffNames=()=>AC().get().staff.map(s=>s.name);
 const shifts=()=>AC().get().shifts;
-const shiftOf=n=>{ const s=AC().get().staff.find(x=>x.name===n); return s?s.shift:''; };
-const deptOf=n=>W().msgDept[n]||'';
-const toLbl=t=>{ if(!t||t.k==='all') return '📢 បុគ្គលិកទាំងអស់';
+/* staff open the inbox by SHIFT or DEPARTMENT (names change, roles don't) */
+const groups=()=>[...shifts().map(x=>({k:'s|'+x.id,t:{k:'s',v:x.id},ic:{m:'🌅',a:'🌇',n:'🌙'}[x.id]||'🕒',n:x.name,sub:x.start+'–'+x.end})),
+  ...DEPTS.map(d=>({k:'d|'+d,t:{k:'d',v:d},ic:'👥',n:lbl(d),sub:d.split(' / ')[1]||''}))];
+const grpByKey=k=>groups().find(g=>g.k===k)||null;
+const toLbl=t=>{ if(!t||t.k==='all') return '📢 សារទូទៅរបស់ក្រុមហ៊ុន';
   if(t.k==='p') return '👤 '+t.v; if(t.k==='d') return '👥 ផ្នែក '+lbl(t.v);
   if(t.k==='s'){ const s=shifts().find(x=>x.id===t.v); return '🕒 '+(s?s.name:t.v); } return ''; };
-const forMe=(m,n)=>{ const t=m.to||{k:'all'}; return t.k==='all'||(t.k==='p'&&t.v===n)||(t.k==='s'&&t.v&&t.v===shiftOf(n))||(t.k==='d'&&t.v&&t.v===deptOf(n)); };
-const canon=n=>{ n=String(n||'').trim().replace(/\s+/g,' '); const L=staffNames(), low=n.toLowerCase(); if(!n) return ''; const al=W().msgAlias||{}; if(al[low]&&L.includes(al[low])) return al[low];
-  return L.find(x=>x.toLowerCase()===low)||L.find(x=>low&&(x.toLowerCase().includes(low)||low.includes(x.toLowerCase())))||n; };
+const legacyP=(m,g)=>{ const st=AC().get().staff.find(x=>x.name===m.to.v); const d=(W().msgDept||{})[m.to.v]; return (g.t.k==='s'&&st&&st.shift===g.t.v)||(g.t.k==='d'&&d===g.t.v); };
+const forMe=(m,k)=>{ const t=m.to||{k:'all'}, g=grpByKey(k); if(t.k==='all') return true; if(!g) return false;
+  if(t.k==='p') return legacyP(m,g); return t.k===g.t.k&&t.v===g.t.v; };
 const newId=()=>'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 
 const css=document.createElement('style'); css.textContent=`
@@ -73,8 +74,8 @@ const css=document.createElement('style'); css.textContent=`
 
 function msgCard(m,isNew,boss){ const c=CATS[m.cat]||CATS.info; const r=m.req;
   return `<div class="mg-card ${esc(m.cat||'info')}${isNew?' new':''}"><div class="mg-h"><b>${c[0]} ${esc(c[1])}${isNew?' <span class="pill warn">ថ្មី</span>':''}</b><span class="mg-to">${esc(when(m.at))}</span></div>
-  <div class="mg-to">ពីមេ → ${esc(toLbl(m.to))}</div>
-  ${r?`<div class="mg-req">📄 <b>សំណើ៖</b> ${esc(lbl(r.type||''))}${r.from?' · '+esc(fmtD(r.from)):''}${r.to&&r.to!==r.from?' → '+esc(fmtD(r.to)):''}${r.days?' ('+esc(r.days)+' ថ្ងៃ)':''}${r.reason?`<br><span class="muted">មូលហេតុរបស់អ្នក៖ ${esc(r.reason)}</span>`:''}</div>`:''}
+  <div class="mg-to">ពីមេ → ${esc(toLbl(m.to))}${m.who?` · 👤 សម្រាប់៖ <b>${esc(m.who)}</b>`:''}</div>
+  ${r?`<div class="mg-req">📄 <b>សំណើ៖</b> ${esc(lbl(r.type||''))}${r.from?' · '+esc(fmtD(r.from)):''}${r.to&&r.to!==r.from?' → '+esc(fmtD(r.to)):''}${r.days?' ('+esc(r.days)+' ថ្ងៃ)':''}${r.reason?`<br><span class="muted">មូលហេតុ៖ ${esc(r.reason)}</span>`:''}</div>`:''}
   ${m.m?`<div class="mg-txt">${m.cat==='ok'||m.cat==='no'?'<b>ចម្លើយ / ហេតុផល៖</b> ':''}${esc(m.m)}</div>`:''}
   ${boss?`<div class="mg-act"><button class="btn alt sm" style="color:var(--bad)" onclick="mgDel('${esc(m.id)}')">🗑 លុប</button></div>`:''}</div>`; }
 
@@ -84,27 +85,29 @@ function msgCard(m,isNew,boss){ const c=CATS[m.cat]||CATS.info; const r=m.req;
 let ME='';
 const seenSet=n=>new Set((jget(LS_SEEN,{})||{})[n]||[]);
 function markSeen(n,ids){ const s=jget(LS_SEEN,{})||{}; s[n]=[...new Set([...(s[n]||[]),...ids])].slice(-200); jset(LS_SEEN,s); }
-const unread=n=>{ const S=seenSet(n); return msgs().filter(m=>forMe(m,n)&&!S.has(m.id)).length; };
+const isAll=m=>!m.to||m.to.k==='all';
+const seenAny=id=>Object.values(jget(LS_SEEN,{})||{}).some(a=>Array.isArray(a)&&a.includes(id));
+const unread=n=>{ if(n==='all') return msgs().filter(m=>isAll(m)&&!seenAny(m.id)).length; const S=seenSet(n); return msgs().filter(m=>!isAll(m)&&forMe(m,n)&&!S.has(m.id)).length; };
 function mgRender(){ const host=$('gfBody'); if(!host) return; ME='';
   host.innerHTML=`<div id="mgMain"><p class="muted">⏳ កំពុងផ្ទុកសារ…</p></div>`;
   drawStaff();
   AC().load(deviceKey()||bossKey()).then(()=>drawStaff()); }
 function drawStaff(){ const box=$('mgMain'); if(!box) return;
-  if(!ME){ const L=staffNames(), mine=jget(LS_ME,[]);
+  if(!ME){ const G=groups(), mine=jget(LS_ME,[]);
     box.innerHTML=`<h2 style="margin-top:6px">💬 សារពីមេ / Messages</h2>
-    <div style="text-align:center;font-weight:600">👇 ចុចឈ្មោះរបស់អ្នក</div>
-    ${L.length?`<div class="mg-names">${L.map((n,i)=>{ const u=unread(n); return `<button onclick="mgMe(${i})"><b>${esc(n)}</b>${u?`<span class="mg-badge">${u}</span>`:''}<small>${mine.includes(n)?'★ ':''}${esc(lbl(deptOf(n)||''))}</small></button>`; }).join('')}</div>`
-      :`<div class="alert warn">មេមិនទាន់បញ្ចូលឈ្មោះបុគ្គលិកទេ (🕒 វត្តមាន → 👥 បុគ្គលិក & វេន)</div>`}
-    <h3 style="margin-top:18px">📢 សារសម្រាប់បុគ្គលិកទាំងអស់</h3>${msgs().filter(m=>!m.to||m.to.k==='all').slice(0,5).map(m=>msgCard(m,false)).join('')||'<p class="muted">មិនមាន</p>'}
-    <p class="muted" style="font-size:13px">📄 ចង់ស្នើសុំច្បាប់ / ប្ដូរវេន / ឈប់? → <a href="#f/leave">បំពេញ «លិខិតស្នើសុំ»</a> ហើយត្រឡប់មកទីនេះដើម្បីមើលចម្លើយពីមេ។</p>`;
+    <div style="text-align:center;font-weight:600">👇 ចុចវេន ឬ ផ្នែករបស់អ្នក</div>
+    <div class="mg-names">${G.map((g,i)=>{ const u=unread(g.k); return `<button onclick="mgMe(${i})"><b>${mine.includes(g.k)?'★ ':''}${g.ic} ${esc(g.n)}</b>${u?`<span class="mg-badge">${u}</span>`:''}<small>${esc(g.sub)}</small></button>`; }).join('')}</div>
+    <h3 style="margin-top:18px">📢 សារទូទៅរបស់ក្រុមហ៊ុន <span class="muted" style="font-size:13px;font-weight:400">— អ្នកណាក៏មើលបាន</span></h3>${(()=>{ const A=msgs().filter(m=>!m.to||m.to.k==='all'), h0=0; const h=A.map(m=>msgCard(m,!seenAny(m.id))).join(''); markSeen('all',A.map(m=>m.id)); return h||'<p class="muted">មិនទាន់មាន</p>'; })()}
+    <p class="muted" style="font-size:13px">📄 ចង់ស្នើសុំច្បាប់ / ប្ដូរវេន / ឈប់? → <a href="#f/leave">បំពេញ «លិខិតស្នើសុំ»</a> ហើយត្រឡប់មកទីនេះដើម្បីមើលចម្លើយពីមេ (ក្នុងផ្នែករបស់អ្នក)។</p>`;
     return; }
-  const S=seenSet(ME), L=msgs().filter(m=>forMe(m,ME)), sh=shifts().find(x=>x.id===shiftOf(ME));
-  box.innerHTML=`<div class="row" style="justify-content:space-between;flex-wrap:wrap"><h2 style="margin:6px 0">💬 ${esc(ME)}</h2><button class="btn alt sm" onclick="mgMe(-1)">← ប្ដូរឈ្មោះ</button></div>
-    <div class="muted" style="font-size:13px">${sh?'🕒 '+esc(sh.name)+' · ':''}${deptOf(ME)?'👥 '+esc(lbl(deptOf(ME))):''}</div>
+  const g=grpByKey(ME); if(!g){ ME=''; return drawStaff(); }
+  const S={has:id=>seenSet(ME).has(id)||seenAny(id)}, L=msgs().filter(m=>forMe(m,ME));
+  box.innerHTML=`<div class="row" style="justify-content:space-between;flex-wrap:wrap"><h2 style="margin:6px 0">💬 ${g.ic} ${esc(g.n)}</h2><button class="btn alt sm" onclick="mgMe(-1)">← ប្ដូរវេន / ផ្នែក</button></div>
+    <div class="muted" style="font-size:13px">${esc(g.sub)} · សារសម្រាប់ក្រុមនេះ + សារទូទៅរបស់ក្រុមហ៊ុន</div>
     ${L.length?L.map(m=>msgCard(m,!S.has(m.id))).join(''):'<p class="muted" style="margin:16px 0">មិនទាន់មានសារទេ ✨</p>'}
-    <p class="muted" style="font-size:13px;margin-top:16px">⏳ បើអ្នកបានផ្ញើសំណើ ហើយមិនទាន់ឃើញចម្លើយ = មេកំពុងពិនិត្យ។ · <a href="#f/leave">📄 ស្នើសុំថ្មី</a></p>`;
+    <p class="muted" style="font-size:13px;margin-top:16px">⏳ បើអ្នកបានផ្ញើសំណើ ហើយមិនទាន់ឃើញចម្លើយ = មេកំពុងពិនិត្យ (ឬមើលក្នុងផ្នែកផ្សេង)។ · <a href="#f/leave">📄 ស្នើសុំថ្មី</a></p>`;
   markSeen(ME,L.map(m=>m.id)); }
-window.mgMe=i=>{ if(i<0){ ME=''; return drawStaff(); } ME=staffNames()[i]||''; const mine=jget(LS_ME,[]); if(ME&&!mine.includes(ME)) jset(LS_ME,[ME,...mine].slice(0,3)); drawStaff(); window.scrollTo(0,0); };
+window.mgMe=i=>{ if(i<0){ ME=''; return drawStaff(); } const g=groups()[i]; ME=g?g.k:''; const mine=jget(LS_ME,[]).filter(k=>grpByKey(k)); if(ME&&!mine.includes(ME)) jset(LS_ME,[ME,...mine].slice(0,3)); drawStaff(); window.scrollTo(0,0); };
 
 DEFS.msg={icon:'💬',short:'សារពីមេ',title:'Messages from Boss',full:'សារពីមេ / Messages',
   sections:[],sigs:[],onRender:()=>mgRender(),
@@ -114,7 +117,7 @@ if(!QR_TYPES.includes('msg')) QR_TYPES.splice(QR_TYPES.indexOf('decl'),0,'msg');
 /* banner on the staff pages (Request form, Daily work, Attendance): "💬 សារពីមេ" + unread count for this device's names */
 function staffBanner(){ const h=location.hash; if(!/^#f\/(leave|work|attend)$/.test(h)) return;
   const host=$('gfBody'); if(!host||host.querySelector('.mg-ban')) return;
-  const mine=jget(LS_ME,[]); const u=mine.reduce((s,n)=>s+unread(n),0);
+  const mine=jget(LS_ME,[]).filter(k=>grpByKey(k)); const u=mine.reduce((s,n)=>s+unread(n),0)+unread('all');
   host.insertAdjacentHTML('afterbegin',`<a class="mg-ban" href="#f/msg"><div class="alert ${u?'warn':'ok'}" style="margin:6px 0">💬 <b>សារពីមេ / ចម្លើយសំណើ</b>${u?` <span class="mg-badge">${u} ថ្មី</span>`:''} — ចុចមើល →</div></a>`); }
 function bannerSoon(){ [400,1500,4000].forEach(t=>setTimeout(staffBanner,t)); }
 window.addEventListener('hashchange',bannerSoon);
@@ -147,63 +150,56 @@ function injectBoss(){
     <div><h2 style="margin-top:0">⏳ សំណើរង់ចាំចម្លើយ</h2><div id="mgPend"></div>
       <details style="margin-top:10px"><summary style="cursor:pointer;font-weight:700">✔ សំណើដែលបានឆ្លើយរួច</summary><div id="mgDone"></div></details></div>
     <div><div class="card"><h2 style="margin-top:0">✉️ ផ្ញើសារថ្មី</h2>
-      <label>ផ្ញើទៅ / To</label><select id="mgTo"></select>
+      <label>ផ្ញើទៅ / To (វេន ឬ ផ្នែក)</label><select id="mgTo"></select>
+      <input id="mgWho" maxlength="60" placeholder="👤 សម្រាប់អ្នកណា? (ឈ្មោះ — មិនចាំបាច់)" style="margin-top:6px">
       <label style="margin-top:8px;display:block">ប្រភេទ</label><div class="mg-chips" id="mgCat"></div>
       <label style="margin-top:4px;display:block">ឧទាហរណ៍ (ចុចដើម្បីបញ្ចូល ហើយកែបាន)</label><div class="mg-chips" id="mgEx"></div>
       <textarea id="mgTxt" maxlength="${MAX_TXT}" rows="4" placeholder="សរសេរសារ…"></textarea>
       <button class="btn big" id="mgSend" onclick="mgSend()" style="margin-top:8px">📤 ផ្ញើ</button><p id="mgSendMsg" class="muted"></p></div>
-      <h2>📜 សារបានផ្ញើ</h2><div id="mgSent"></div>
-      <details class="card" style="margin-top:12px"><summary style="cursor:pointer;font-weight:700">👥 ផ្នែករបស់បុគ្គលិក (សម្រាប់ផ្ញើតាមផ្នែក)</summary><div id="mgDept" style="margin-top:8px"></div></details></div>
+      <h2>📜 សារបានផ្ញើ</h2><div id="mgSent"></div></div>
   </div>`;
   const main=document.querySelector('#bossApp main'); const prev=$('t-work')||$('t-attend'); prev?prev.after(sec):main.appendChild(sec);
   freshCfg().then(mgBoss);
 }
 let CAT='info';
-function drawCompose(){ const sel=$('mgTo'); if(!sel) return; const cur=sel.value;
-  sel.innerHTML=`<option value="all">📢 បុគ្គលិកទាំងអស់</option><optgroup label="👤 បុគ្គលិកម្នាក់ៗ">${staffNames().map(n=>`<option value="p|${esc(n)}">👤 ${esc(n)}</option>`).join('')}</optgroup>
-   <optgroup label="👥 ផ្នែក">${DEPTS.map(d=>`<option value="d|${esc(d)}">👥 ${esc(d)}</option>`).join('')}</optgroup>
-   <optgroup label="🕒 វេន">${shifts().map(s=>`<option value="s|${esc(s.id)}">🕒 ${esc(s.name)} ${esc(s.start)}–${esc(s.end)}</option>`).join('')}</optgroup>`;
-  if(cur) sel.value=cur;
+function drawCompose(){ const sel=$('mgTo'); if(!sel) return; const cur=sel.value||'all';
+  sel.innerHTML=grpOpts(cur);
   $('mgCat').innerHTML=['info','warn','shift'].map(k=>`<button class="${k===CAT?'on':''}" onclick="mgCat('${k}')">${CATS[k][0]} ${esc(CATS[k][1])}</button>`).join('');
   $('mgEx').innerHTML=EXAMPLES.map((e,i)=>`<button onclick="mgEx(${i})">${esc(e[1])}</button>`).join(''); }
 window.mgCat=k=>{ CAT=k; drawCompose(); };
 window.mgEx=i=>{ const e=EXAMPLES[i]; CAT=e[0]; $('mgTxt').value=e[2]; drawCompose(); $('mgTxt').focus(); };
 function parseTo(v){ if(!v||v==='all') return {k:'all'}; const i=v.indexOf('|'); return {k:v.slice(0,i),v:v.slice(i+1)}; }
-window.mgSend=async()=>{ const t=$('mgTxt').value.trim().slice(0,MAX_TXT); if(!t) return alert('សូមសរសេរសារ'); const to=parseTo($('mgTo').value);
-  if(!confirm(`ផ្ញើសារទៅ ${toLbl(to)}?`)) return;
+window.mgSend=async()=>{ const t=$('mgTxt').value.trim().slice(0,MAX_TXT); if(!t) return alert('សូមសរសេរសារ'); const to=parseTo($('mgTo').value), who=$('mgWho').value.trim().slice(0,60);
+  if(!confirm(`ផ្ញើសារទៅ ${toLbl(to)}${who?' · '+who:''}?`)) return;
   const b=$('mgSend'); b.disabled=true; b.textContent='⏳ កំពុងផ្ញើ…';
-  try{ await freshCfg(); W().msg.unshift({id:newId(),at:new Date().toISOString(),to,cat:CAT,m:t}); const ok=await pushMsgs();
-    $('mgSendMsg').textContent=ok?'✅ ផ្ញើរួច — បុគ្គលិកនឹងឃើញពេលបើក «💬 សារពីមេ»':NOKEEP; $('mgSendMsg').style.color=ok?'var(--ok)':'var(--bad)'; if(ok) $('mgTxt').value=''; mgBoss(); }
+  try{ await freshCfg(); W().msg.unshift({id:newId(),at:new Date().toISOString(),to,...(who?{who}:{}),cat:CAT,m:t}); const ok=await pushMsgs();
+    $('mgSendMsg').textContent=ok?'✅ ផ្ញើរួច — បុគ្គលិកនឹងឃើញពេលបើក «💬 សារពីមេ»':NOKEEP; $('mgSendMsg').style.color=ok?'var(--ok)':'var(--bad)'; if(ok){ $('mgTxt').value=''; $('mgWho').value=''; } mgBoss(); }
   catch(e){ alert('ផ្ញើមិនបាន៖ '+e.message); }
   b.disabled=false; b.textContent='📤 ផ្ញើ'; };
 window.mgDel=async id=>{ if(!confirm('🗑 លុបសារនេះ? បុគ្គលិកនឹងលែងឃើញ។')) return;
   try{ await freshCfg(); W().msg=msgs().filter(m=>m.id!==id); await pushMsgs(); mgBoss(); }catch(e){ alert('លុបមិនបាន៖ '+e.message); } };
 
-function reqCard(r,i){ const rp=replyOf(r._id), who=canon(r.name);
+function grpOpts(sel){ return `<option value="all" ${sel==='all'?'selected':''}>📢 សារទូទៅរបស់ក្រុមហ៊ុន — អ្នកណាក៏មើលបាន</option><optgroup label="🕒 វេន">${shifts().map(x=>`<option value="s|${esc(x.id)}" ${sel==='s|'+x.id?'selected':''}>🕒 ${esc(x.name)} ${esc(x.start)}–${esc(x.end)}</option>`).join('')}</optgroup>
+   <optgroup label="👥 ផ្នែក / ជំនាញ">${DEPTS.map(d=>`<option value="d|${esc(d)}" ${sel==='d|'+d?'selected':''}>👥 ${esc(d)}</option>`).join('')}</optgroup>`; }
+function reqCard(r,i){ const rp=replyOf(r._id);
   const info=`<b>${esc(r.name||'—')}</b> <span class="muted">${esc(lbl(r.position||''))}</span><br>📄 ${esc(lbl(r.leaveType||''))}${r.halfday?' · '+esc(lbl(r.halfday)):''}${r.other?' · '+esc(r.other):''}<br>📅 ${esc(fmtD(r.fromDate))}${r.toDate&&r.toDate!==r.fromDate?' → '+esc(fmtD(r.toDate)):''}${r.totalDays?' · '+esc(r.totalDays)+' ថ្ងៃ':''}
     ${r.reason?`<div class="mg-txt" style="font-size:14px">💭 ${esc(r.reason)}</div>`:''}${r.covering?`<div class="muted" style="font-size:13px">អ្នកជំនួស៖ ${esc(r.covering)}</div>`:''}`;
   if(rp) return `<div class="mg-card ${rp.cat}">${info}<div class="mg-req">${rp.cat==='ok'?'✅ អនុញ្ញាត':'❌ មិនអនុញ្ញាត'} · ${esc(when(rp.at))} → ${esc(toLbl(rp.to))}${rp.m?`<br>${esc(rp.m)}`:''}</div>
     <div class="mg-act"><button class="btn alt sm" onclick="mgDel('${esc(rp.id)}')">↩ ដកចម្លើយ</button><button class="btn alt sm" onclick="openRecord('${esc(r._id)}')">📄 មើលហ្វម</button></div></div>`;
+  const def=DEPTS.includes(r.position)?'d|'+r.position:'all';
   return `<div class="mg-card warn">${info}
-    <label style="margin-top:8px;display:block;font-size:13px">ផ្ញើចម្លើយទៅ</label><select id="mgRto_${i}">${staffNames().includes(who)?'':`<option value="" selected>⚠️ ជ្រើសឈ្មោះបុគ្គលិក (ហ្វមសរសេរ «${esc(r.name||'')}»)</option>`}${staffNames().map(n=>`<option ${n===who?'selected':''}>${esc(n)}</option>`).join('')}</select>
+    <label style="margin-top:8px;display:block;font-size:13px">ផ្ញើចម្លើយទៅ (វេន / ផ្នែក)</label><select id="mgRto_${i}">${grpOpts(def)}</select>
     <textarea id="mgRtx_${i}" rows="2" maxlength="${MAX_TXT}" placeholder="ហេតុផល / ចំណាំ (មិនចាំបាច់)" style="margin-top:6px"></textarea>
     <div class="mg-chips">${REPLY_EX.ok.map(t=>`<button onclick="$('mgRtx_${i}').value=this.textContent">${esc(t)}</button>`).join('')}${REPLY_EX.no.map(t=>`<button onclick="$('mgRtx_${i}').value=this.textContent">${esc(t)}</button>`).join('')}</div>
     <div class="mg-act"><button class="btn" style="background:var(--ok);border-color:var(--ok)" onclick="mgReply(${i},'ok')">✅ អនុញ្ញាត</button><button class="btn" style="background:var(--bad);border-color:var(--bad)" onclick="mgReply(${i},'no')">❌ មិនអនុញ្ញាត</button><button class="btn alt sm" onclick="openRecord('${esc(r._id)}')">📄 មើលហ្វម</button></div></div>`; }
-window.mgReply=async(i,st)=>{ const r=LEAVES[i]; if(!r) return; const to=$('mgRto_'+i).value, t=$('mgRtx_'+i).value.trim().slice(0,MAX_TXT);
-  if(!to) return alert('សូមជ្រើសឈ្មោះបុគ្គលិកដែលត្រូវផ្ញើចម្លើយទៅ (ឈ្មោះក្នុងហ្វមមិនដូចក្នុងបញ្ជីបុគ្គលិក)');
+window.mgReply=async(i,st)=>{ const r=LEAVES[i]; if(!r) return; const to=parseTo($('mgRto_'+i).value), t=$('mgRtx_'+i).value.trim().slice(0,MAX_TXT);
   if(st==='no'&&!t&&!confirm('មិនទាន់សរសេរហេតុផលទេ។ ផ្ញើ «មិនអនុញ្ញាត» ដោយគ្មានហេតុផល?')) return;
   try{ await freshCfg(); const w=W();
-    const nk=String(r.name||'').trim().replace(/\s+/g,' ').toLowerCase(); if(nk&&nk!==to.toLowerCase()){ w.msgAlias=w.msgAlias&&typeof w.msgAlias==='object'?w.msgAlias:{}; w.msgAlias[nk]=to; }
-    if(to&&!w.msgDept[to]&&r.position&&DEPTS.includes(r.position)) w.msgDept[to]=r.position;
     w.msg=msgs().filter(m=>m.ref!==String(r._id));
-    w.msg.unshift({id:newId(),at:new Date().toISOString(),to:{k:'p',v:to},cat:st,m:t,ref:String(r._id),
+    w.msg.unshift({id:newId(),at:new Date().toISOString(),to,who:String(r.name||'').slice(0,60),cat:st,m:t,ref:String(r._id),
       req:{type:r.leaveType||'',from:r.fromDate||'',to:r.toDate||'',days:r.totalDays||'',reason:String(r.reason||'').slice(0,200)}});
     const ok=await pushMsgs(); if(!ok) alert(NOKEEP); mgBoss(); }
   catch(e){ alert('ផ្ញើមិនបាន៖ '+e.message); } };
-function drawDept(){ const box=$('mgDept'); if(!box) return; const L=staffNames();
-  box.innerHTML=L.length?L.map((n,i)=>`<div class="row" style="gap:8px;margin:4px 0"><b style="min-width:110px">${esc(n)}</b><select onchange="mgSetDept(${i},this.value)" style="width:auto"><option value="">—</option>${DEPTS.map(d=>`<option ${deptOf(n)===d?'selected':''} value="${esc(d)}">${esc(d)}</option>`).join('')}</select></div>`).join('')
-    :'<p class="muted">មិនទាន់មានឈ្មោះបុគ្គលិក (🕒 វត្តមាន → 👥 បុគ្គលិក & វេន)</p>'; }
-window.mgSetDept=async(i,v)=>{ const n=staffNames()[i]; if(!n) return; try{ await freshCfg(); const w=W(); if(v) w.msgDept[n]=v; else delete w.msgDept[n]; AC().set(AC().get()); await api('setAttCfg',{key:bossKey(),cfg:AC().get()}); }catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); } };
 function pendingCount(){ return LEAVES.filter(r=>!replyOf(r._id)).length; }
 function mgBoss(){ if(!$('t-msg')) return;
   const P=[],D=[]; LEAVES.forEach((r,i)=>(replyOf(r._id)?D:P).push(reqCard(r,i)));
@@ -211,7 +207,7 @@ function mgBoss(){ if(!$('t-msg')) return;
   $('mgDone').innerHTML=D.slice(0,30).join('')||'<p class="muted">មិនទាន់មាន</p>';
   $('mgSent').innerHTML=msgs().filter(m=>!m.ref).slice(0,30).map(m=>msgCard(m,false,true)).join('')||'<p class="muted">មិនទាន់មានសារ</p>';
   const n=pendingCount(); const tn=$('mgTabN'); if(tn) tn.innerHTML=n?`<span class="mg-badge">${n}</span>`:'';
-  drawCompose(); drawDept();
+  drawCompose();
   const tile=document.querySelector('#launcher [data-mg] .ts'); if(tile) tile.textContent=n?`⏳ ${n} សំណើរង់ចាំ`:'ផ្ញើសារទៅបុគ្គលិក'; }
 
 /* collect the staff Request Forms (newest first, last 90 days) whenever the boss data reloads */
