@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="km"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#1f6f4a">
+<title>ចាប់ផ្លែឈើ · Fruit Catch</title>
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#143d2b;color:#fff;font-family:"Kantumruy Pro",system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+#wrap{position:fixed;inset:0;display:flex;flex-direction:column;max-width:560px;margin:0 auto;background:linear-gradient(#8fd6ff,#d7f3ff 55%,#9fd98b 55%,#4c9a4a)}
+canvas{flex:1;width:100%;display:block}
+#hud{position:absolute;top:calc(8px + env(safe-area-inset-top));left:10px;right:10px;display:flex;gap:8px;align-items:center;pointer-events:none;color:#103a28;font-weight:700;text-shadow:0 1px 0 #fff8}
+#hud span{background:#ffffffcc;border-radius:99px;padding:4px 12px;font-size:16px}
+#hud .sp{flex:1;background:none}
+.btn{pointer-events:auto;border:0;background:#ffffffcc;border-radius:99px;width:38px;height:38px;font-size:18px;cursor:pointer}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0d2f2099;text-align:center;padding:24px}
+.ov.hide{display:none}
+.ov h1{font-size:34px;margin:0}.ov p{margin:0;font-size:16px;opacity:.95;max-width:340px}
+.big{background:#ffb703;color:#3d2a00;border:0;border-radius:18px;padding:14px 34px;font:700 22px "Kantumruy Pro",system-ui,sans-serif;cursor:pointer;box-shadow:0 5px 0 #c98a00}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 #c98a00}
+.sm{background:#ffffff33;color:#fff;border:0;border-radius:99px;padding:8px 16px;font:inherit;font-size:14px;cursor:pointer}
+.score{font-size:46px;font-weight:700;color:#ffd166}
+.legend{display:flex;gap:14px;font-size:15px;justify-content:center;flex-wrap:wrap}
+</style></head><body>
+<div id="wrap"><canvas id="c"></canvas>
+<div id="hud"><span id="sc">0</span><span id="lv">Lv 1</span><span id="li">❤️❤️❤️</span><span class="sp"></span><button class="btn" id="bs" aria-label="sound">🔊</button><button class="btn" id="bp" aria-label="pause">⏸️</button></div>
+<div class="ov" id="ovStart"><div style="font-size:64px">🧺🥭</div><h1 id="tTitle"></h1><p id="tHow"></p><div class="legend" id="tLeg"></div><div>🏆 <b id="best">0</b></div><button class="big" id="go"></button><button class="sm" id="lang"></button></div>
+<div class="ov hide" id="ovPause"><h1 id="tPause"></h1><button class="big" id="resume"></button></div>
+<div class="ov hide" id="ovEnd"><h1 id="tOver"></h1><div class="score" id="fs">0</div><p id="tBest"></p><button class="big" id="again"></button><button class="sm" id="share"></button></div>
+</div>
+<script>
+var TX={km:{title:"ចាប់ផ្លែឈើ",how:"អូសម្រាមដៃ (ឬចុចព្រួញ) ឲ្យកញ្ជើចាប់ផ្លែឈើដែលជ្រុះ។ ជៀសដង្កូវ!",ok:"+1",gold:"+5",bad:"បាត់ជីវិត",go:"ចាប់ផ្តើម",again:"លេងម្តងទៀត",pause:"ផ្អាក",resume:"បន្ត",over:"ចប់ហើយ!",best:"ពិន្ទុខ្ពស់បំផុត",newbest:"កំណត់ត្រាថ្មី! 🎉",share:"ចែករំលែកពិន្ទុ",st:"ពិន្ទុរបស់ខ្ញុំ {n} ក្នុងហ្គេម ចាប់ផ្លែឈើ! តើអ្នកអាចឈ្នះខ្ញុំបានទេ?"},
+en:{title:"Fruit Catch",how:"Drag your finger (or use the arrow keys) to catch the falling fruit with the basket. Avoid the bugs!",ok:"+1",gold:"+5",bad:"lose a life",go:"Play",again:"Play again",pause:"Paused",resume:"Resume",over:"Game over!",best:"Best score",newbest:"New record! 🎉",share:"Share my score",st:"I scored {n} in Fruit Catch! Can you beat me?"}};
+function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+var LANG=ld("fc_lang",(navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en"),BEST=ld("fc_best",0),SND=ld("fc_snd",true),$=function(i){return document.getElementById(i)};
+function t(k,v){var s=TX[LANG][k]||TX.en[k]||k;if(v)for(var x in v)s=s.split("{"+x+"}").join(v[x]);return s}
+function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("title");$("tHow").textContent=t("how");$("go").textContent=t("go");$("again").textContent=t("again");$("tPause").textContent=t("pause");$("resume").textContent=t("resume");$("tOver").textContent=t("over");$("share").textContent=t("share");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("best").textContent=BEST;$("bs").textContent=SND?"🔊":"🔇";
+ $("tLeg").innerHTML="<span>🥭🍌🍉 "+t("ok")+"</span><span>🍍 "+t("gold")+"</span><span>🐛 "+t("bad")+"</span>"}
+var cv=$("c"),cx=cv.getContext("2d"),W=0,H=0,DPR=1;
+function fit(){DPR=Math.min(window.devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*DPR;cv.height=H*DPR;cx.setTransform(DPR,0,0,DPR,0,0)}
+window.addEventListener("resize",fit);
+var G={state:"menu",score:0,lives:3,level:1,items:[],px:0,tx:0,pw:84,t:0,spawn:0,fx:[],rng:Math.random};
+var GOOD=["🥭","🍌","🍉","🥥","🍊"],GOLD="🍍",BAD="🐛";
+function start(){G.state="play";G.score=0;G.lives=3;G.level=1;G.items=[];G.fx=[];G.spawn=0.6;G.t=0;G.px=G.tx=W/2;hud();["ovStart","ovEnd","ovPause"].forEach(function(i){$(i).classList.add("hide")})}
+function hud(){$("sc").textContent=G.score;$("lv").textContent="Lv "+G.level;var h="";for(var i=0;i<3;i++)h+=i<G.lives?"❤️":"🖤";$("li").innerHTML=h}
+function beep(f,d,ty){if(!SND)return;try{var a=beep.a||(beep.a=new (window.AudioContext||window.webkitAudioContext)()),o=a.createOscillator(),g=a.createGain();o.type=ty||"sine";o.frequency.value=f;g.gain.setValueAtTime(.12,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+d);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
+function addItem(kind){var x=30+G.rng()*(W-60),k=kind||(G.rng()<.2?"bad":G.rng()<.1?"gold":"ok");
+ G.items.push({x:x,y:-30,k:k,e:k==="bad"?BAD:k==="gold"?GOLD:GOOD[Math.floor(G.rng()*GOOD.length)],vy:(120+G.level*22)*(.85+G.rng()*.3),r:26,rot:G.rng()*6})}
+function floatText(x,y,s,c){G.fx.push({x:x,y:y,s:s,c:c,a:1})}
+function step(dt){
+ if(G.state!=="play")return;G.t+=dt;G.spawn-=dt;
+ var gap=Math.max(.32,.95-G.level*.07);if(G.spawn<=0){addItem();G.spawn=gap*(.7+G.rng()*.6)}
+ G.px+=(G.tx-G.px)*Math.min(1,dt*18);G.px=Math.max(G.pw/2,Math.min(W-G.pw/2,G.px));
+ var by=H-70;
+ for(var i=G.items.length-1;i>=0;i--){var it=G.items[i];it.y+=it.vy*dt;it.rot+=dt*2;
+  if(it.y>by-14&&it.y<by+24&&Math.abs(it.x-G.px)<G.pw/2+8){G.items.splice(i,1);
+   if(it.k==="bad"){G.lives--;beep(120,.25,"sawtooth");floatText(it.x,by-30,"💔","#c0392b");if(navigator.vibrate)navigator.vibrate(60);hud();if(G.lives<=0)return over()}
+   else{var p=it.k==="gold"?5:1;G.score+=p;beep(it.k==="gold"?880:520,.12);floatText(it.x,by-30,"+"+p,it.k==="gold"?"#e0a100":"#1b7a3e");var lv=1+Math.floor(G.score/10);if(lv>G.level){G.level=lv;beep(660,.2);floatText(W/2,H/2,"Lv "+lv,"#fff")}hud()}}
+  else if(it.y>H+40){G.items.splice(i,1)}}
+ for(var j=G.fx.length-1;j>=0;j--){var f=G.fx[j];f.y-=40*dt;f.a-=dt*1.1;if(f.a<=0)G.fx.splice(j,1)}}
+function over(){G.state="over";var nb=G.score>BEST;if(nb){BEST=G.score;sv("fc_best",BEST)}$("fs").textContent=G.score;$("tBest").textContent=nb?t("newbest"):t("best")+": "+BEST;$("best").textContent=BEST;$("ovEnd").classList.remove("hide");beep(200,.4,"triangle")}
+function draw(){cx.clearRect(0,0,W,H);
+ cx.font="40px serif";cx.textAlign="center";cx.textBaseline="middle";
+ for(var i=0;i<G.items.length;i++){var it=G.items[i];cx.save();cx.translate(it.x,it.y);cx.rotate(Math.sin(it.rot)*.35);cx.font=(it.k==="gold"?46:40)+"px serif";cx.fillText(it.e,0,0);cx.restore()}
+ if(G.state!=="menu"){cx.font="64px serif";cx.fillText("🧺",G.px,H-62)}
+ cx.font="bold 24px 'Kantumruy Pro',system-ui,sans-serif";for(var j=0;j<G.fx.length;j++){var f=G.fx[j];cx.globalAlpha=Math.max(0,f.a);cx.fillStyle=f.c;cx.fillText(f.s,f.x,f.y);cx.globalAlpha=1}}
+var last=0;function loop(ts){var dt=Math.min(.05,(ts-last)/1000||0);last=ts;step(dt);draw();requestAnimationFrame(loop)}
+function pos(e){var r=cv.getBoundingClientRect();return(e.touches?e.touches[0].clientX:e.clientX)-r.left}
+["pointerdown","pointermove"].forEach(function(n){cv.addEventListener(n,function(e){if(G.state==="play"&&(n==="pointerdown"||e.pressure>0||e.buttons||e.pointerType==="touch"||e.pointerType==="mouse")){G.tx=pos(e)}})});
+var keys={};window.addEventListener("keydown",function(e){keys[e.key]=1;if(e.key===" "&&G.state==="play")pause()});window.addEventListener("keyup",function(e){keys[e.key]=0});
+setInterval(function(){if(G.state==="play"){if(keys.ArrowLeft||keys.a)G.tx-=14;if(keys.ArrowRight||keys.d)G.tx+=14;G.tx=Math.max(0,Math.min(W,G.tx))}},16);
+function pause(){if(G.state==="play"){G.state="pause";$("ovPause").classList.remove("hide")}else if(G.state==="pause"){G.state="play";$("ovPause").classList.add("hide")}}
+$("go").onclick=start;$("again").onclick=start;$("bp").onclick=pause;$("resume").onclick=pause;
+$("bs").onclick=function(){SND=!SND;sv("fc_snd",SND);texts();beep(600,.1)};
+$("lang").onclick=function(){LANG=LANG==="km"?"en":"km";sv("fc_lang",LANG);texts()};
+$("share").onclick=function(){var s=t("st",{n:G.score})+" "+location.href;if(navigator.share)navigator.share({text:s}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(s)};
+document.addEventListener("visibilitychange",function(){if(document.hidden&&G.state==="play")pause()});
+window.FC={G:G,addItem:addItem,step:step,start:start,fit:fit};
+fit();texts();requestAnimationFrame(loop);
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
+</script></body></html>
