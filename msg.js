@@ -1,4 +1,4 @@
-/* msg.js v9 */
+/* msg.js v10 */
 /* =====================================================================
    💬 MESSAGES & REQUEST REPLIES — A&J Kampot Hub
    - Boss page:  tab "💬 សារ & សំណើ" inside #boss
@@ -11,6 +11,9 @@
    🔒 PRIVATE: a reply to a staff Request Form (and any message the boss ticks "🔒 ឯកជន") shows on the
        staff page only as a lock with the person's name; that person opens it with their own PIN, which the
        boss sets in the "🔑 PIN សារឯកជន" card. Other staff in the same shift/department see only the lock.
+   ✍️ ACK: inside an opened private message the staff ticks "I have read, understood and agree" + signs →
+       a {type:'msgack'} record goes to the boss (shown on the reply, in the 📄 Request Form PDF) and the
+       boss page copies the ack time into cfg.work.ack so every tablet shows "✅ បានស៊ីញ៉េទទួលយករួច".
    Messages live in the attendance config (cfg.work.msg) — the same saved config that already
    carries the daily-work feedback, so every tablet loads it with the staff list. No new server.
    ===================================================================== */
@@ -67,6 +70,10 @@ const whoLbl=n=>{ const c=canon(n); return normN(c)===normN(n)?esc(n):`${esc(c)}
 async function pinHash(name,pin){ const d=new TextEncoder().encode('ajmsg|'+normN(canon(name))+'|'+String(pin).trim()); const h=await crypto.subtle.digest('SHA-256',d); return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
 const pinOf=n=>pins()[normN(canon(n))]||'';
 const OPEN=new Set(); /* private messages unlocked on this screen — memory only, re-locks by itself */
+const LS_ACK='ajmsg_ack';
+const ackCfg=()=>{ const w=W(); return w.ack&&typeof w.ack==='object'?w.ack:{}; };
+const ackedHere=id=>!!ackCfg()[id]||(jget(LS_ACK,[])||[]).includes(id);
+let ACKS={}; /* boss side: msgId → latest msgack record */
 const newId=()=>'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 
 const css=document.createElement('style'); css.textContent=`
@@ -115,7 +122,7 @@ window.mgOpen=async id=>{ const m=msgs().find(x=>x.id===id); if(!m) return; cons
   if(!want) return alert('🔒 មេមិនទាន់កំណត់ PIN សម្រាប់ '+m.who+' ទេ — សូមសួរមេ។');
   if(!p) return el&&el.focus();
   if(await pinHash(m.who,p)!==want){ if(el){ el.value=''; el.focus(); } return alert('❌ PIN មិនត្រូវ'); }
-  OPEN.add(id); drawStaff(); setTimeout(()=>{ if(OPEN.delete(id)) drawStaff(); },3*60e3); };
+  OPEN.add(id); drawStaff(); setTimeout(()=>{ if(OPEN.delete(id)) drawStaff(); },10*60e3); };
 window.mgLock=id=>{ OPEN.delete(id); drawStaff(); };
 function msgCard(m,isNew,boss){ const c=CATS[m.cat]||CATS.info; const r=m.req;
   if(!boss&&isPriv(m)&&!OPEN.has(m.id)) return lockCard(m,isNew);
@@ -123,7 +130,30 @@ function msgCard(m,isNew,boss){ const c=CATS[m.cat]||CATS.info; const r=m.req;
   <div class="mg-to">ពីមេ → ${esc(toLbl(m.to))}${m.who?` · 👤 សម្រាប់៖ <b>${whoLbl(m.who)}</b>`:''}${isPriv(m)?' · 🔒 ឯកជន':''}</div>
   ${r?`<div class="mg-req">📄 <b>សំណើ៖</b> ${esc(lbl(r.type||''))}${r.from?' · '+esc(fmtD(r.from)):''}${r.to&&r.to!==r.from?' → '+esc(fmtD(r.to)):''}${r.days?' ('+esc(r.days)+' ថ្ងៃ)':''}${r.reason?`<br><span class="muted">មូលហេតុ៖ ${esc(r.reason)}</span>`:''}</div>`:''}
   ${m.m?`<div class="mg-txt">${m.cat==='ok'||m.cat==='no'?'<b>ចម្លើយ / ហេតុផល៖</b> ':''}${esc(m.m)}</div>`:''}${payHtml(m)}
-  ${boss?`<div class="mg-act"><button class="btn alt sm" style="color:var(--bad)" onclick="mgDel('${esc(m.id)}')">🗑 លុប</button></div>`:(isPriv(m)?`<div class="mg-act"><button class="btn alt sm" onclick="mgLock('${esc(m.id)}')">🔒 បិទវិញ</button></div>`:'')}</div>`; }
+  ${boss?`<div class="mg-act"><button class="btn alt sm" style="color:var(--bad)" onclick="mgDel('${esc(m.id)}')">🗑 លុប</button></div>`:(isPriv(m)?ackBox(m)+`<div class="mg-act"><button class="btn alt sm" onclick="mgLock('${esc(m.id)}')">🔒 បិទវិញ</button></div>`:'')}${boss&&ACKS[m.id]?ackDone(ACKS[m.id]):''}</div>`; }
+/* ✍️ staff acknowledges a private message: tick + signature → {type:'msgack'} record for the boss */
+function ackBox(m){ const id=esc(m.id);
+  if(ackedHere(m.id)) return `<div class="mg-req" style="background:var(--okbg)">✅ <b>អ្នកបានស៊ីញ៉េទទួលយករួចហើយ</b>${ackCfg()[m.id]?' · '+esc(when(ackCfg()[m.id])):''}</div>`;
+  return `<div class="mg-req" style="background:#fff;border:1.5px solid var(--line)"><b>✍️ ស៊ីញ៉េទទួលយក</b>
+  <label style="display:flex;gap:8px;align-items:flex-start;margin:8px 0;font-size:15px;cursor:pointer"><input type="checkbox" id="mgAckOk_${id}" style="width:auto;margin:3px 0 0">ខ្ញុំបានអាន បានយល់ និងយល់ព្រម តាមសេចក្ដីសម្រេចខាងលើ${m.pay==='cut'||m.charge?' (រួមទាំងការកាត់ប្រាក់ខែ / ពិន័យ)':''}។</label>
+  <div class="sigwrap"><canvas id="mgSig_${id}"></canvas><div class="ph">✍️ ស៊ីញ៉េនៅទីនេះ</div></div>
+  <div class="mg-act"><button class="btn alt sm" onclick="sigClear('mgSig_${id}')">លុបហត្ថលេខា</button><button class="btn" style="background:var(--ok);border-color:var(--ok)" id="mgAckBtn_${id}" onclick="mgAck('${id}')">✅ ស៊ីញ៉េ & ផ្ញើទៅមេ</button></div></div>`; }
+function ackDone(a){ return `<div class="mg-req" style="background:var(--okbg)">✍️ <b>${esc(a.name||'')} បានស៊ីញ៉េទទួលយក</b> · ${esc(when(a.ciAt||a.at||''))}${typeof pImg==='function'&&a.sig?`<div style="max-width:220px;margin-top:4px;background:#fff;border-radius:8px">${pImg(a.sig)}</div>`:''}</div>`; }
+function initAckPads(){ document.querySelectorAll('canvas[id^="mgSig_"]').forEach(c=>{ if(c._mg) return; c._mg=1; try{ initSig(c.id); sigResize(c.id); }catch(e){} }); }
+window.mgAck=async id=>{ const m=msgs().find(x=>x.id===id); if(!m) return;
+  if(!($('mgAckOk_'+id)||{}).checked) return alert('សូមធីក «ខ្ញុំបានអាន បានយល់ និងយល់ព្រម» ជាមុនសិន');
+  const sig=sigData('mgSig_'+id); if(!sig) return alert('សូមស៊ីញ៉េក្នុងប្រអប់ហត្ថលេខា');
+  const b=$('mgAckBtn_'+id); if(b){ b.disabled=true; b.textContent='⏳ កំពុងផ្ញើ…'; }
+  const now=new Date(), p=pp(now);
+  const data={type:'msgack',msgId:m.id,ref:m.ref||'',name:canon(m.who),who:m.who||'',decision:m.cat||'',pay:m.pay||'',cut:m.cut||'',charge:m.charge||'',
+    text:'ខ្ញុំបានអាន បានយល់ និងយល់ព្រម',msg:String(m.m||'').slice(0,300),sig,date:p.date,time:p.time,at:now.toISOString(),ci:p.date,ciAt:now.toISOString(),device:typeof device==='function'?device():''};
+  try{ await api('submit',{type:'msgack',data,clientId:'ack-'+m.id+'-'+Date.now().toString(36),key:deviceKey()||bossKey()});
+    jset(LS_ACK,[...(jget(LS_ACK,[])||[]),m.id].slice(-100)); alert('✅ បានស៊ីញ៉េទទួលយក — មេនឹងឃើញ'); drawStaff(); }
+  catch(e){ alert('ផ្ញើមិនបាន៖ '+e.message+'\nសូមពិនិត្យអ៊ីនធឺណិត ហើយព្យាយាមម្ដងទៀត'); if(b){ b.disabled=false; b.textContent='✅ ស៊ីញ៉េ & ផ្ញើទៅមេ'; } } };
+DEFS.msgack={icon:'✍️',short:'ទទួលយកសារ',title:'Message Acknowledgment',full:'ការទទួលយកសារពីមេ / Message Acknowledgment',
+  sections:[{h:'ការទទួលយក / Acknowledgment',fields:[{k:'name',l:'ឈ្មោះ / Name'},{k:'date',l:'ថ្ងៃ / Date',t:'date'},{k:'time',l:'ម៉ោង / Time'},{k:'cut',l:'កាត់ប្រាក់ខែ / Salary deduction'},{k:'msg',l:'សារ / Message',t:'textarea',full:1},{k:'text',l:'សេចក្ដីបញ្ជាក់ / Statement',full:1}]}],
+  sigs:[{k:'sig',l:'ហត្ថលេខាទទួលយក / Acknowledgment Signature'}],
+  date:r=>r.date||'',room:()=>'',name:r=>r.name||'',idn:()=>'',extra:r=>'✍️ '+(r.text||'')};
 
 /* =====================================================================
    STAFF SIDE  (#f/msg)
@@ -153,7 +183,7 @@ function drawStaff(){ const box=$('mgMain'); if(!box) return;
     <div class="muted" style="font-size:13px">${esc(g.sub)} · សារសម្រាប់ក្រុមនេះ + សារទូទៅរបស់ក្រុមហ៊ុន</div>
     ${L.length?L.map(m=>msgCard(m,!S.has(m.id))).join(''):'<p class="muted" style="margin:16px 0">មិនទាន់មានសារទេ ✨</p>'}
     <p class="muted" style="font-size:13px;margin-top:16px">⏳ បើអ្នកបានផ្ញើសំណើ ហើយមិនទាន់ឃើញចម្លើយ = មេកំពុងពិនិត្យ (ឬមើលក្នុងផ្នែកផ្សេង)។ · <a href="#f/leave">📄 ស្នើសុំថ្មី</a></p>`;
-  markSeen(ME,L.map(m=>m.id)); }
+  markSeen(ME,L.map(m=>m.id)); setTimeout(initAckPads,30); }
 window.mgMe=i=>{ OPEN.clear(); if(i<0){ ME=''; return drawStaff(); } const g=groups()[i]; ME=g?g.k:''; const mine=jget(LS_ME,[]).filter(k=>grpByKey(k)); if(ME&&!mine.includes(ME)) jset(LS_ME,[ME,...mine].slice(0,3)); drawStaff(); window.scrollTo(0,0); };
 
 DEFS.msg={icon:'💬',short:'សារពីមេ',title:'Messages from Boss',full:'សារពីមេ / Messages',
@@ -247,7 +277,8 @@ function decisionHtml(rp){ const t=pp(rp.at);
   <p><b>${rp.cat==='ok'?'✅ អនុញ្ញាត / Approved':'❌ មិនអនុញ្ញាត / Not approved'}</b> · ${esc(dmy(t.date))} ${esc(t.time)}</p>
   ${rp.m?`<p style="white-space:pre-line;margin-top:6px">${esc(rp.m)}</p>`:''}
   ${rp.pay==='cut'?`<p style="margin-top:6px"><b>💵 កាត់ប្រាក់ខែ / Salary deduction:</b> ${esc(money(rp.cut||''))}</p>`:rp.pay==='none'?'<p style="margin-top:6px"><b>💵 មិនកាត់ប្រាក់ខែ / No salary deduction</b></p>':''}
-  ${rp.charge?`<p><b>⚠️ ពិន័យតាមគោលការណ៍ / Policy charge:</b> ${esc(money(rp.charge))}</p>`:''}</div>`; }
+  ${rp.charge?`<p><b>⚠️ ពិន័យតាមគោលការណ៍ / Policy charge:</b> ${esc(money(rp.charge))}</p>`:''}
+  ${(()=>{ const a=ACKS[rp.id]; if(!a) return ''; const t2=pp(a.ciAt||a.at); return `<div style="display:flex;gap:14px;align-items:flex-end;margin-top:10px;padding-top:8px;border-top:1px dashed #bbb"><div style="flex:1"><p><b>✍️ បុគ្គលិកបានទទួលយក / Acknowledged by staff</b></p><p>${esc(a.name||'')} · ${esc(dmy(t2.date))} ${esc(t2.time)}</p><p class="muted">«${esc(a.text||'')}»</p></div>${a.sig?`<div class="sigbox" style="width:200px">${pImg(a.sig)}</div>`:''}</div>`; })()}</div>`; }
 if(typeof DEFS!=='undefined'&&DEFS.leave&&!DEFS.leave._mg){ const L=DEFS.leave, base=L.text.slice(); L._mg=1;
   const me=r=>{ let rp=null; try{ rp=replyOf(r._id); }catch(e){}
     L.paper=null; if(rp) L.text=[base[0]]; let h; try{ h=paperGeneric(r); } finally{ L.paper=me; L.text=base; }
@@ -313,7 +344,7 @@ function grpOpts(sel){ return `<option value="all" ${sel==='all'?'selected':''}>
 function reqCard(r,i){ const rp=replyOf(r._id);
   const info=`<b>${esc(r.name||'—')}</b> <span class="muted">${esc(lbl(r.position||''))}</span><br>📄 ${esc(lbl(r.leaveType||''))}${r.halfday?' · '+esc(lbl(r.halfday)):''}${r.other?' · '+esc(r.other):''}<br>📅 ${esc(fmtD(r.fromDate))}${r.toDate&&r.toDate!==r.fromDate?' → '+esc(fmtD(r.toDate)):''}${r.totalDays?' · '+esc(r.totalDays)+' ថ្ងៃ':''}
     ${r.reason?`<div class="mg-txt" style="font-size:14px">💭 ${esc(r.reason)}</div>`:''}${r.covering?`<div class="muted" style="font-size:13px">អ្នកជំនួស៖ ${esc(r.covering)}</div>`:''}`;
-  if(rp) return `<div class="mg-card ${rp.cat}">${info}<div class="mg-req">${rp.cat==='ok'?'✅ អនុញ្ញាត':'❌ មិនអនុញ្ញាត'} · ${esc(when(rp.at))} → ${esc(toLbl(rp.to))}${rp.m?`<br>${esc(rp.m)}`:''}</div>${payHtml(rp)}
+  if(rp) return `<div class="mg-card ${rp.cat}">${info}${ACKS[rp.id]?ackDone(ACKS[rp.id]):(isPriv(rp)?'<div class="muted" style="font-size:13px;margin-top:6px">⏳ បុគ្គលិកមិនទាន់ស៊ីញ៉េទទួលយក</div>':'')}<div class="mg-req">${rp.cat==='ok'?'✅ អនុញ្ញាត':'❌ មិនអនុញ្ញាត'} · ${esc(when(rp.at))} → ${esc(toLbl(rp.to))}${rp.m?`<br>${esc(rp.m)}`:''}</div>${payHtml(rp)}
     <div class="mg-act"><button class="btn alt sm" onclick="mgDel('${esc(rp.id)}')">↩ ដកចម្លើយ</button><button class="btn alt sm" onclick="openRecord('${esc(r._id)}')">📄 មើលហ្វម</button></div></div>`;
   const def=DEPTS.includes(r.position)?'d|'+r.position:'all';
   return `<div class="mg-card warn">${info}
@@ -356,7 +387,7 @@ function mgBoss(){ if(!$('t-msg')) return;
   $('mgDone').innerHTML=D.slice(0,30).join('')||'<p class="muted">មិនទាន់មាន</p>';
   $('mgSent').innerHTML=msgs().filter(m=>!m.ref).slice(0,30).map(m=>msgCard(m,false,true)).join('')||'<p class="muted">មិនទាន់មានសារ</p>';
   const n=pendingCount(); const tn=$('mgTabN'); if(tn) tn.innerHTML=n?`<span class="mg-badge">${n}</span>`:'';
-  drawCompose(); drawPins(); if(!PED) drawPolBoss();
+  drawCompose(); drawPins(); if(!PED) drawPolBoss(); if(Object.keys(ACKS).length&&typeof fetchImgs==='function') try{ const ids=[...document.querySelectorAll('#t-msg img[data-drive]')].map(i=>i.dataset.drive).filter(id=>!imgCache[id]); paintImgs(); if(ids.length) fetchImgs(ids,2); }catch(e){}
   const tile=document.querySelector('#launcher [data-mg] .ts'); if(tile) tile.textContent=n?`⏳ ${n} សំណើរង់ចាំ`:'ផ្ញើសារទៅបុគ្គលិក'; }
 
 /* collect the staff Request Forms (newest first, last 90 days) whenever the boss data reloads */
@@ -365,8 +396,13 @@ window.renderAll=renderAll=function(){
   const cut=new Date(Date.now()-90*864e5).toISOString().slice(0,10);
   LEAVES=(Array.isArray(S.forms)?S.forms:[]).filter(r=>r.type==='leave'&&r._id&&String(r.fromDate||r.at||'')>=cut)
     .sort((a,b)=>String(b.at||b.fromDate||'').localeCompare(String(a.at||a.fromDate||'')));
-  _renderAll.apply(this,arguments); injectBoss(); mgBoss();
+  ACKS={}; (Array.isArray(S.forms)?S.forms:[]).filter(r=>r.type==='msgack'&&r.msgId).sort((a,b)=>String(a.ciAt||'').localeCompare(String(b.ciAt||''))).forEach(r=>{ ACKS[r.msgId]=r; });
+  _renderAll.apply(this,arguments); injectBoss(); mgBoss(); syncAcks();
 };
+let ackSyncing=false;
+async function syncAcks(){ if(ackSyncing||!bossKey()) return; const ids=Object.keys(ACKS).filter(id=>msgs().some(m=>m.id===id)&&!ackCfg()[id]); if(!ids.length) return;
+  ackSyncing=true; try{ await freshCfg(); const w=W(); if(!w.ack||typeof w.ack!=='object') w.ack={}; ids.forEach(id=>{ w.ack[id]=ACKS[id].ciAt||ACKS[id].at||new Date().toISOString(); });
+    Object.keys(w.ack).forEach(id=>{ if(!msgs().some(m=>m.id===id)) delete w.ack[id]; }); AC().set(AC().get()); await api('setAttCfg',{key:bossKey(),cfg:AC().get()}); }catch(e){} ackSyncing=false; }
 const _launch=window.renderLauncher;
 window.renderLauncher=renderLauncher=function(){ _launch.apply(this,arguments); const L=$('launcher'); if(!L||L.querySelector('[data-mg]')) return;
   const n=pendingCount(); const d=document.createElement('button'); d.setAttribute('data-mg','1'); d.className='tile'; d.onclick=()=>showTab('msg');
