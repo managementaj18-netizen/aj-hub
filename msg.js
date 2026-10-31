@@ -1,4 +1,4 @@
-/* msg.js v7 */
+/* msg.js v8 */
 /* =====================================================================
    💬 MESSAGES & REQUEST REPLIES — A&J Kampot Hub
    - Boss page:  tab "💬 សារ & សំណើ" inside #boss
@@ -58,8 +58,13 @@ const forMe=(m,k)=>{ const t=m.to||{k:'all'}, g=grpByKey(k); if(t.k==='all') ret
 const isPriv=m=>!!(m&&m.who&&(m.ref||m.priv));
 const pins=()=>{ const w=W(); if(!w.pins||typeof w.pins!=='object') w.pins={}; return w.pins; };
 const normN=n=>String(n||'').trim().toLowerCase().replace(/\s+/g,' ');
-async function pinHash(name,pin){ const d=new TextEncoder().encode('ajmsg|'+normN(name)+'|'+String(pin).trim()); const h=await crypto.subtle.digest('SHA-256',d); return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
-const pinOf=n=>pins()[normN(n)]||'';
+/* one person can have a Khmer and an English name: cfg.work.alias maps the other name → main (Khmer) name */
+const aliases=()=>{ const w=W(); if(!w.alias||typeof w.alias!=='object') w.alias={}; return w.alias; };
+const canon=n=>{ n=String(n||'').trim(); return aliases()[normN(n)]||n; };
+const otherNames=n=>Object.entries(aliases()).filter(([k,v])=>normN(v)===normN(n)).map(([k])=>k);
+const whoLbl=n=>{ const c=canon(n); return normN(c)===normN(n)?esc(n):`${esc(c)} <span class="muted" style="font-weight:400">(${esc(n)})</span>`; };
+async function pinHash(name,pin){ const d=new TextEncoder().encode('ajmsg|'+normN(canon(name))+'|'+String(pin).trim()); const h=await crypto.subtle.digest('SHA-256',d); return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
+const pinOf=n=>pins()[normN(canon(n))]||'';
 const OPEN=new Set(); /* private messages unlocked on this screen — memory only, re-locks by itself */
 const newId=()=>'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 
@@ -102,7 +107,7 @@ const payOf=id=>{ const o={}, p=$(id+'_pay')&&$(id+'_pay').value; if(p) o.pay=p;
 const payClear=id=>{ ['_cut','_chg','_pay'].forEach(k=>{ if($(id+k)) $(id+k).value=''; }); const w=$(id+'_pay'); if(w) w.closest('.mg-pay').querySelectorAll('button').forEach(x=>x.classList.remove('on')); if($(id+'_cut')) $(id+'_cut').classList.add('hide'); };
 function lockCard(m,isNew){ const id=esc(m.id);
   return `<div class="mg-card lock${isNew?' new':''}"><div class="mg-h"><b>🔒 សារឯកជន${isNew?' <span class="pill warn">ថ្មី</span>':''}</b><span class="mg-to">${esc(when(m.at))}</span></div>
-  <div class="mg-to">ពីមេ → 👤 សម្រាប់តែ <b>${esc(m.who)}</b> ម្នាក់គត់</div>
+  <div class="mg-to">ពីមេ → 👤 សម្រាប់តែ <b>${whoLbl(m.who)}</b> ម្នាក់គត់</div>
   <div class="mg-pin"><input type="password" inputmode="numeric" autocomplete="off" maxlength="8" id="mgPin_${id}" placeholder="🔑 PIN" onkeydown="if(event.key==='Enter')mgOpen('${id}')"><button class="btn sm" onclick="mgOpen('${id}')">🔓 បើកមើល</button></div>
   <div class="muted" style="font-size:12px;margin-top:4px">បញ្ចូល PIN ផ្ទាល់ខ្លួនដែលមេបានឲ្យ · មិនមាន PIN? សូមសួរមេ</div></div>`; }
 window.mgOpen=async id=>{ const m=msgs().find(x=>x.id===id); if(!m) return; const want=pinOf(m.who), el=$('mgPin_'+id), p=el?el.value:'';
@@ -114,7 +119,7 @@ window.mgLock=id=>{ OPEN.delete(id); drawStaff(); };
 function msgCard(m,isNew,boss){ const c=CATS[m.cat]||CATS.info; const r=m.req;
   if(!boss&&isPriv(m)&&!OPEN.has(m.id)) return lockCard(m,isNew);
   return `<div class="mg-card ${esc(m.cat||'info')}${isNew?' new':''}"><div class="mg-h"><b>${c[0]} ${esc(c[1])}${isNew?' <span class="pill warn">ថ្មី</span>':''}</b><span class="mg-to">${esc(when(m.at))}</span></div>
-  <div class="mg-to">ពីមេ → ${esc(toLbl(m.to))}${m.who?` · 👤 សម្រាប់៖ <b>${esc(m.who)}</b>`:''}${isPriv(m)?' · 🔒 ឯកជន':''}</div>
+  <div class="mg-to">ពីមេ → ${esc(toLbl(m.to))}${m.who?` · 👤 សម្រាប់៖ <b>${whoLbl(m.who)}</b>`:''}${isPriv(m)?' · 🔒 ឯកជន':''}</div>
   ${r?`<div class="mg-req">📄 <b>សំណើ៖</b> ${esc(lbl(r.type||''))}${r.from?' · '+esc(fmtD(r.from)):''}${r.to&&r.to!==r.from?' → '+esc(fmtD(r.to)):''}${r.days?' ('+esc(r.days)+' ថ្ងៃ)':''}${r.reason?`<br><span class="muted">មូលហេតុ៖ ${esc(r.reason)}</span>`:''}</div>`:''}
   ${m.m?`<div class="mg-txt">${m.cat==='ok'||m.cat==='no'?'<b>ចម្លើយ / ហេតុផល៖</b> ':''}${esc(m.m)}</div>`:''}${payHtml(m)}
   ${boss?`<div class="mg-act"><button class="btn alt sm" style="color:var(--bad)" onclick="mgDel('${esc(m.id)}')">🗑 លុប</button></div>`:(isPriv(m)?`<div class="mg-act"><button class="btn alt sm" onclick="mgLock('${esc(m.id)}')">🔒 បិទវិញ</button></div>`:'')}</div>`; }
@@ -325,16 +330,22 @@ window.mgReply=async(i,st)=>{ const r=LEAVES[i]; if(!r) return; const to=parseTo
     const ok=await pushMsgs(); if(!ok) alert(NOKEEP); mgBoss(); }
   catch(e){ alert('ផ្ញើមិនបាន៖ '+e.message); } };
 /* 🔑 per-staff PIN for private messages */
-function pinNames(){ const set=new Map(); const add=n=>{ n=String(n||'').trim(); if(n&&!set.has(normN(n))) set.set(normN(n),n); };
+function pinNames(){ const set=new Map(); const add=n=>{ n=canon(n); if(n&&!set.has(normN(n))) set.set(normN(n),n); };
   msgs().filter(isPriv).forEach(m=>add(m.who)); LEAVES.forEach(r=>add(r.name)); (AC().get().staff||[]).forEach(x=>add(x.name));
   return [...set.values()]; }
 function drawPins(){ const box=$('mgPins'); if(!box) return; const N=pinNames();
-  box.innerHTML=N.length?`<table class="mg-pins" style="width:100%">${N.map((n,i)=>`<tr><td><b>${esc(n)}</b></td><td>${pinOf(n)?'<span style="color:var(--ok)">✅ មាន PIN</span>':'<span style="color:var(--bad)">⚠️ មិនទាន់មាន</span>'}</td>
+  box.innerHTML=N.length?`<table class="mg-pins" style="width:100%">${N.map((n,i)=>`<tr><td><b>${esc(n)}</b>${otherNames(n).map(o=>`<br><span class="muted" style="font-size:13px">${esc(o)} <a href="#" onclick="mgUnlink('${esc(o)}');return false" title="ផ្ដាច់">✕</a></span>`).join('')}
+      ${N.length>1?`<br><select style="width:auto;font-size:12px;padding:2px;margin-top:3px" onchange="mgLink(${i},this.value)"><option value="">🔗 ឈ្មោះផ្សេងរបស់គាត់…</option>${N.map((o,k)=>k===i?'':`<option value="${k}">${esc(o)}</option>`).join('')}</select>`:''}</td><td>${pinOf(n)?'<span style="color:var(--ok)">✅ មាន PIN</span>':'<span style="color:var(--bad)">⚠️ មិនទាន់មាន</span>'}</td>
     <td><input type="password" inputmode="numeric" maxlength="8" id="mgPinSet_${i}" placeholder="PIN ថ្មី 4–8"></td><td><button class="btn alt sm" onclick="mgPinSave(${i})">💾</button></td></tr>`).join('')}</table>
-    <p class="muted" style="font-size:12px;margin:6px 0 0">ប្រាប់ PIN ដល់បុគ្គលិកម្នាក់ៗដោយផ្ទាល់ · ប្រព័ន្ធរក្សាទុកតែកូដសម្ងាត់ (hash) មិនមែន PIN ពិតទេ — បើភ្លេច សូមកំណត់ PIN ថ្មី</p>`:'<p class="muted">មិនទាន់មានបុគ្គលិក</p>'; }
+    <p class="muted" style="font-size:12px;margin:6px 0 0">🔗 បើឈ្មោះខ្មែរ និងឈ្មោះអង់គ្លេស ជាមនុស្សតែម្នាក់ — ជ្រើស «ឈ្មោះផ្សេងរបស់គាត់» នៅក្រោមឈ្មោះខ្មែរ · ប្រាប់ PIN ដល់បុគ្គលិកម្នាក់ៗដោយផ្ទាល់ · ប្រព័ន្ធរក្សាទុកតែកូដសម្ងាត់ (hash) មិនមែន PIN ពិតទេ — បើភ្លេច សូមកំណត់ PIN ថ្មី</p>`:'<p class="muted">មិនទាន់មានបុគ្គលិក</p>'; }
+async function saveCfgW(){ AC().set(AC().get()); await api('setAttCfg',{key:bossKey(),cfg:AC().get()}); const j=await api('attCfg',{key:bossKey()}); if(j&&j.cfg) AC().set(j.cfg); }
+window.mgLink=async(i,k)=>{ const N=pinNames(), main=N[i], other=N[+k]; if(!main||!other) return drawPins();
+  if(!confirm('🔗 «'+other+'» និង «'+main+'» ជាមនុស្សតែម្នាក់?\nឈ្មោះ «'+main+'» នៅខាងលើ · PIN ប្រើរបស់ «'+main+'»')) return drawPins();
+  try{ await freshCfg(); const A=aliases(); A[normN(other)]=main; Object.keys(A).forEach(x=>{ if(normN(A[x])===normN(other)) A[x]=main; }); delete pins()[normN(other)]; await saveCfgW(); mgBoss(); }catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); } };
+window.mgUnlink=async o=>{ if(!confirm('ផ្ដាច់ «'+o+'» ចេញ?')) return; try{ await freshCfg(); delete aliases()[normN(o)]; await saveCfgW(); mgBoss(); }catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); } };
 window.mgPinSave=async i=>{ const n=pinNames()[i], el=$('mgPinSet_'+i), p=el?el.value.trim():''; if(!n) return;
   if(!/^\d{4,8}$/.test(p)) return alert('PIN ត្រូវជាលេខ 4 ដល់ 8 ខ្ទង់');
-  try{ await freshCfg(); pins()[normN(n)]=await pinHash(n,p); AC().set(AC().get()); await api('setAttCfg',{key:bossKey(),cfg:AC().get()});
+  try{ await freshCfg(); pins()[normN(canon(n))]=await pinHash(n,p); AC().set(AC().get()); await api('setAttCfg',{key:bossKey(),cfg:AC().get()});
     const j=await api('attCfg',{key:bossKey()}); if(j&&j.cfg) AC().set(j.cfg); const ok=pinOf(n)===await pinHash(n,p);
     alert(ok?'✅ បានកំណត់ PIN សម្រាប់ '+n:NOKEEP); mgBoss(); }catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); } };
 function pendingCount(){ return LEAVES.filter(r=>!replyOf(r._id)).length; }
