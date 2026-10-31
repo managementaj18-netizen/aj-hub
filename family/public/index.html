@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="km"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0f4c45">
+<title>Soramma Family</title>
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+:root{--bg:#eef6f3;--ink:#16302c;--mute:#5d7570;--ac:#0f6b5e;--ac2:#0f4c45;--line:#d7e5e0;--bad:#c0392b;--ok:#1f8a5b}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Kantumruy Pro",system-ui,sans-serif;line-height:1.5}
+header{background:var(--ac2);color:#fff;border-bottom:3px solid #7fd6b8;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+header img{width:38px;height:38px}header b{font-size:18px;line-height:1.1}header small{display:block;font-weight:400;opacity:.8;font-size:12px}
+header button{margin-left:auto;background:none;border:1px solid #ffffff66;color:#fff;border-radius:99px;padding:6px 12px;font:inherit;font-size:13px;cursor:pointer}
+main{max-width:640px;margin:0 auto;padding:14px 14px calc(90px + env(safe-area-inset-bottom))}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:16px;margin-bottom:12px;box-shadow:0 1px 3px #0001}
+h2{font-size:19px;margin:0 0 10px}h3{font-size:16px;margin:14px 0 6px}
+label{display:block;font-size:13px;color:var(--mute);margin:8px 0 2px}
+input,select{width:100%;font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}
+.b{display:inline-block;border:0;background:var(--ac);color:#fff;font:inherit;font-weight:700;border-radius:12px;padding:11px 16px;cursor:pointer;text-align:center;text-decoration:none}
+.b.alt{background:#e3efeb;color:var(--ac2)}.b.bad{background:#fbe5e1;color:var(--bad)}.b.full{width:100%}.b.sm{padding:7px 12px;font-size:14px}.b:disabled{opacity:.5}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}.muted{color:var(--mute);font-size:13px}.err{color:var(--bad);min-height:22px}
+nav{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);display:flex;padding-bottom:env(safe-area-inset-bottom);z-index:5}
+nav button{flex:1;border:0;background:none;padding:9px 4px 7px;font:inherit;font-size:12px;color:var(--mute);cursor:pointer}nav button.on{color:var(--ac);font-weight:700}nav button span{display:block;font-size:22px;line-height:1.1}
+#map{height:56vh;min-height:300px;border-radius:18px;border:1px solid var(--line);margin-bottom:12px;background:#dfeee9}
+.mem{display:flex;gap:12px;align-items:center;padding:10px 0;border-bottom:1px solid var(--line)}.mem:last-child{border:0}
+.av{width:44px;height:44px;border-radius:50%;background:var(--ac);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:18px;flex:none}.av.off{background:#9db3ad}
+.pill{display:inline-block;border-radius:99px;padding:2px 10px;font-size:12px;font-weight:700}.pill.on{background:#d8f3e6;color:#126b44}.pill.off{background:#eceff0;color:#667}
+.banner{background:#d8f3e6;border:1px solid #9bd8b9;color:#0e5a39;border-radius:14px;padding:10px 14px;margin-bottom:12px;display:flex;gap:10px;align-items:center}
+.pin{background:var(--ac);color:#fff;border:2px solid #fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font-weight:700;box-shadow:0 2px 6px #0005}
+.pinl{position:absolute;left:50%;transform:translateX(-50%);top:36px;background:#fff;border-radius:8px;padding:1px 7px;font-size:12px;font-weight:700;white-space:nowrap;box-shadow:0 1px 4px #0004}
+.code{font-size:34px;font-weight:700;letter-spacing:.12em;text-align:center;color:var(--ac2);padding:6px 0}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:#16302c;color:#fff;padding:10px 16px;border-radius:12px;z-index:30;font-size:14px}
+dialog{border:0;border-radius:20px;padding:20px;max-width:440px;width:92vw;box-shadow:0 10px 40px #0006}dialog::backdrop{background:#0008}
+</style></head><body>
+<header><img src="logo-for-dark.svg" alt=""><b>Soramma Family<small id="hs"></small></b><button id="hl">ភាសា</button></header>
+<main id="app"></main><nav id="nav"></nav>
+<dialog id="dlg"><div id="dbody"></div></dialog>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+var TX={km:{app:"Soramma Family",tag:"ចែករំលែកទីតាំងក្នុងគ្រួសារ",login:"ចូល",phone:"លេខទូរស័ព្ទ",pass:"ពាក្យសម្ងាត់",pass6:"ពាក្យសម្ងាត់ (6 តួឡើង)",name:"ឈ្មោះរបស់អ្នក",fname:"ឈ្មោះគ្រួសារ",create:"បង្កើតគ្រួសារថ្មី",join:"ចូលគ្រួសារដែលមានស្រាប់",invite:"កូដអញ្ជើញ (6 ខ្ទង់)",do_login:"ចូល",do_create:"បង្កើតគ្រួសារ",do_join:"ចូលគ្រួសារ",back:"ត្រឡប់",
+e_bad_login:"លេខទូរស័ព្ទ ឬពាក្យសម្ងាត់មិនត្រឹមត្រូវ",e_bad_phone:"សូមបញ្ចូលលេខទូរស័ព្ទឲ្យត្រឹមត្រូវ",e_phone_dup:"លេខទូរស័ព្ទនេះមានគណនីរួចហើយ",e_bad_invite:"កូដអញ្ជើញមិនត្រឹមត្រូវ",e_bad_input:"ពាក្យសម្ងាត់ត្រូវមាន 6 តួយ៉ាងតិច",e_too_many:"ព្យាយាមច្រើនពេក សូមរង់ចាំ 10 នាទី",e_family_full:"គ្រួសារពេញហើយ (20 នាក់)",e_net:"បញ្ហាបណ្តាញ សូមសាកម្តងទៀត",
+map:"ផែនទី",people:"សមាជិក",me:"ខ្ញុំ",nobody:"មិនទាន់មានអ្នកចែករំលែកទីតាំងទេ",fit:"មើលទាំងអស់",
+sharing_on:"កំពុងចែករំលែកទីតាំងរបស់អ្នកជាមួយគ្រួសារ",stop:"ផ្អាក",share_now:"ចែករំលែកទីតាំងរបស់ខ្ញុំ",
+consent_t:"ចែករំលែកទីតាំងជាមួយគ្រួសារ?",consent_m:"សមាជិកគ្រួសារទាំងអស់នឹងឃើញទីតាំងរបស់អ្នកលើផែនទី។ អ្នកអាចផ្អាកបានគ្រប់ពេល ហើយទីតាំងនឹងត្រូវលុបភ្លាម។ ទីតាំងបច្ចុប្បន្នភាពតែពេលអ្នកបើកកម្មវិធីនេះ។",agree:"យល់ព្រម ចែករំលែក",cancel:"បោះបង់",
+st_on:"កំពុងចែករំលែក",st_off:"មិនចែករំលែក",seen:"ឃើញចុងក្រោយ",ago_now:"អម្បាញ់មិញ",ago_min:"{n} នាទីមុន",ago_h:"{n} ម៉ោងមុន",open_maps:"បើក Google Maps",on_map:"មើលលើផែនទី",no_loc:"កំពុងរង់ចាំទីតាំង…",loc_denied:"មិនអាចទទួលទីតាំងបានទេ។ សូមអនុញ្ញាតទីតាំងក្នុងការកំណត់ទូរស័ព្ទ។",
+fam:"គ្រួសារ",code_t:"កូដអញ្ជើញ",code_h:"ផ្ញើកូដនេះទៅសមាជិកថ្មី ដើម្បីចូលគ្រួសារ",copy:"ចម្លងកូដ",share:"ចែករំលែក",copied:"បានចម្លង",invite_text:"ចូលគ្រួសាររបស់ខ្ញុំក្នុង Soramma Family៖ {u} · កូដអញ្ជើញ {c}",
+keep_on:"រក្សាអេក្រង់បើក (ដើម្បីឲ្យទីតាំងបន្តបច្ចុប្បន្នភាព)",note:"ចំណាំ៖ ទីតាំងបច្ចុប្បន្នភាពតែពេលបើកកម្មវិធីនេះ។ សមាជិកម្នាក់ៗអាចផ្អាក ឬចាកចេញបានគ្រប់ពេល។",
+remove:"យកចេញ",remove_q:"យកសមាជិកនេះចេញ?",leave:"ចាកចេញពីគ្រួសារ",leave_q:"ចាកចេញពីគ្រួសារ និងលុបគណនីរបស់អ្នក?",logout:"ចាកចេញ",owner:"ម្ចាស់"},
+en:{app:"Soramma Family",tag:"Share location inside your family",login:"Sign in",phone:"Phone number",pass:"Password",pass6:"Password (6+ characters)",name:"Your name",fname:"Family name",create:"Create a new family",join:"Join an existing family",invite:"Invite code (6 digits)",do_login:"Sign in",do_create:"Create family",do_join:"Join family",back:"Back",
+e_bad_login:"Wrong phone number or password",e_bad_phone:"Please enter a valid phone number",e_phone_dup:"This phone number already has an account",e_bad_invite:"Invalid invite code",e_bad_input:"Password needs at least 6 characters",e_too_many:"Too many tries, please wait 10 minutes",e_family_full:"This family is full (20 people)",e_net:"Network problem, please try again",
+map:"Map",people:"People",me:"Me",nobody:"Nobody is sharing a location yet",fit:"Show all",
+sharing_on:"You are sharing your location with your family",stop:"Pause",share_now:"Share my location",
+consent_t:"Share your location with your family?",consent_m:"Everyone in your family will see your location on the map. You can pause at any time and your location is deleted right away. Your location updates only while this app is open.",agree:"I agree, share",cancel:"Cancel",
+st_on:"Sharing",st_off:"Not sharing",seen:"Last seen",ago_now:"just now",ago_min:"{n} min ago",ago_h:"{n} h ago",open_maps:"Open in Google Maps",on_map:"Show on map",no_loc:"Waiting for location…",loc_denied:"Cannot get your location. Please allow location in your phone settings.",
+fam:"Family",code_t:"Invite code",code_h:"Send this code to new members so they can join",copy:"Copy code",share:"Share",copied:"Copied",invite_text:"Join my family on Soramma Family: {u} · invite code {c}",
+keep_on:"Keep the screen on (so the location keeps updating)",note:"Note: your location updates only while this app is open. Every member can pause or leave at any time.",
+remove:"Remove",remove_q:"Remove this member?",leave:"Leave the family",leave_q:"Leave the family and delete your account?",logout:"Sign out",owner:"Owner"}};
+function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+var LANG=ld("fam_lang",(navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en"),TOK=ld("fam_tok",""),$=function(i){return document.getElementById(i)};
+function t(k,v){var s=(TX[LANG]||{})[k];if(s==null)s=TX.en[k];if(s==null)s=k;if(v)for(var x in v)s=s.split("{"+x+"}").join(v[x]);return s}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function toast(m){var e=document.createElement("div");e.className="toast";e.textContent=m;document.body.appendChild(e);setTimeout(function(){e.remove()},2600)}
+function api(method,path,body){var h={"content-type":"application/json"};if(TOK)h.authorization="Bearer "+TOK;
+ return fetch("/api/"+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined}).then(function(r){return r.text().then(function(tx){var j;try{j=JSON.parse(tx)}catch(e){throw{code:"net"}}if(!r.ok)throw{code:j.error||"err",status:r.status};return j})})}
+var D=null,TAB="map",AUTHMODE="login",map=null,markers={},fitted=false,watchId=null,lastSent={t:0,lat:0,lng:0},wake=null,pollT=null;
+function ago(ts){if(!ts)return"";var m=Math.floor((Date.now()-ts)/60000);if(m<1)return t("ago_now");if(m<60)return t("ago_min",{n:m});return t("ago_h",{n:Math.floor(m/60)})}
+function mapsUrl(m){return"https://www.google.com/maps?q="+m.lat+","+m.lng}
+/* ---------- auth ---------- */
+function vAuth(){var m=AUTHMODE;
+ return'<div class="card"><div style="text-align:center"><img src="logo-for-light.svg" alt="" style="width:64px;height:64px"></div><h2 style="text-align:center">'+esc(t(m==="login"?"login":m==="create"?"create":"join"))+'</h2><p class="muted" style="text-align:center;margin-top:-4px">'+esc(t("tag"))+'</p>'+
+ (m==="create"?'<label>'+esc(t("fname"))+'</label><input id="a_f" autocomplete="off">':'')+(m==="join"?'<label>'+esc(t("invite"))+'</label><input id="a_i" inputmode="numeric" maxlength="6" autocomplete="off">':'')+
+ (m!=="login"?'<label>'+esc(t("name"))+'</label><input id="a_n" autocomplete="name">':'')+'<label>'+esc(t("phone"))+'</label><input id="a_p" type="tel" inputmode="tel" autocomplete="tel"><label>'+esc(t(m==="login"?"pass":"pass6"))+'</label><input id="a_c" type="password" autocomplete="'+(m==="login"?"current-password":"new-password")+'">'+
+ '<div class="err" id="a_e"></div><button class="b full" id="a_go">'+esc(t(m==="login"?"do_login":m==="create"?"do_create":"do_join"))+'</button>'+
+ '<div class="row" style="margin-top:12px;justify-content:center">'+(m==="login"?'<a href="#" data-m="create">'+esc(t("create"))+'</a> · <a href="#" data-m="join">'+esc(t("join"))+'</a>':'<a href="#" data-m="login">'+esc(t("back"))+'</a>')+'</div></div>'}
+function bindAuth(){var a=$("app");
+ a.onclick=function(e){var l=e.target.closest("[data-m]");if(l){e.preventDefault();AUTHMODE=l.dataset.m;render()}};
+ var go=function(){var m=AUTHMODE,b={phone:$("a_p").value,code:$("a_c").value};if(m!=="login")b.name=$("a_n").value;if(m==="create")b.family=$("a_f").value;if(m==="join")b.invite=$("a_i").value;
+  $("a_go").disabled=true;$("a_e").textContent="";
+  api("POST",m==="login"?"login":m==="create"?"signup":"join",b).then(function(r){TOK=r.token;sv("fam_tok",TOK);start()}).catch(function(e){$("a_go").disabled=false;$("a_e").textContent=t("e_"+(e&&e.code==="net"?"net":e&&e.code)).indexOf("e_")===0?t("e_net"):t("e_"+e.code)})};
+ $("a_go").onclick=go;$("a_c").onkeydown=function(e){if(e.key==="Enter")go()}}
+/* ---------- main screens ---------- */
+function nav(){var T=[["map","🗺️","map"],["people","👨‍👩‍👧","people"],["me","⚙️","me"]];
+ $("nav").innerHTML=D?T.map(function(x){return'<button class="'+(TAB===x[0]?"on":"")+'" data-t="'+x[0]+'"><span>'+x[1]+"</span>"+esc(t(x[2]))+"</button>"}).join(""):"";
+ $("nav").onclick=function(e){var b=e.target.closest("button");if(!b)return;TAB=b.dataset.t;render()}}
+function banner(){return D.me.sharing?'<div class="banner"><span>📍</span><b style="flex:1">'+esc(t("sharing_on"))+'</b><button class="b alt sm" id="b_stop">'+esc(t("stop"))+'</button></div>':'<button class="b full" id="b_share" style="margin-bottom:12px">📍 '+esc(t("share_now"))+'</button>'}
+function vMap(){return banner()+'<div id="map"></div><div class="row"><button class="b alt sm" id="m_fit">'+esc(t("fit"))+'</button><span class="sp"></span><span class="muted">'+esc(D.family.name)+'</span></div>'}
+function memHtml(m){var on=m.sharing&&m.lat!=null;
+ return'<div class="mem"><div class="av'+(on?"":" off")+'">'+esc((m.name||"?").trim().charAt(0).toUpperCase())+'</div><div style="flex:1;min-width:0"><b>'+esc(m.name)+(m.me?" ("+esc(t("me"))+")":"")+'</b>'+(m.role==="owner"?' <span class="muted">· '+esc(t("owner"))+'</span>':'')+'<div><span class="pill '+(m.sharing?"on":"off")+'">'+esc(t(m.sharing?"st_on":"st_off"))+'</span> <span class="muted">'+(on?esc(t("seen"))+" "+esc(ago(m.ts)):(m.sharing?esc(t("no_loc")):""))+'</span></div></div>'+
+  (on?'<div style="display:flex;flex-direction:column;gap:6px"><a class="b alt sm" target="_blank" rel="noopener" href="'+esc(mapsUrl(m))+'">'+esc(t("open_maps"))+'</a><button class="b alt sm" data-focus="'+esc(m.id)+'">'+esc(t("on_map"))+'</button></div>':'')+'</div>'}
+function vPeople(){return banner()+'<div class="card">'+D.members.map(memHtml).join("")+'</div>'}
+function vMe(){var o=D.me.role==="owner",u=location.origin;
+ return'<div class="card"><h2>'+esc(D.me.name)+'</h2>'+(D.me.sharing?'<p class="muted">'+esc(t("sharing_on"))+'</p><button class="b alt" id="b_stop">'+esc(t("stop"))+'</button>':'<button class="b" id="b_share">📍 '+esc(t("share_now"))+'</button>')+
+ '<label class="row" style="margin-top:14px;font-size:14px;color:var(--ink)"><input type="checkbox" id="k_on" style="width:auto"'+(ld("fam_wake",false)?" checked":"")+'> '+esc(t("keep_on"))+'</label><p class="muted">'+esc(t("note"))+'</p></div>'+
+ '<div class="card"><h2>'+esc(D.family.name)+'</h2><h3>'+esc(t("code_t"))+'</h3><div class="code">'+esc(D.family.code)+'</div><p class="muted" style="text-align:center">'+esc(t("code_h"))+'</p><div class="row" style="justify-content:center"><button class="b alt sm" id="c_copy">'+esc(t("copy"))+'</button><button class="b sm" id="c_share">'+esc(t("share"))+'</button></div>'+
+ (o?'<h3>'+esc(t("people"))+'</h3>'+D.members.filter(function(m){return!m.me}).map(function(m){return'<div class="row" style="padding:6px 0"><b>'+esc(m.name)+'</b><span class="sp"></span><button class="b bad sm" data-rm="'+esc(m.id)+'">'+esc(t("remove"))+'</button></div>'}).join(""):"")+'</div>'+
+ '<div class="card row"><button class="b alt" id="o_lang">'+(LANG==="km"?"English":"ខ្មែរ")+'</button><button class="b alt" id="o_out">'+esc(t("logout"))+'</button><span class="sp"></span><button class="b bad" id="o_leave">'+esc(t("leave"))+'</button></div>'}
+function render(){document.documentElement.lang=LANG;$("hs").textContent=D?D.family.name:t("tag");$("hl").textContent=LANG==="km"?"EN":"ខ្មែរ";nav();var a=$("app");
+ if(!TOK||!D){a.innerHTML=vAuth();bindAuth();return}
+ a.innerHTML=TAB==="map"?vMap():TAB==="people"?vPeople():vMe();bindMain();if(TAB==="map")drawMap()}
+function bindMain(){var a=$("app");
+ a.onclick=function(e){var b=e.target.closest("button");if(!b)return;
+  if(b.id==="b_share")return consent();if(b.id==="b_stop")return setSharing(false);if(b.id==="m_fit"){fitted=false;return drawMap()}
+  if(b.dataset.focus){TAB="map";render();var m=D.members.filter(function(x){return x.id===b.dataset.focus})[0];if(m&&map&&m.lat!=null)map.setView([m.lat,m.lng],17,{animate:false});return}
+  if(b.id==="c_copy"){return copy(D.family.code)}if(b.id==="c_share"){var tx=t("invite_text",{u:location.origin,c:D.family.code});if(navigator.share)navigator.share({text:tx}).catch(function(){});else copy(tx);return}
+  if(b.dataset.rm){if(confirm(t("remove_q")))api("DELETE","members/"+b.dataset.rm).then(sync);return}
+  if(b.id==="o_lang"){LANG=LANG==="km"?"en":"km";sv("fam_lang",LANG);return render()}
+  if(b.id==="o_out"){api("POST","logout").catch(function(){}).then(function(){reset()});return}
+  if(b.id==="o_leave"){if(confirm(t("leave_q")))api("DELETE","members").catch(function(){}).then(function(){reset()})}};
+ var k=$("k_on");if(k)k.onchange=function(){sv("fam_wake",k.checked);keepAwake()}}
+function copy(tx){if(navigator.clipboard)navigator.clipboard.writeText(tx).then(function(){toast(t("copied"))},function(){toast(tx)});else toast(tx)}
+$("hl").onclick=function(){LANG=LANG==="km"?"en":"km";sv("fam_lang",LANG);render()};
+/* ---------- map ---------- */
+function drawMap(){var el=$("map");if(!el)return;
+ if(typeof L==="undefined"){el.innerHTML='<p class="muted" style="padding:20px;text-align:center">'+esc(t("people"))+' →</p>';return}
+ if(map){map.remove();map=null;markers={}}
+ map=L.map(el,{zoomControl:true,attributionControl:true,zoomAnimation:false,fadeAnimation:false,markerZoomAnimation:false}).setView([11.55,104.9],6,{animate:false});
+ L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19,attribution:"© OpenStreetMap"}).addTo(map);
+ var pts=[];D.members.forEach(function(m){if(m.sharing&&m.lat!=null){pts.push([m.lat,m.lng]);
+   markers[m.id]=L.marker([m.lat,m.lng],{icon:L.divIcon({className:"",html:'<div style="position:relative"><div class="pin">'+esc((m.name||"?").trim().charAt(0).toUpperCase())+'</div><div class="pinl">'+esc(m.name)+'</div></div>',iconSize:[34,34],iconAnchor:[17,17]})}).addTo(map)}});
+ if(pts.length===1)map.setView(pts[0],16,{animate:false});else if(pts.length>1)map.fitBounds(pts,{padding:[40,40],maxZoom:17,animate:false})}
+/* ---------- sharing ---------- */
+function consent(){$("dbody").innerHTML='<h2>📍 '+esc(t("consent_t"))+'</h2><p>'+esc(t("consent_m"))+'</p><div class="row" style="margin-top:12px"><span class="sp"></span><button class="b alt" id="c_no">'+esc(t("cancel"))+'</button><button class="b" id="c_yes">'+esc(t("agree"))+'</button></div>';
+ if(!$("dlg").open)$("dlg").showModal();$("c_no").onclick=function(){$("dlg").close()};$("c_yes").onclick=function(){$("dlg").close();setSharing(true)}}
+function setSharing(on){if(on&&!navigator.geolocation){toast(t("loc_denied"));return}
+ api("POST","sharing",{on:on}).then(function(){return sync()}).catch(function(){toast(t("e_net"))})}
+function dist(a,b,c,d){var R=6371000,x=(c-a)*Math.PI/180,y=(d-b)*Math.PI/180,h=Math.sin(x/2)*Math.sin(x/2)+Math.cos(a*Math.PI/180)*Math.cos(c*Math.PI/180)*Math.sin(y/2)*Math.sin(y/2);return 2*R*Math.asin(Math.sqrt(h))}
+function startWatch(){if(watchId!=null||!navigator.geolocation)return;
+ watchId=navigator.geolocation.watchPosition(function(p){var n=Date.now(),c=p.coords;
+  if(n-lastSent.t<20000&&dist(lastSent.lat,lastSent.lng,c.latitude,c.longitude)<30)return;
+  lastSent={t:n,lat:c.latitude,lng:c.longitude};api("POST","loc",{lat:c.latitude,lng:c.longitude,acc:c.accuracy}).catch(function(){})},
+  function(e){if(e&&e.code===1){toast(t("loc_denied"));setSharing(false)}},{enableHighAccuracy:true,maximumAge:10000,timeout:30000});keepAwake()}
+function stopWatch(){if(watchId!=null&&navigator.geolocation)navigator.geolocation.clearWatch(watchId);watchId=null;if(wake){try{wake.release()}catch(e){}wake=null}}
+function keepAwake(){if(wake){try{wake.release()}catch(e){}wake=null}if(D&&D.me.sharing&&ld("fam_wake",false)&&navigator.wakeLock)navigator.wakeLock.request("screen").then(function(w){wake=w}).catch(function(){})}
+/* ---------- sync ---------- */
+function sync(){return api("GET","sync").then(function(r){var first=!D,was=D&&D.me.sharing;D=r;if(r.me.sharing&&watchId==null)startWatch();if(!r.me.sharing)stopWatch();if(first||!$("dlg").open){var y=window.scrollY;if(TAB==="map"&&map&&!first&&was===r.me.sharing){updateMarkers()}else render();window.scrollTo(0,y)}return r}).catch(function(e){if(e&&e.code==="auth")reset();else if(!D)render()})}
+function updateMarkers(){D.members.forEach(function(m){var mk=markers[m.id];if(m.sharing&&m.lat!=null){if(mk)mk.setLatLng([m.lat,m.lng]);else drawMap()}else if(mk){drawMap()}})}
+function reset(){TOK="";sv("fam_tok","");D=null;stopWatch();clearInterval(pollT);pollT=null;AUTHMODE="login";render()}
+function start(){TAB="map";sync().then(function(){render();if(!pollT)pollT=setInterval(function(){if(!document.hidden&&TOK)sync()},15000)})}
+document.addEventListener("visibilitychange",function(){if(!document.hidden&&TOK){sync();keepAwake()}});
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
+render();if(TOK)start();
+</script></body></html>
