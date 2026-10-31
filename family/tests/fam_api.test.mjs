@@ -1,0 +1,32 @@
+import {makeDB} from './d1shim.mjs';
+import {onRequest} from '/home/user/aj-hub/family/functions/api/[[path]].js';
+const DB=makeDB();
+async function call(method,path,body,tok){const r=await onRequest({request:new Request('http://x'+path,{method,headers:{'content-type':'application/json',...(tok?{authorization:'Bearer '+tok}:{})},body:body?JSON.stringify(body):undefined}),env:{DB}});return{s:r.status,j:await r.json()}}
+const ok=(c,m)=>{console.log(c?'PASS':'FAIL',m);if(!c)process.exitCode=1};
+let r=await call('POST','/api/signup',{family:'Sam Family',name:'Mom',phone:'012 111 222',code:'secret1'});const mom=r.j.token;ok(!!mom,'mom creates family');
+r=await call('GET','/api/sync',null,mom);const code=r.j.family.code;ok(/^\d{6}$/.test(code)&&r.j.me.role==='owner'&&r.j.members.length===1,'invite code '+code);
+r=await call('POST','/api/join',{invite:'000000',name:'X',phone:'099999999',code:'secret1'});ok(r.s===404,'wrong invite rejected');
+r=await call('POST','/api/join',{invite:code,name:'Dad',phone:'098111111',code:'secret1'});const dad=r.j.token;ok(!!dad,'dad joins with the code');
+r=await call('POST','/api/join',{invite:code,name:'Kid1',phone:'097222222',code:'secret1'});const kid=r.j.token;ok(!!kid,'kid joins');
+r=await call('POST','/api/join',{invite:code,name:'Dup',phone:'098111111',code:'secret1'});ok(r.s===409,'same phone rejected');
+r=await call('POST','/api/signup',{family:'Other',name:'Neighbour',phone:'011333333',code:'secret1'});const nb=r.j.token;
+// nothing is shared until a member agrees
+r=await call('POST','/api/loc',{lat:11.5,lng:104.9},kid);ok(r.j.ignored,'position ignored while sharing is off');
+r=await call('GET','/api/sync',null,mom);ok(r.j.members.every(m=>m.lat==null),'nobody visible before agreeing');
+r=await call('POST','/api/sharing',{on:true},kid);r=await call('POST','/api/loc',{lat:10.61,lng:104.18,acc:20},kid);
+r=await call('GET','/api/sync',null,mom);const k=r.j.members.find(m=>m.name==='Kid1');ok(k.sharing&&k.lat===10.61&&k.lng===104.18&&k.ts>0,'after agreeing, kid is visible to mom');
+r=await call('GET','/api/sync',null,dad);ok(r.j.members.find(m=>m.name==='Kid1').lat===10.61,'and visible to dad');
+r=await call('GET','/api/sync',null,dad);ok(r.j.members.find(m=>m.name==='Mom').lat==null,'mom is not sharing, so not visible');
+r=await call('GET','/api/sync',null,nb);ok(r.j.members.length===1&&r.j.family.code!==code,'another family sees nothing of this family');
+r=await call('POST','/api/sharing',{on:false},kid);r=await call('GET','/api/sync',null,mom);const k2=r.j.members.find(m=>m.name==='Kid1');ok(!k2.sharing&&k2.lat==null,'pausing hides the position at once');
+const row=await DB.prepare("SELECT lat,lng FROM users WHERE name='Kid1'").first();ok(row.lat===null&&row.lng===null,'pausing wipes the stored coordinates');
+r=await call('POST','/api/loc',{lat:1,lng:2},kid);r=await call('GET','/api/sync',null,mom);ok(r.j.members.find(m=>m.name==='Kid1').lat==null,'updates while paused are ignored');
+r=await call('POST','/api/loc',{lat:999,lng:2},dad);ok(r.s===400,'invalid coordinates rejected');
+r=await call('POST','/api/login',{phone:'097-222-222',code:'secret1'});ok(!!r.j.token,'login by phone');
+r=await call('POST','/api/login',{phone:'097222222',code:'bad'});ok(r.s===401,'wrong code rejected');
+r=await call('DELETE','/api/members/'+k.id,null,dad);ok(r.s===403,'a member cannot remove another member');
+r=await call('DELETE','/api/members/'+k.id,null,mom);ok(r.j.ok,'owner removes a member');
+r=await call('GET','/api/sync',null,kid);ok(r.s===401,'removed member is signed out');
+r=await call('DELETE','/api/members',null,mom);ok(r.j.ok,'owner leaves: ownership passes on');
+r=await call('GET','/api/sync',null,dad);ok(r.j.me.role==='owner'&&r.j.members.length===1,'dad is now the owner');
+r=await call('DELETE','/api/members',null,dad);r=await call('POST','/api/join',{invite:code,name:'Late',phone:'095000000',code:'secret1'});ok(r.s===404,'family disappears when the last member leaves');
