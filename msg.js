@@ -1,4 +1,4 @@
-/* msg.js v8 */
+/* msg.js v9 */
 /* =====================================================================
    💬 MESSAGES & REQUEST REPLIES — A&J Kampot Hub
    - Boss page:  tab "💬 សារ & សំណើ" inside #boss
@@ -61,6 +61,7 @@ const normN=n=>String(n||'').trim().toLowerCase().replace(/\s+/g,' ');
 /* one person can have a Khmer and an English name: cfg.work.alias maps the other name → main (Khmer) name */
 const aliases=()=>{ const w=W(); if(!w.alias||typeof w.alias!=='object') w.alias={}; return w.alias; };
 const canon=n=>{ n=String(n||'').trim(); return aliases()[normN(n)]||n; };
+const origName=k=>{ const L=[...msgs().map(m=>m.who),...(typeof LEAVES!=='undefined'?LEAVES.map(r=>r.name):[]),...(AC().get().staff||[]).map(x=>x.name)]; return L.find(x=>x&&normN(x)===k)||k; };
 const otherNames=n=>Object.entries(aliases()).filter(([k,v])=>normN(v)===normN(n)).map(([k])=>k);
 const whoLbl=n=>{ const c=canon(n); return normN(c)===normN(n)?esc(n):`${esc(c)} <span class="muted" style="font-weight:400">(${esc(n)})</span>`; };
 async function pinHash(name,pin){ const d=new TextEncoder().encode('ajmsg|'+normN(canon(name))+'|'+String(pin).trim()); const h=await crypto.subtle.digest('SHA-256',d); return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
@@ -334,7 +335,7 @@ function pinNames(){ const set=new Map(); const add=n=>{ n=canon(n); if(n&&!set.
   msgs().filter(isPriv).forEach(m=>add(m.who)); LEAVES.forEach(r=>add(r.name)); (AC().get().staff||[]).forEach(x=>add(x.name));
   return [...set.values()]; }
 function drawPins(){ const box=$('mgPins'); if(!box) return; const N=pinNames();
-  box.innerHTML=N.length?`<table class="mg-pins" style="width:100%">${N.map((n,i)=>`<tr><td><b>${esc(n)}</b>${otherNames(n).map(o=>`<br><span class="muted" style="font-size:13px">${esc(o)} <a href="#" onclick="mgUnlink('${esc(o)}');return false" title="ផ្ដាច់">✕</a></span>`).join('')}
+  box.innerHTML=N.length?`<table class="mg-pins" style="width:100%">${N.map((n,i)=>`<tr><td><b>${esc(n)}</b>${otherNames(n).map(o=>`<br><span class="muted" style="font-size:13px">${esc(origName(o))} <a href="#" onclick="mgUnlink('${esc(o)}');return false" title="ផ្ដាច់">✕</a></span>`).join('')}
       ${N.length>1?`<br><select style="width:auto;font-size:12px;padding:2px;margin-top:3px" onchange="mgLink(${i},this.value)"><option value="">🔗 ឈ្មោះផ្សេងរបស់គាត់…</option>${N.map((o,k)=>k===i?'':`<option value="${k}">${esc(o)}</option>`).join('')}</select>`:''}</td><td>${pinOf(n)?'<span style="color:var(--ok)">✅ មាន PIN</span>':'<span style="color:var(--bad)">⚠️ មិនទាន់មាន</span>'}</td>
     <td><input type="password" inputmode="numeric" maxlength="8" id="mgPinSet_${i}" placeholder="PIN ថ្មី 4–8"></td><td><button class="btn alt sm" onclick="mgPinSave(${i})">💾</button></td></tr>`).join('')}</table>
     <p class="muted" style="font-size:12px;margin:6px 0 0">🔗 បើឈ្មោះខ្មែរ និងឈ្មោះអង់គ្លេស ជាមនុស្សតែម្នាក់ — ជ្រើស «ឈ្មោះផ្សេងរបស់គាត់» នៅក្រោមឈ្មោះខ្មែរ · ប្រាប់ PIN ដល់បុគ្គលិកម្នាក់ៗដោយផ្ទាល់ · ប្រព័ន្ធរក្សាទុកតែកូដសម្ងាត់ (hash) មិនមែន PIN ពិតទេ — បើភ្លេច សូមកំណត់ PIN ថ្មី</p>`:'<p class="muted">មិនទាន់មានបុគ្គលិក</p>'; }
