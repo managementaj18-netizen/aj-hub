@@ -1,4 +1,4 @@
-/* msg.js v6 */
+/* msg.js v7 */
 /* =====================================================================
    💬 MESSAGES & REQUEST REPLIES — A&J Kampot Hub
    - Boss page:  tab "💬 សារ & សំណើ" inside #boss
@@ -235,6 +235,18 @@ window.mgPolDel=async i=>{ const P=pols(); if(!P[i]||!confirm('🗑 លុបគ
 
 let LEAVES=[];
 const replyOf=id=>msgs().find(m=>m.ref===String(id));
+/* 📄 the Request Form paper / PDF carries the management decision once the boss has replied */
+function decisionHtml(rp){ const t=pp(rp.at);
+  return `<h4 class="sh">សេចក្ដីសម្រេចរបស់ថ្នាក់ដឹកនាំ / Management Decision</h4><div class="notice avoid">
+  <p><b>${rp.cat==='ok'?'✅ អនុញ្ញាត / Approved':'❌ មិនអនុញ្ញាត / Not approved'}</b> · ${esc(dmy(t.date))} ${esc(t.time)}</p>
+  ${rp.m?`<p style="white-space:pre-line;margin-top:6px">${esc(rp.m)}</p>`:''}
+  ${rp.pay==='cut'?`<p style="margin-top:6px"><b>💵 កាត់ប្រាក់ខែ / Salary deduction:</b> ${esc(money(rp.cut||''))}</p>`:rp.pay==='none'?'<p style="margin-top:6px"><b>💵 មិនកាត់ប្រាក់ខែ / No salary deduction</b></p>':''}
+  ${rp.charge?`<p><b>⚠️ ពិន័យតាមគោលការណ៍ / Policy charge:</b> ${esc(money(rp.charge))}</p>`:''}</div>`; }
+if(typeof DEFS!=='undefined'&&DEFS.leave&&!DEFS.leave._mg){ const L=DEFS.leave, base=L.text.slice(); L._mg=1;
+  const me=r=>{ let rp=null; try{ rp=replyOf(r._id); }catch(e){}
+    L.paper=null; if(rp) L.text=[base[0]]; let h; try{ h=paperGeneric(r); } finally{ L.paper=me; L.text=base; }
+    if(!rp) return h; const i=h.indexOf('</div><div class="sigrow'); const d=decisionHtml(rp); return i>0?h.slice(0,i)+d+h.slice(i):h+d; };
+  L.paper=me; }
 async function pushMsgs(){ /* save the whole config, then read back to be sure the server kept the messages */
   const w=W(); const cut=Date.now()-MAX_DAYS*864e5;
   w.msg=msgs().filter(m=>Date.parse(m.at)>cut).sort((a,b)=>String(b.at).localeCompare(String(a.at))).slice(0,MAX_MSG);
