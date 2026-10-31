@@ -19,7 +19,7 @@ r=await call('GET','/api/sync',null,dad);ok(r.j.members.find(m=>m.name==='Kid1')
 r=await call('GET','/api/sync',null,dad);ok(r.j.members.find(m=>m.name==='Mom').lat==null,'mom is not sharing, so not visible');
 r=await call('GET','/api/sync',null,nb);ok(r.j.members.length===1&&r.j.family.code!==code,'another family sees nothing of this family');
 r=await call('POST','/api/sharing',{on:false},kid);r=await call('GET','/api/sync',null,mom);const k2=r.j.members.find(m=>m.name==='Kid1');ok(!k2.sharing&&k2.lat==null,'pausing hides the position at once');
-const row=await DB.prepare("SELECT lat,lng FROM users WHERE name='Kid1'").first();ok(row.lat===null&&row.lng===null,'pausing wipes the stored coordinates');
+const row=await DB.prepare("SELECT lat,lng FROM fam_users WHERE name='Kid1'").first();ok(row.lat===null&&row.lng===null,'pausing wipes the stored coordinates');
 r=await call('POST','/api/loc',{lat:1,lng:2},kid);r=await call('GET','/api/sync',null,mom);ok(r.j.members.find(m=>m.name==='Kid1').lat==null,'updates while paused are ignored');
 r=await call('POST','/api/loc',{lat:999,lng:2},dad);ok(r.s===400,'invalid coordinates rejected');
 r=await call('POST','/api/login',{phone:'097-222-222',code:'secret1'});ok(!!r.j.token,'login by phone');

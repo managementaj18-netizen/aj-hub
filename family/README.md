@@ -8,9 +8,9 @@ Share location inside a family. Everyone agrees first, can pause at any time, an
 - Limit: it is a web app, so a position is sent only while the app is open (optional "keep the screen on"). For background tracking a native app would be needed.
 
 ## Cloudflare setup (same as Shop)
-1. D1 database `soramma-family-db`.
+1. **No new D1 database is needed.** All tables are prefixed `fam_`, so the app can share an existing database (e.g. `soramma-laundrypro-db`); this keeps you under the free plan's 10-database limit. (Tested side by side with Laundry in one database.)
 2. Pages project `family`: connect this repo, root directory `family`, build output `public`, no build command.
-3. Settings → Bindings → D1 → variable `DB` = `soramma-family-db`, then redeploy.
+3. Settings → Bindings → D1 → variable `DB` = the existing database from step 1, then redeploy.
 4. Custom domain, e.g. `family.soramma.app`.
 
 Tests: `tests/` (API with a D1 shim, Playwright e2e, map test).
