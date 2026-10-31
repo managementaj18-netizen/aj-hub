@@ -1,4 +1,4 @@
-/* msg.js v5 */
+/* msg.js v6 */
 /* =====================================================================
    💬 MESSAGES & REQUEST REPLIES — A&J Kampot Hub
    - Boss page:  tab "💬 សារ & សំណើ" inside #boss
@@ -8,6 +8,9 @@
    - Staff page: #f/msg  (tablet / phone, PIN once like the other forms)
        staff tap their SHIFT or DEPARTMENT (not a name — names change) → messages for that group + everyone;
        the boss can add a name ("👤 សម្រាប់") on a message so the right person knows it is for them
+   🔒 PRIVATE: a reply to a staff Request Form (and any message the boss ticks "🔒 ឯកជន") shows on the
+       staff page only as a lock with the person's name; that person opens it with their own PIN, which the
+       boss sets in the "🔑 PIN សារឯកជន" card. Other staff in the same shift/department see only the lock.
    Messages live in the attendance config (cfg.work.msg) — the same saved config that already
    carries the daily-work feedback, so every tablet loads it with the staff list. No new server.
    ===================================================================== */
@@ -51,6 +54,13 @@ const toLbl=t=>{ if(!t||t.k==='all') return '📢 សារទូទៅរបស
 const legacyP=(m,g)=>{ const st=AC().get().staff.find(x=>x.name===m.to.v); const d=(W().msgDept||{})[m.to.v]; return (g.t.k==='s'&&st&&st.shift===g.t.v)||(g.t.k==='d'&&d===g.t.v); };
 const forMe=(m,k)=>{ const t=m.to||{k:'all'}, g=grpByKey(k); if(t.k==='all') return true; if(!g) return false;
   if(t.k==='p') return legacyP(m,g); return t.k===g.t.k&&t.v===g.t.v; };
+/* 🔒 private messages + per-staff PIN (stored only as a SHA-256 hash in cfg.work.pins) */
+const isPriv=m=>!!(m&&m.who&&(m.ref||m.priv));
+const pins=()=>{ const w=W(); if(!w.pins||typeof w.pins!=='object') w.pins={}; return w.pins; };
+const normN=n=>String(n||'').trim().toLowerCase().replace(/\s+/g,' ');
+async function pinHash(name,pin){ const d=new TextEncoder().encode('ajmsg|'+normN(name)+'|'+String(pin).trim()); const h=await crypto.subtle.digest('SHA-256',d); return [...new Uint8Array(h)].map(b=>b.toString(16).padStart(2,'0')).join(''); }
+const pinOf=n=>pins()[normN(n)]||'';
+const OPEN=new Set(); /* private messages unlocked on this screen — memory only, re-locks by itself */
 const newId=()=>'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,5);
 
 const css=document.createElement('style'); css.textContent=`
@@ -69,6 +79,9 @@ const css=document.createElement('style'); css.textContent=`
 .mg-badge{display:inline-block;min-width:20px;padding:0 6px;border-radius:99px;background:var(--bad);color:#fff;font-size:12px;text-align:center;margin-left:4px}
 .mg-ban{display:block;text-decoration:none;color:inherit;margin:8px 0}
 .mg-act{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.mg-card.lock{border-left-color:#555;background:#fafafa}
+.mg-pin{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:8px}.mg-pin input{width:140px;margin:0}
+.mg-pins td{padding:6px 4px;vertical-align:middle}.mg-pins input{width:110px;margin:0}
 .mg-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px}
 `; document.head.appendChild(css);
 
@@ -87,12 +100,24 @@ const payInputs=id=>`<div class="mg-pay" style="margin-top:8px"><label style="fo
 window.mgPay=(id,v,b)=>{ const h=$(id+'_pay'); const on=h.value!==v; h.value=on?v:''; b.parentElement.querySelectorAll('button').forEach(x=>x.classList.toggle('on',on&&x.dataset.p===v)); $(id+'_cut').classList.toggle('hide',!(on&&v==='cut')); };
 const payOf=id=>{ const o={}, p=$(id+'_pay')&&$(id+'_pay').value; if(p) o.pay=p; const c=($(id+'_cut')||{}).value; if(p==='cut'&&c&&c.trim()) o.cut=c.trim().slice(0,40); const g=($(id+'_chg')||{}).value; if(g&&g.trim()) o.charge=g.trim().slice(0,40); return o; };
 const payClear=id=>{ ['_cut','_chg','_pay'].forEach(k=>{ if($(id+k)) $(id+k).value=''; }); const w=$(id+'_pay'); if(w) w.closest('.mg-pay').querySelectorAll('button').forEach(x=>x.classList.remove('on')); if($(id+'_cut')) $(id+'_cut').classList.add('hide'); };
+function lockCard(m,isNew){ const id=esc(m.id);
+  return `<div class="mg-card lock${isNew?' new':''}"><div class="mg-h"><b>🔒 សារឯកជន${isNew?' <span class="pill warn">ថ្មី</span>':''}</b><span class="mg-to">${esc(when(m.at))}</span></div>
+  <div class="mg-to">ពីមេ → 👤 សម្រាប់តែ <b>${esc(m.who)}</b> ម្នាក់គត់</div>
+  <div class="mg-pin"><input type="password" inputmode="numeric" autocomplete="off" maxlength="8" id="mgPin_${id}" placeholder="🔑 PIN" onkeydown="if(event.key==='Enter')mgOpen('${id}')"><button class="btn sm" onclick="mgOpen('${id}')">🔓 បើកមើល</button></div>
+  <div class="muted" style="font-size:12px;margin-top:4px">បញ្ចូល PIN ផ្ទាល់ខ្លួនដែលមេបានឲ្យ · មិនមាន PIN? សូមសួរមេ</div></div>`; }
+window.mgOpen=async id=>{ const m=msgs().find(x=>x.id===id); if(!m) return; const want=pinOf(m.who), el=$('mgPin_'+id), p=el?el.value:'';
+  if(!want) return alert('🔒 មេមិនទាន់កំណត់ PIN សម្រាប់ '+m.who+' ទេ — សូមសួរមេ។');
+  if(!p) return el&&el.focus();
+  if(await pinHash(m.who,p)!==want){ if(el){ el.value=''; el.focus(); } return alert('❌ PIN មិនត្រូវ'); }
+  OPEN.add(id); drawStaff(); setTimeout(()=>{ if(OPEN.delete(id)) drawStaff(); },3*60e3); };
+window.mgLock=id=>{ OPEN.delete(id); drawStaff(); };
 function msgCard(m,isNew,boss){ const c=CATS[m.cat]||CATS.info; const r=m.req;
+  if(!boss&&isPriv(m)&&!OPEN.has(m.id)) return lockCard(m,isNew);
   return `<div class="mg-card ${esc(m.cat||'info')}${isNew?' new':''}"><div class="mg-h"><b>${c[0]} ${esc(c[1])}${isNew?' <span class="pill warn">ថ្មី</span>':''}</b><span class="mg-to">${esc(when(m.at))}</span></div>
-  <div class="mg-to">ពីមេ → ${esc(toLbl(m.to))}${m.who?` · 👤 សម្រាប់៖ <b>${esc(m.who)}</b>`:''}</div>
+  <div class="mg-to">ពីមេ → ${esc(toLbl(m.to))}${m.who?` · 👤 សម្រាប់៖ <b>${esc(m.who)}</b>`:''}${isPriv(m)?' · 🔒 ឯកជន':''}</div>
   ${r?`<div class="mg-req">📄 <b>សំណើ៖</b> ${esc(lbl(r.type||''))}${r.from?' · '+esc(fmtD(r.from)):''}${r.to&&r.to!==r.from?' → '+esc(fmtD(r.to)):''}${r.days?' ('+esc(r.days)+' ថ្ងៃ)':''}${r.reason?`<br><span class="muted">មូលហេតុ៖ ${esc(r.reason)}</span>`:''}</div>`:''}
   ${m.m?`<div class="mg-txt">${m.cat==='ok'||m.cat==='no'?'<b>ចម្លើយ / ហេតុផល៖</b> ':''}${esc(m.m)}</div>`:''}${payHtml(m)}
-  ${boss?`<div class="mg-act"><button class="btn alt sm" style="color:var(--bad)" onclick="mgDel('${esc(m.id)}')">🗑 លុប</button></div>`:''}</div>`; }
+  ${boss?`<div class="mg-act"><button class="btn alt sm" style="color:var(--bad)" onclick="mgDel('${esc(m.id)}')">🗑 លុប</button></div>`:(isPriv(m)?`<div class="mg-act"><button class="btn alt sm" onclick="mgLock('${esc(m.id)}')">🔒 បិទវិញ</button></div>`:'')}</div>`; }
 
 /* =====================================================================
    STAFF SIDE  (#f/msg)
@@ -123,7 +148,7 @@ function drawStaff(){ const box=$('mgMain'); if(!box) return;
     ${L.length?L.map(m=>msgCard(m,!S.has(m.id))).join(''):'<p class="muted" style="margin:16px 0">មិនទាន់មានសារទេ ✨</p>'}
     <p class="muted" style="font-size:13px;margin-top:16px">⏳ បើអ្នកបានផ្ញើសំណើ ហើយមិនទាន់ឃើញចម្លើយ = មេកំពុងពិនិត្យ (ឬមើលក្នុងផ្នែកផ្សេង)។ · <a href="#f/leave">📄 ស្នើសុំថ្មី</a></p>`;
   markSeen(ME,L.map(m=>m.id)); }
-window.mgMe=i=>{ if(i<0){ ME=''; return drawStaff(); } const g=groups()[i]; ME=g?g.k:''; const mine=jget(LS_ME,[]).filter(k=>grpByKey(k)); if(ME&&!mine.includes(ME)) jset(LS_ME,[ME,...mine].slice(0,3)); drawStaff(); window.scrollTo(0,0); };
+window.mgMe=i=>{ OPEN.clear(); if(i<0){ ME=''; return drawStaff(); } const g=groups()[i]; ME=g?g.k:''; const mine=jget(LS_ME,[]).filter(k=>grpByKey(k)); if(ME&&!mine.includes(ME)) jset(LS_ME,[ME,...mine].slice(0,3)); drawStaff(); window.scrollTo(0,0); };
 
 DEFS.msg={icon:'💬',short:'សារពីមេ',title:'Messages from Boss',full:'សារពីមេ / Messages',
   sections:[],sigs:[],onRender:()=>mgRender(),
@@ -233,11 +258,13 @@ function injectBoss(){
     <div><div class="card"><h2 style="margin-top:0">✉️ ផ្ញើសារថ្មី</h2>
       <label>ផ្ញើទៅ / To (វេន ឬ ផ្នែក)</label><select id="mgTo"></select>
       <input id="mgWho" maxlength="60" placeholder="👤 សម្រាប់អ្នកណា? (ឈ្មោះ — មិនចាំបាច់)" style="margin-top:6px">
+      <label style="display:flex;gap:8px;align-items:center;font-size:14px;margin-top:6px;cursor:pointer"><input type="checkbox" id="mgPriv" style="width:auto;margin:0"> 🔒 ឯកជន — មើលបានតែអ្នកមានឈ្មោះខាងលើ ដោយ PIN</label>
       <label style="margin-top:8px;display:block">ប្រភេទ</label><div class="mg-chips" id="mgCat"></div>
       <label style="margin-top:4px;display:block">ឧទាហរណ៍ (ចុចដើម្បីបញ្ចូល ហើយកែបាន)</label><div class="mg-chips" id="mgEx"></div>
       <textarea id="mgTxt" maxlength="${MAX_TXT}" rows="4" placeholder="សរសេរសារ…"></textarea>${payInputs('mgNew')}
       <button class="btn big" id="mgSend" onclick="mgSend()" style="margin-top:8px">📤 ផ្ញើ</button><p id="mgSendMsg" class="muted"></p></div>
       <div class="card" style="margin-top:14px"><h2 style="margin-top:0">📜 គោលការណ៍ក្រុមហ៊ុន <span class="muted" style="font-size:13px;font-weight:400">លិខិតពីថ្នាក់ដឹកនាំ · បុគ្គលិកអានប៉ុណ្ណោះ (មិនស៊ីញ៉េ)</span></h2><div id="mgPol"></div></div>
+      <div class="card" style="margin-top:14px"><h2 style="margin-top:0">🔑 PIN សារឯកជន <span class="muted" style="font-size:13px;font-weight:400">ចម្លើយសំណើ និងសារ 🔒 — បុគ្គលិកម្នាក់ៗបើកមើលដោយ PIN ផ្ទាល់ខ្លួន</span></h2><div id="mgPins"></div></div>
       <h2>📨 សារបានផ្ញើ</h2><div id="mgSent"></div></div>
   </div>`;
   const main=document.querySelector('#bossApp main'); const prev=$('t-work')||$('t-attend'); prev?prev.after(sec):main.appendChild(sec);
@@ -251,11 +278,13 @@ function drawCompose(){ const sel=$('mgTo'); if(!sel) return; const cur=sel.valu
 window.mgCat=k=>{ CAT=k; drawCompose(); };
 window.mgEx=i=>{ const e=EXAMPLES[i]; CAT=e[0]; $('mgTxt').value=e[2]; drawCompose(); $('mgTxt').focus(); };
 function parseTo(v){ if(!v||v==='all') return {k:'all'}; const i=v.indexOf('|'); return {k:v.slice(0,i),v:v.slice(i+1)}; }
-window.mgSend=async()=>{ const t=$('mgTxt').value.trim().slice(0,MAX_TXT); if(!t) return alert('សូមសរសេរសារ'); const to=parseTo($('mgTo').value), who=$('mgWho').value.trim().slice(0,60);
-  if(!confirm(`ផ្ញើសារទៅ ${toLbl(to)}${who?' · '+who:''}?`)) return;
+window.mgSend=async()=>{ const t=$('mgTxt').value.trim().slice(0,MAX_TXT); if(!t) return alert('សូមសរសេរសារ'); const to=parseTo($('mgTo').value), who=$('mgWho').value.trim().slice(0,60), priv=!!($('mgPriv')&&$('mgPriv').checked);
+  if(priv&&!who) return alert('🔒 សារឯកជន៖ សូមវាយឈ្មោះបុគ្គលិកក្នុងប្រអប់ «👤 សម្រាប់អ្នកណា?»');
+  if(priv&&!pinOf(who)&&!confirm('⚠️ '+who+' មិនទាន់មាន PIN ទេ — គាត់នឹងមើលមិនបាន រហូតដល់មេកំណត់ PIN ក្នុងប្រអប់ «🔑 PIN សារឯកជន»។ ផ្ញើដដែល?')) return;
+  if(!confirm(`ផ្ញើសារទៅ ${toLbl(to)}${who?' · '+who:''}${priv?' · 🔒 ឯកជន':''}?`)) return;
   const b=$('mgSend'); b.disabled=true; b.textContent='⏳ កំពុងផ្ញើ…';
-  try{ await freshCfg(); W().msg.unshift({id:newId(),at:new Date().toISOString(),to,...(who?{who}:{}),cat:CAT,m:t,...payOf('mgNew')}); const ok=await pushMsgs();
-    $('mgSendMsg').textContent=ok?'✅ ផ្ញើរួច — បុគ្គលិកនឹងឃើញពេលបើក «💬 សារពីមេ»':NOKEEP; $('mgSendMsg').style.color=ok?'var(--ok)':'var(--bad)'; if(ok){ $('mgTxt').value=''; $('mgWho').value=''; payClear('mgNew'); } mgBoss(); }
+  try{ await freshCfg(); W().msg.unshift({id:newId(),at:new Date().toISOString(),to,...(who?{who}:{}),...(priv?{priv:true}:{}),cat:CAT,m:t,...payOf('mgNew')}); const ok=await pushMsgs();
+    $('mgSendMsg').textContent=ok?'✅ ផ្ញើរួច — បុគ្គលិកនឹងឃើញពេលបើក «💬 សារពីមេ»':NOKEEP; $('mgSendMsg').style.color=ok?'var(--ok)':'var(--bad)'; if(ok){ $('mgTxt').value=''; $('mgWho').value=''; if($('mgPriv')) $('mgPriv').checked=false; payClear('mgNew'); } mgBoss(); }
   catch(e){ alert('ផ្ញើមិនបាន៖ '+e.message); }
   b.disabled=false; b.textContent='📤 ផ្ញើ'; };
 window.mgDel=async id=>{ if(!confirm('🗑 លុបសារនេះ? បុគ្គលិកនឹងលែងឃើញ។')) return;
@@ -271,6 +300,7 @@ function reqCard(r,i){ const rp=replyOf(r._id);
   const def=DEPTS.includes(r.position)?'d|'+r.position:'all';
   return `<div class="mg-card warn">${info}
     <label style="margin-top:8px;display:block;font-size:13px">ផ្ញើចម្លើយទៅ (វេន / ផ្នែក)</label><select id="mgRto_${i}">${grpOpts(def)}</select>
+    <div class="muted" style="font-size:13px;margin-top:4px">🔒 ចម្លើយនេះឯកជន — មើលបានតែ <b>${esc(r.name||'')}</b> ដោយ PIN${pinOf(r.name)?'':' · <b style="color:var(--bad)">⚠️ មិនទាន់មាន PIN</b> (កំណត់ក្នុង «🔑 PIN សារឯកជន»)'}</div>
     <textarea id="mgRtx_${i}" rows="2" maxlength="${MAX_TXT}" placeholder="ហេតុផល / ចំណាំ (មិនចាំបាច់)" style="margin-top:6px"></textarea>${payInputs('mgRp_'+i)}
     <div class="mg-chips">${REPLY_EX.ok.map(t=>`<button onclick="$('mgRtx_${i}').value=this.textContent">${esc(t)}</button>`).join('')}${REPLY_EX.no.map(t=>`<button onclick="$('mgRtx_${i}').value=this.textContent">${esc(t)}</button>`).join('')}</div>
     <div class="mg-act"><button class="btn" style="background:var(--ok);border-color:var(--ok)" onclick="mgReply(${i},'ok')">✅ អនុញ្ញាត</button><button class="btn" style="background:var(--bad);border-color:var(--bad)" onclick="mgReply(${i},'no')">❌ មិនអនុញ្ញាត</button><button class="btn alt sm" onclick="openRecord('${esc(r._id)}')">📄 មើលហ្វម</button></div></div>`; }
@@ -282,6 +312,19 @@ window.mgReply=async(i,st)=>{ const r=LEAVES[i]; if(!r) return; const to=parseTo
       req:{type:r.leaveType||'',from:r.fromDate||'',to:r.toDate||'',days:r.totalDays||'',reason:String(r.reason||'').slice(0,200)}});
     const ok=await pushMsgs(); if(!ok) alert(NOKEEP); mgBoss(); }
   catch(e){ alert('ផ្ញើមិនបាន៖ '+e.message); } };
+/* 🔑 per-staff PIN for private messages */
+function pinNames(){ const set=new Map(); const add=n=>{ n=String(n||'').trim(); if(n&&!set.has(normN(n))) set.set(normN(n),n); };
+  msgs().filter(isPriv).forEach(m=>add(m.who)); LEAVES.forEach(r=>add(r.name)); (AC().get().staff||[]).forEach(x=>add(x.name));
+  return [...set.values()]; }
+function drawPins(){ const box=$('mgPins'); if(!box) return; const N=pinNames();
+  box.innerHTML=N.length?`<table class="mg-pins" style="width:100%">${N.map((n,i)=>`<tr><td><b>${esc(n)}</b></td><td>${pinOf(n)?'<span style="color:var(--ok)">✅ មាន PIN</span>':'<span style="color:var(--bad)">⚠️ មិនទាន់មាន</span>'}</td>
+    <td><input type="password" inputmode="numeric" maxlength="8" id="mgPinSet_${i}" placeholder="PIN ថ្មី 4–8"></td><td><button class="btn alt sm" onclick="mgPinSave(${i})">💾</button></td></tr>`).join('')}</table>
+    <p class="muted" style="font-size:12px;margin:6px 0 0">ប្រាប់ PIN ដល់បុគ្គលិកម្នាក់ៗដោយផ្ទាល់ · ប្រព័ន្ធរក្សាទុកតែកូដសម្ងាត់ (hash) មិនមែន PIN ពិតទេ — បើភ្លេច សូមកំណត់ PIN ថ្មី</p>`:'<p class="muted">មិនទាន់មានបុគ្គលិក</p>'; }
+window.mgPinSave=async i=>{ const n=pinNames()[i], el=$('mgPinSet_'+i), p=el?el.value.trim():''; if(!n) return;
+  if(!/^\d{4,8}$/.test(p)) return alert('PIN ត្រូវជាលេខ 4 ដល់ 8 ខ្ទង់');
+  try{ await freshCfg(); pins()[normN(n)]=await pinHash(n,p); AC().set(AC().get()); await api('setAttCfg',{key:bossKey(),cfg:AC().get()});
+    const j=await api('attCfg',{key:bossKey()}); if(j&&j.cfg) AC().set(j.cfg); const ok=pinOf(n)===await pinHash(n,p);
+    alert(ok?'✅ បានកំណត់ PIN សម្រាប់ '+n:NOKEEP); mgBoss(); }catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); } };
 function pendingCount(){ return LEAVES.filter(r=>!replyOf(r._id)).length; }
 function mgBoss(){ if(!$('t-msg')) return;
   const P=[],D=[]; LEAVES.forEach((r,i)=>(replyOf(r._id)?D:P).push(reqCard(r,i)));
@@ -289,7 +332,7 @@ function mgBoss(){ if(!$('t-msg')) return;
   $('mgDone').innerHTML=D.slice(0,30).join('')||'<p class="muted">មិនទាន់មាន</p>';
   $('mgSent').innerHTML=msgs().filter(m=>!m.ref).slice(0,30).map(m=>msgCard(m,false,true)).join('')||'<p class="muted">មិនទាន់មានសារ</p>';
   const n=pendingCount(); const tn=$('mgTabN'); if(tn) tn.innerHTML=n?`<span class="mg-badge">${n}</span>`:'';
-  drawCompose(); if(!PED) drawPolBoss();
+  drawCompose(); drawPins(); if(!PED) drawPolBoss();
   const tile=document.querySelector('#launcher [data-mg] .ts'); if(tile) tile.textContent=n?`⏳ ${n} សំណើរង់ចាំ`:'ផ្ញើសារទៅបុគ្គលិក'; }
 
 /* collect the staff Request Forms (newest first, last 90 days) whenever the boss data reloads */
