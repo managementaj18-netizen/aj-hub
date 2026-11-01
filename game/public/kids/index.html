@@ -35,6 +35,7 @@ function texts(){document.documentElement.lang=LANG;$("tPick").textContent=t("pi
 /* ----- sound: everything is synthesised, nothing is sampled ----- */
 var AC=null;function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==="suspended")AC.resume();return AC}
 function tone(f,d,type,vol,when,glide){var a=ac();if(!a)return;var o=a.createOscillator(),g=a.createGain(),t0=a.currentTime+(when||0);o.type=type||"sine";o.frequency.setValueAtTime(f,t0);if(glide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f*glide),t0+d);g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol||.15,t0+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(g);g.connect(a.destination);o.start(t0);o.stop(t0+d+.02)}
+["pointerdown","touchstart","click","keydown"].forEach(function(n){window.addEventListener(n,function(){var a=ac();if(a){try{var b=a.createBuffer(1,1,22050),x=a.createBufferSource();x.buffer=b;x.connect(a.destination);x.start(0)}catch(e){}}},{passive:true})});
 function sPop(){tone(500,.12,"sine",.2,0,2.2)}
 function sVoice(an){tone(an.f,an.d,an.w,.16,0,1.4);tone(an.f*1.5,an.d*.7,an.w,.1,an.d*.8,.8)}
 function sBoing(){tone(380,.35,"sine",.18,0,.35);tone(300,.3,"triangle",.12,.05,1.6)}

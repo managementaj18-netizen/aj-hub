@@ -8,7 +8,7 @@ await p.addInitScript(()=>{localStorage.setItem('ak_lang','"km"')});
 await p.goto('http://localhost:8806/kids/');await p.waitForSelector('.card');
 ok((await p.locator('.card').count())===6,'6 animal friends to choose from');ok(/ជ្រើសមិត្ត/.test(await p.locator('#tPick').innerText()),'Khmer title');
 await p.screenshot({path:'/tmp/sc/kids_pick.png'});
-await p.click('.card[data-i="0"]');await p.waitForTimeout(100);ok(await p.evaluate(()=>AK.G.state==='play'&&AK.G.an.id==='dog'),'choosing the dog starts the game');
+await p.click('.card[data-i="0"]');await p.waitForTimeout(100);ok(await p.evaluate(()=>AC&&AC.state==='running'),'sound engine is unlocked by the first touch (needed on iPhone)');ok(await p.evaluate(()=>AK.G.state==='play'&&AK.G.an.id==='dog'),'choosing the dog starts the game');
 await p.evaluate(()=>{AK.G.spawn=1e9;AK.G.items=[];AK.G.rng=()=>0.5});
 const run=async(n)=>{for(let i=0;i<n;i++)await p.evaluate(()=>AK.step(0.02))};
 const drop=async(k,x)=>{await p.evaluate(([k,x])=>{AK.addItem(k);const it=AK.G.items[AK.G.items.length-1];it.x=x;it.y=cv.clientHeight-170},[k,x])};

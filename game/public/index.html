@@ -44,6 +44,9 @@ var G={state:"menu",score:0,lives:3,level:1,items:[],px:0,tx:0,pw:84,t:0,spawn:0
 var GOOD=["🥭","🍌","🍉","🥥","🍊"],GOLD="🍍",BAD="🐛";
 function start(){G.state="play";G.score=0;G.lives=3;G.level=1;G.items=[];G.fx=[];G.spawn=0.6;G.t=0;G.px=G.tx=W/2;hud();["ovStart","ovEnd","ovPause"].forEach(function(i){$(i).classList.add("hide")})}
 function hud(){$("sc").textContent=G.score;$("lv").textContent="Lv "+G.level;var h="";for(var i=0;i<3;i++)h+=i<G.lives?"❤️":"🖤";$("li").innerHTML=h}
+/* iPhone/Safari keep sound off until the first touch: create and resume the audio engine inside that touch */
+function unlockAudio(){try{var A=window.AudioContext||window.webkitAudioContext;if(!A)return;var a=beep.a||(beep.a=new A());if(a.state==="suspended")a.resume();var b=a.createBuffer(1,1,22050),s=a.createBufferSource();s.buffer=b;s.connect(a.destination);s.start(0)}catch(e){}}
+["pointerdown","touchstart","click","keydown"].forEach(function(n){window.addEventListener(n,unlockAudio,{passive:true})});
 function beep(f,d,ty){if(!SND)return;try{var a=beep.a||(beep.a=new (window.AudioContext||window.webkitAudioContext)()),o=a.createOscillator(),g=a.createGain();o.type=ty||"sine";o.frequency.value=f;g.gain.setValueAtTime(.12,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+d);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
 function addItem(kind){var x=30+G.rng()*(W-60),k=kind||(G.rng()<.2?"bad":G.rng()<.1?"gold":"ok");
  G.items.push({x:x,y:-30,k:k,e:k==="bad"?BAD:k==="gold"?GOLD:GOOD[Math.floor(G.rng()*GOOD.length)],vy:(120+G.level*22)*(.85+G.rng()*.3),r:26,rot:G.rng()*6})}

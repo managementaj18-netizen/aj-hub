@@ -64,6 +64,9 @@ var S={lv:ld("js_lv",1),tubes:[],hist:[],sel:-1,moves:0,extra:false,won:false,an
 function newLevel(lv){S.lv=lv;sv("js_lv",lv);S.tubes=makeLevel(lv);S.hist=[];S.sel=-1;S.moves=0;S.extra=false;S.won=false;S.anim=null;texts();$("ovWin").classList.add("hide")}
 function texts(){document.documentElement.lang=LANG;$("tLv").textContent=t("lv",{n:S.lv});$("tMv").textContent=t("mv",{n:S.moves});$("undo").innerHTML="↩️<small>"+t("undo")+"</small>";$("restart").innerHTML="🔄<small>"+t("restart")+"</small>";$("addt").innerHTML="➕<small>"+t("add")+"</small>";
  $("undo").disabled=!S.hist.length||S.won;$("addt").disabled=S.extra||S.won;$("bs").textContent=SND?"🔊":"🔇";$("mTitle").textContent=t("title");$("mHow").textContent=t("how");$("resume").textContent=t("resume");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("reset").textContent=t("reset");$("tWin").textContent=t("win");$("next").textContent=t("next")}
+/* iPhone/Safari keep sound off until the first touch: create and resume the audio engine inside that touch */
+function unlockAudio(){try{var A=window.AudioContext||window.webkitAudioContext;if(!A)return;var a=beep.a||(beep.a=new A());if(a.state==="suspended")a.resume();var b=a.createBuffer(1,1,22050),s=a.createBufferSource();s.buffer=b;s.connect(a.destination);s.start(0)}catch(e){}}
+["pointerdown","touchstart","click","keydown"].forEach(function(n){window.addEventListener(n,unlockAudio,{passive:true})});
 function beep(f,d){if(!SND)return;try{var a=beep.a||(beep.a=new (window.AudioContext||window.webkitAudioContext)()),o=a.createOscillator(),g=a.createGain();o.type="sine";o.frequency.value=f;g.gain.setValueAtTime(.1,a.currentTime);g.gain.exponentialRampToValueAtTime(.001,a.currentTime+d);o.connect(g);g.connect(a.destination);o.start();o.stop(a.currentTime+d)}catch(e){}}
 function tap(i){if(S.won||i<0||i>=S.tubes.length)return;
  if(S.sel<0){if(S.tubes[i].length){S.sel=i;beep(500,.06)}return}
