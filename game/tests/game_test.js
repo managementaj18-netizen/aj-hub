@@ -8,7 +8,7 @@ await p.addInitScript(()=>{localStorage.setItem('fc_lang','"km"');localStorage.r
 await p.goto('http://localhost:8803/');await p.waitForSelector('#go');
 ok(/ចាប់ផ្លែឈើ/.test(await p.locator('#tTitle').innerText()),'Khmer title');ok(!/\b(title|how|go)\b/.test(await p.locator('#ovStart').innerText().then(x=>x.replace(/\s+/g,' '))),'no raw keys');
 await p.screenshot({path:'/tmp/sc/game_menu.png'});
-await p.click('#go');await p.waitForTimeout(100);ok(await p.evaluate(()=>FC.G.state)==='play','game starts');
+await p.click('#go');await p.waitForTimeout(100);ok(await p.evaluate(()=>FC.G.state)==='play','game starts');ok(await p.evaluate(()=>!!beep.a&&beep.a.state==='running'),'sound engine is unlocked by the first touch (needed on iPhone)');
 // freeze the random spawns, then drive the game deterministically
 await p.evaluate(()=>{FC.G.spawn=1e9;FC.G.items=[];FC.G.rng=()=>0.5});
 const W=await p.evaluate(()=>cv.clientWidth),H=await p.evaluate(()=>cv.clientHeight);

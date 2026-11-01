@@ -20,7 +20,7 @@ ok(lv[0].nc===3&&lv[59].nc===10,'difficulty grows from 3 to 10 colours');
 // same level is always the same puzzle (so a restart repeats it)
 ok(await p.evaluate(()=>JSON.stringify(JS.makeLevel(5))===JSON.stringify(JS.makeLevel(5))),'a level is repeatable');
 // play through the UI by solving level 1 with the solver path
-await p.evaluate(()=>JS.newLevel(1));
+await p.touchscreen.tap(215,300);await p.waitForTimeout(100);ok(await p.evaluate(()=>!!beep.a&&beep.a.state==='running'),'sound engine is unlocked by the first touch (needed on iPhone)');await p.evaluate(()=>JS.newLevel(1));
 const solveMoves=await p.evaluate(()=>{function clone(t){return t.map(x=>x.slice())}const CAP=4;function top(t){return t.length?t[t.length-1]:-1}function rl(t){var c=top(t),n=0;for(var i=t.length-1;i>=0&&t[i]===c;i--)n++;return n}
  const seen={};function key(s){return s.map(t=>t.join('')).sort().join('|')}
  function go(s,path){if(JS.solved(s))return path;const k=key(s);if(seen[k])return null;seen[k]=1;for(let i=0;i<s.length;i++){if(!s[i].length)continue;for(let j=0;j<s.length;j++){if(i===j||!JS.canPour(s[i],s[j]))continue;if(!s[j].length&&rl(s[i])===s[i].length)continue;const n=clone(s);JS.pour(n[i],n[j]);const r=go(n,path.concat([[i,j]]));if(r)return r}}return null}
