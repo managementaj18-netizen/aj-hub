@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="km"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#ff8fb1">
+<title>មិត្តសត្វ · Animal Friends</title>
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#ffe9f1;font-family:"Kantumruy Pro",system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none;color:#5b2a45}
+#wrap{position:fixed;inset:0;max-width:560px;margin:0 auto;background:linear-gradient(#bfe9ff,#fff4c9 60%,#b8e986 60%,#7ccf5b)}
+canvas{width:100%;height:100%;display:block}
+#hud{position:absolute;top:calc(8px + env(safe-area-inset-top));left:10px;right:10px;display:flex;gap:8px;align-items:center;pointer-events:none}
+#hud span{background:#ffffffdd;border-radius:99px;padding:5px 14px;font-weight:700;font-size:20px}
+#hud .sp{flex:1;background:none}.btn{pointer-events:auto;border:0;background:#ffffffdd;border-radius:99px;width:46px;height:46px;font-size:22px;cursor:pointer}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;background:#ffd6e6ee;text-align:center;padding:20px}.ov.hide{display:none}
+.ov h1{margin:0;font-size:30px}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%;max-width:380px}
+.card{background:#fff;border:0;border-radius:24px;padding:14px 0 10px;font:700 15px "Kantumruy Pro",system-ui,sans-serif;color:#5b2a45;box-shadow:0 6px 0 #f1a9c4;cursor:pointer}
+.card:active{transform:translateY(4px);box-shadow:0 2px 0 #f1a9c4}.card .e{font-size:54px;line-height:1.1;display:block}
+.sm{background:#ffffffaa;color:#5b2a45;border:0;border-radius:99px;padding:8px 16px;font:inherit;font-size:14px;cursor:pointer;text-decoration:none}
+</style></head><body>
+<div id="wrap"><canvas id="c"></canvas>
+<div id="hud"><span id="st">⭐ 0</span><span class="sp"></span><button class="btn" id="bm">🎵</button><button class="btn" id="bb">🏠</button></div>
+<div class="ov" id="ovPick"><h1 id="tPick"></h1><div class="grid" id="grid"></div><a class="sm" href="../" id="more">🧺 ហ្គេមផ្សេងទៀត</a><button class="sm" id="lang"></button></div>
+</div>
+<script>
+var ANIMALS=[{id:"dog",e:"🐶",food:"🦴",km:"ឆ្កែ",en:"Dog",f:196,w:"saw",d:.14},{id:"cat",e:"🐱",food:"🐟",km:"ឆ្មា",en:"Cat",f:660,w:"sine",d:.28},{id:"panda",e:"🐼",food:"🎋",km:"ផាន់ដា",en:"Panda",f:262,w:"tri",d:.2},{id:"ele",e:"🐘",food:"🍌",km:"ដំរី",en:"Elephant",f:130,w:"saw",d:.34},{id:"lion",e:"🦁",food:"🍖",km:"តោ",en:"Lion",f:110,w:"saw",d:.3},{id:"monkey",e:"🐵",food:"🍌",km:"ស្វា",en:"Monkey",f:520,w:"square",d:.12}];
+var SILLY=["🧦","🪣","👟","🎈"];
+var TX={km:{pick:"ជ្រើសមិត្តរបស់អ្នក",say:["ពូកែណាស់!","អូយ ឆ្ងាញ់!","យ៉ាំៗ!","ល្អណាស់!","ចាប់បានហើយ!"],oops:"ហេហេ មិនមែនម្ហូប!",more:"🧺 ហ្គេមផ្សេងទៀត"},en:{pick:"Choose your friend",say:["Great job!","Yummy!","Nom nom!","Super!","You got it!"],oops:"Hehe, not food!",more:"🧺 More games"}};
+function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+var LANG=ld("ak_lang",(navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en"),MUS=ld("ak_mus",true),$=function(i){return document.getElementById(i)};
+function t(k){return TX[LANG][k]}
+function texts(){document.documentElement.lang=LANG;$("tPick").textContent=t("pick");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("more").textContent=t("more");$("bm").textContent=MUS?"🎵":"🔇";
+ $("grid").innerHTML=ANIMALS.map(function(a,i){return'<button class="card" data-i="'+i+'"><span class="e">'+a.e+'</span>'+(LANG==="km"?a.km:a.en)+'</button>'}).join("")}
+/* ----- sound: everything is synthesised, nothing is sampled ----- */
+var AC=null;function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==="suspended")AC.resume();return AC}
+function tone(f,d,type,vol,when,glide){var a=ac();if(!a)return;var o=a.createOscillator(),g=a.createGain(),t0=a.currentTime+(when||0);o.type=type||"sine";o.frequency.setValueAtTime(f,t0);if(glide)o.frequency.exponentialRampToValueAtTime(Math.max(40,f*glide),t0+d);g.gain.setValueAtTime(0.0001,t0);g.gain.exponentialRampToValueAtTime(vol||.15,t0+.01);g.gain.exponentialRampToValueAtTime(.0001,t0+d);o.connect(g);g.connect(a.destination);o.start(t0);o.stop(t0+d+.02)}
+function sPop(){tone(500,.12,"sine",.2,0,2.2)}
+function sVoice(an){tone(an.f,an.d,an.w,.16,0,1.4);tone(an.f*1.5,an.d*.7,an.w,.1,an.d*.8,.8)}
+function sBoing(){tone(380,.35,"sine",.18,0,.35);tone(300,.3,"triangle",.12,.05,1.6)}
+function sStar(){[523,659,784,1047].forEach(function(f,i){tone(f,.18,"triangle",.16,i*.08)})}
+function sFan(){[523,659,784,1047,1319].forEach(function(f,i){tone(f,.22,"square",.1,i*.07);tone(f/2,.22,"triangle",.1,i*.07)})}
+var musT=null,mi=0,SCALE=[523,587,659,784,880,784,659,587,523,659,784,1047,880,784,659,587];
+function startMusic(){if(musT||!MUS)return;ac();musT=setInterval(function(){if(!MUS||!ac())return;var f=SCALE[mi%SCALE.length];tone(f,.22,"triangle",.045);if(mi%4===0)tone(f/4,.4,"sine",.05);mi++},300)}
+function stopMusic(){clearInterval(musT);musT=null}
+/* ----- game ----- */
+var cv=$("c"),cx=cv.getContext("2d"),W=0,H=0,DPR=1;
+function fit(){DPR=Math.min(window.devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*DPR;cv.height=H*DPR;cx.setTransform(DPR,0,0,DPR,0,0)}
+window.addEventListener("resize",fit);
+var G={state:"pick",an:null,px:0,tx:0,items:[],fx:[],stars:0,catches:0,spawn:1,t:0,jump:0,bubble:null,rng:Math.random};
+function choose(i){G.an=ANIMALS[i];G.state="play";G.stars=0;G.catches=0;G.items=[];G.fx=[];G.spawn=.5;G.px=G.tx=W/2;G.jump=0;G.bubble=null;$("ovPick").classList.add("hide");hud();sPop();startMusic()}
+function hud(){$("st").textContent="⭐ "+G.stars}
+function confetti(x,y){for(var i=0;i<28;i++){G.fx.push({k:"c",x:x,y:y,vx:(G.rng()-.5)*320,vy:-120-G.rng()*260,c:["#ff5c8a","#ffd166","#4ecdc4","#8b5cf6","#ff9f43"][i%5],a:1.2})}}
+function say(){var L=t("say");G.bubble={s:L[Math.floor(G.rng()*L.length)],a:1.4}}
+function addItem(kind){var silly=kind==="silly"||(!kind&&G.rng()<.18);G.items.push({x:40+G.rng()*(W-80),y:-40,e:silly?SILLY[Math.floor(G.rng()*SILLY.length)]:G.an.food,silly:silly,vy:95+Math.min(G.catches,40)*1.6,rot:0,b:0})}
+function step(dt){if(G.state!=="play")return;G.t+=dt;G.spawn-=dt;if(G.spawn<=0){addItem();G.spawn=1.1+G.rng()*.6}
+ G.px+=(G.tx-G.px)*Math.min(1,dt*14);G.px=Math.max(46,Math.min(W-46,G.px));if(G.jump>0)G.jump=Math.max(0,G.jump-dt*3);
+ var by=H-110;
+ for(var i=G.items.length-1;i>=0;i--){var it=G.items[i];
+  if(it.b){it.x+=it.b*dt*220;it.y-=dt*60;it.rot+=dt*8;if(it.y<-60||it.x<-60||it.x>W+60)G.items.splice(i,1);continue}
+  it.y+=it.vy*dt;
+  if(it.y>by-40&&it.y<by+30&&Math.abs(it.x-G.px)<62){
+   if(it.silly){it.b=it.x<G.px?-1:1;sBoing();G.bubble={s:t("oops"),a:1.3}}
+   else{G.items.splice(i,1);G.catches++;G.jump=1;sPop();sVoice(G.an);G.fx.push({k:"t",x:it.x,y:by-70,s:"+1",a:1});
+    if(G.catches%5===0){G.stars++;hud();sStar();confetti(G.px,by-60);say()}
+    if(G.catches%15===0){sFan();confetti(W*.25,H*.4);confetti(W*.75,H*.4)}}}
+  else if(it.y>H+50)G.items.splice(i,1)}
+ for(var j=G.fx.length-1;j>=0;j--){var f=G.fx[j];f.a-=dt*(f.k==="c"?.6:1.1);if(f.k==="c"){f.x+=f.vx*dt;f.y+=f.vy*dt;f.vy+=520*dt}else f.y-=50*dt;if(f.a<=0)G.fx.splice(j,1)}
+ if(G.bubble){G.bubble.a-=dt;if(G.bubble.a<=0)G.bubble=null}}
+function draw(){cx.clearRect(0,0,W,H);cx.textAlign="center";cx.textBaseline="middle";
+ for(var i=0;i<G.items.length;i++){var it=G.items[i];cx.save();cx.translate(it.x,it.y);cx.rotate(it.rot||Math.sin(G.t*3+i)*.25);cx.font="46px serif";cx.fillText(it.e,0,0);cx.restore()}
+ if(G.an&&G.state==="play"){var by=H-110,sq=1+Math.sin(G.jump*Math.PI)*.18,jy=-Math.sin(G.jump*Math.PI)*34;cx.save();cx.translate(G.px,by+jy);cx.scale(1/sq,sq);cx.font="96px serif";cx.fillText(G.an.e,0,0);cx.restore();
+  if(G.bubble){cx.globalAlpha=Math.min(1,G.bubble.a);cx.font="bold 20px 'Kantumruy Pro',system-ui,sans-serif";var w=cx.measureText(G.bubble.s).width+28,bx=Math.max(w/2+8,Math.min(W-w/2-8,G.px)),byy=by-110;cx.fillStyle="#fff";cx.beginPath();cx.roundRect?cx.roundRect(bx-w/2,byy-20,w,40,20):cx.rect(bx-w/2,byy-20,w,40);cx.fill();cx.fillStyle="#5b2a45";cx.fillText(G.bubble.s,bx,byy+1);cx.globalAlpha=1}}
+ for(var j=0;j<G.fx.length;j++){var f=G.fx[j];cx.globalAlpha=Math.max(0,Math.min(1,f.a));if(f.k==="c"){cx.fillStyle=f.c;cx.fillRect(f.x,f.y,9,9)}else{cx.fillStyle="#ff5c8a";cx.font="bold 30px 'Kantumruy Pro',system-ui,sans-serif";cx.fillText(f.s,f.x,f.y)}cx.globalAlpha=1}}
+var last=0;function loop(ts){var dt=Math.min(.05,(ts-last)/1000||0);last=ts;step(dt);draw();requestAnimationFrame(loop)}
+function px(e){var r=cv.getBoundingClientRect();return e.clientX-r.left}
+cv.addEventListener("pointerdown",function(e){ac();if(G.state==="play")G.tx=px(e)});cv.addEventListener("pointermove",function(e){if(G.state==="play"&&(e.buttons||e.pointerType==="touch"))G.tx=px(e)});
+$("grid").onclick=function(e){var b=e.target.closest(".card");if(b)choose(+b.dataset.i)};
+$("bb").onclick=function(){G.state="pick";$("ovPick").classList.remove("hide")};
+$("bm").onclick=function(){MUS=!MUS;sv("ak_mus",MUS);texts();if(MUS)startMusic();else stopMusic()};
+$("lang").onclick=function(){LANG=LANG==="km"?"en":"km";sv("ak_lang",LANG);texts()};
+document.addEventListener("visibilitychange",function(){if(document.hidden)stopMusic();else if(G.state==="play")startMusic()});
+window.AK={G:G,ANIMALS:ANIMALS,choose:choose,addItem:addItem,step:step,fit:fit};
+fit();texts();requestAnimationFrame(loop);
+</script></body></html>

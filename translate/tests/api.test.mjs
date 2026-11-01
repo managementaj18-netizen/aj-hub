@@ -1,0 +1,23 @@
+import {onRequest} from '../functions/api/[[path]].js';
+const ok=(c,m)=>{console.log(c?'PASS':'FAIL',m);if(!c)process.exitCode=1};
+const calls=[];const AI={async run(model,input){calls.push([model,input]);if(model.includes('whisper'))return{text:'  hello world '};return{translated_text:'សួស្តី'}}};
+const call=async(path,{method='POST',body,code='secret',env={AI,ACCESS_CODE:'secret'},ip='1.1.1.1',json}={})=>{const h={'cf-connecting-ip':ip};if(code!==null)h['x-code']=code;if(json){h['content-type']='application/json'}
+ const r=await onRequest({request:new Request('http://x/api/'+path,{method,headers:h,body:json?JSON.stringify(json):body}),env});return{s:r.status,j:await r.json()}};
+let r=await call('ping',{method:'GET'});ok(r.s===200&&r.j.ai===true&&r.j.locked===false,'ping reports the AI binding and that a code is set');
+r=await call('translate',{json:{text:'hi',from:'en',to:'km'},env:{AI}});ok(r.s===503&&r.j.error==='not_configured','refuses everything when no ACCESS_CODE is configured');
+r=await call('translate',{json:{text:'hi',from:'en',to:'km'},code:'wrong'});ok(r.s===401,'wrong code rejected');
+r=await call('translate',{json:{text:'hi',from:'en',to:'km'},code:null});ok(r.s===401,'missing code rejected');
+r=await call('translate',{json:{text:'hi',from:'en',to:'km'}});ok(r.s===200&&r.j.text==='សួស្តី','translate en->km works');
+ok(calls.at(-1)[0]==='@cf/meta/m2m100-1.2b'&&calls.at(-1)[1].source_lang==='en'&&calls.at(-1)[1].target_lang==='km','uses m2m100 with the right language codes');
+r=await call('translate',{json:{text:'hi',from:'en',to:'en'}});ok(r.s===400,'same source and target rejected');
+r=await call('translate',{json:{text:'hi',from:'xx',to:'en'}});ok(r.s===400,'unknown language rejected (only km/en)');
+r=await call('translate',{json:{text:'   ',from:'en',to:'km'}});ok(r.s===400,'empty text rejected');
+await call('translate',{json:{text:'a'.repeat(5000),from:'en',to:'km'}});ok(calls.at(-1)[1].text.length===2000,'text cut at 2000 characters');
+const wav=new Uint8Array([82,73,70,70,1,2,3,4]);
+r=await call('stt',{body:wav});ok(r.s===200&&r.j.text==='hello world','stt returns trimmed text');ok(calls.at(-1)[0]==='@cf/openai/whisper'&&Array.isArray(calls.at(-1)[1].audio)&&calls.at(-1)[1].audio.length===8,'whisper gets the audio bytes');
+r=await call('stt',{body:new Uint8Array(0)});ok(r.s===400,'empty audio rejected');
+r=await call('stt',{body:new Uint8Array(7*1024*1024)});ok(r.s===413,'audio over 6 MB rejected');
+r=await call('stt',{body:wav,env:{ACCESS_CODE:'secret'}});ok(r.s===503&&r.j.error==='no_ai','clear error when the AI binding is missing');
+let last;for(let i=0;i<32;i++)last=await call('translate',{json:{text:'hi',from:'en',to:'km'},ip:'9.9.9.9'});ok(last.s===429,'too many requests from one address are slowed down');
+r=await call('translate',{method:'GET'});ok(r.s===404,'GET is not allowed on data routes');
+const boom={async run(){throw new Error('model down')}};r=await call('translate',{json:{text:'hi',from:'en',to:'km'},env:{AI:boom,ACCESS_CODE:'secret'},ip:'3.3.3.3'});ok(r.s===500&&r.j.error==='server','model failure becomes a clean 500');
