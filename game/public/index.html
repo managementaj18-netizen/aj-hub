@@ -24,7 +24,7 @@ canvas{flex:1;width:100%;display:block}
 .legend{display:flex;gap:14px;font-size:15px;justify-content:center;flex-wrap:wrap}
 </style></head><body>
 <div id="wrap"><canvas id="c"></canvas>
-<div id="hud"><span id="sc">0</span><span id="lv">Lv 1</span><span id="li">❤️❤️❤️</span><span class="sp"></span><button class="btn" id="bs" aria-label="sound">🔊</button><button class="btn" id="bp" aria-label="pause">⏸️</button></div>
+<div id="hud"><span id="sc">0</span><span id="lv">Lv 1</span><span id="li">❤️❤️❤️</span><span class="sp"></span><button class="btn" id="bm" aria-label="music">🎵</button><button class="btn" id="bs" aria-label="sound">🔊</button><button class="btn" id="bp" aria-label="pause">⏸️</button></div>
 <div class="ov" id="ovStart"><div style="font-size:64px">🧺🥭</div><h1 id="tTitle"></h1><p id="tHow"></p><div class="legend" id="tLeg"></div><div>🏆 <b id="best">0</b></div><button class="big" id="go"></button><button class="sm" id="lang"></button><div style="font-size:14px;opacity:.9" id="soon"></div></div>
 <div class="ov hide" id="ovPause"><h1 id="tPause"></h1><button class="big" id="resume"></button></div>
 <div class="ov hide" id="ovEnd"><h1 id="tOver"></h1><div class="score" id="fs">0</div><p id="tBest"></p><button class="big" id="again"></button><button class="sm" id="share"></button></div>
@@ -33,16 +33,16 @@ canvas{flex:1;width:100%;display:block}
 var TX={km:{title:"ចាប់ផ្លែឈើ",how:"អូសម្រាមដៃ (ឬចុចព្រួញ) ឲ្យកញ្ជើ (ឡើងចុះបាន) ចាប់ផ្លែឈើដែលជ្រុះ។ ជៀសដង្កូវ!",ok:"+1",gold:"+5",bad:"បាត់ជីវិត",go:"ចាប់ផ្តើម",again:"លេងម្តងទៀត",pause:"ផ្អាក",resume:"បន្ត",over:"ចប់ហើយ!",best:"ពិន្ទុខ្ពស់បំផុត",newbest:"កំណត់ត្រាថ្មី! 🎉",share:"ចែករំលែកពិន្ទុ",st:"ពិន្ទុរបស់ខ្ញុំ {n} ក្នុងហ្គេម ចាប់ផ្លែឈើ! តើអ្នកអាចឈ្នះខ្ញុំបានទេ?"},
 en:{title:"Fruit Catch",how:"Drag your finger (or use the arrow keys) to catch the falling fruit with the basket. Avoid the bugs!",ok:"+1",gold:"+5",bad:"lose a life",go:"Play",again:"Play again",pause:"Paused",resume:"Resume",over:"Game over!",best:"Best score",newbest:"New record! 🎉",share:"Share my score",st:"I scored {n} in Fruit Catch! Can you beat me?"}};
 function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
-var LANG=ld("fc_lang",(navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en"),BEST=ld("fc_best",0),SND=ld("fc_snd",true),$=function(i){return document.getElementById(i)};
+var LANG=ld("fc_lang",(navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en"),BEST=ld("fc_best",0),SND=ld("fc_snd",true),MUS=ld("fc_mus",true),$=function(i){return document.getElementById(i)};
 function t(k,v){var s=TX[LANG][k]||TX.en[k]||k;if(v)for(var x in v)s=s.split("{"+x+"}").join(v[x]);return s}
-function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("title");$("tHow").textContent=t("how");$("go").textContent=t("go");$("again").textContent=t("again");$("tPause").textContent=t("pause");$("resume").textContent=t("resume");$("tOver").textContent=t("over");$("share").textContent=t("share");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("soon").textContent=LANG==="km"?"🎮 ហ្គេមថ្មីៗនឹងមកដល់ឆាប់ៗ · តាមដាន Page Soramma":"🎮 New games coming soon · follow Page Soramma";$("best").textContent=BEST;$("bs").textContent=SND?"🔊":"🔇";
+function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("title");$("tHow").textContent=t("how");$("go").textContent=t("go");$("again").textContent=t("again");$("tPause").textContent=t("pause");$("resume").textContent=t("resume");$("tOver").textContent=t("over");$("share").textContent=t("share");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("soon").textContent=LANG==="km"?"🎮 ហ្គេមថ្មីៗនឹងមកដល់ឆាប់ៗ · តាមដាន Page Soramma":"🎮 New games coming soon · follow Page Soramma";$("best").textContent=BEST;$("bs").textContent=SND?"🔊":"🔇";$("bm").style.opacity=MUS?1:.45;
  $("tLeg").innerHTML="<span>🥭🍌🍉 "+t("ok")+"</span><span>🍍 "+t("gold")+"</span><span>🐛 "+t("bad")+"</span>"}
 var cv=$("c"),cx=cv.getContext("2d"),W=0,H=0,DPR=1;
 function fit(){DPR=Math.min(window.devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*DPR;cv.height=H*DPR;cx.setTransform(DPR,0,0,DPR,0,0)}
 window.addEventListener("resize",fit);
 var G={state:"menu",score:0,lives:3,level:1,items:[],px:0,tx:0,py:0,ty:0,pw:112,t:0,spawn:0,fx:[],rng:Math.random};
 var GOOD=["🥭","🍌","🍉","🥥","🍊"],GOLD="🍍",BAD="🐛";
-function start(){G.state="play";G.score=0;G.lives=3;G.level=1;G.items=[];G.fx=[];G.spawn=0.6;G.t=0;G.px=G.tx=W/2;G.py=G.ty=H-130;hud();["ovStart","ovEnd","ovPause"].forEach(function(i){$(i).classList.add("hide")})}
+function start(){mstart();G.state="play";G.score=0;G.lives=3;G.level=1;G.items=[];G.fx=[];G.spawn=0.6;G.t=0;G.px=G.tx=W/2;G.py=G.ty=H-130;hud();["ovStart","ovEnd","ovPause"].forEach(function(i){$(i).classList.add("hide")})}
 function hud(){$("sc").textContent=G.score;$("lv").textContent="Lv "+G.level;var h="";for(var i=0;i<3;i++)h+=i<G.lives?"❤️":"🖤";$("li").innerHTML=h}
 /* iPhone/Safari keep sound off until the first touch: create and resume the audio engine inside that touch */
 function unlockAudio(){try{var a=ctx();if(!a)return;if(a.state==="suspended")a.resume();var b=a.createBuffer(1,1,22050),s=a.createBufferSource();s.buffer=b;s.connect(a.destination);s.start(0)}catch(e){}}
@@ -58,6 +58,22 @@ function sfx(k){if(!SND)return;try{var a=ctx();if(!a)return;if(a.state==="suspen
  else if(k==="over"){[392,349,311,262].forEach(function(f,i){note(f,i*.2,.45,.3,"triangle")})}
  else note(660,0,.12,.25)}catch(e){}}
 function beep(){sfx("tap")}
+
+/* background music: original tune, speeds up with the level; plays only while a game is running */
+var MU={step:0,next:0,id:null},HOOK=[72,76,79,0,76,72,74,0,77,74,79,0,76,74,72,0],BASS=[36,36,43,43,41,41,43,43];
+function mf(n){return 440*Math.pow(2,(n-69)/12)}
+function mnote(f,T,d,v,ty){var a=ctx();var o=a.createOscillator(),g=a.createGain();o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(.0001,T);g.gain.linearRampToValueAtTime(v,T+.01);g.gain.exponentialRampToValueAtTime(.0001,T+d);o.connect(g);g.connect(beep.m);o.start(T);o.stop(T+d+.03)}
+function bpm(){return Math.min(172,100+12*(G.level-1))}
+function mtick(){if(!MUS||!SND||G.state!=="play"||document.hidden){return}
+ var a=ctx();if(!a)return;if(a.state==="suspended")a.resume();
+ if(MU.next<a.currentTime-.2)MU.next=a.currentTime+.05;
+ while(MU.next<a.currentTime+.3){var sd=60/bpm()/2,i=MU.step%16,n=HOOK[i];
+  if(n)mnote(mf(n),MU.next,sd*1.6,.07,"triangle");
+  if(i%2===0)mnote(mf(BASS[(i/2)%8]),MU.next,sd*1.8,.1,"sine");
+  if(i%4===0)mnote(mf(40),MU.next,.1,.16,"sine");
+  MU.next+=sd;MU.step++}}
+function mstart(){if(!MU.id){MU.step=0;MU.next=0;MU.id=setInterval(mtick,80)}}
+function mstop(){clearInterval(MU.id);MU.id=null}
 /* stop everything when the page is left, so no sound stays stuck */
 function hush(){try{if(beep.a&&beep.a.state==="running")beep.a.suspend()}catch(e){}}
 function wake(){try{if(beep.a&&beep.a.state==="suspended")beep.a.resume()}catch(e){}}
@@ -90,11 +106,12 @@ var keys={};window.addEventListener("keydown",function(e){keys[e.key]=1;if(e.key
 setInterval(function(){if(G.state==="play"){if(keys.ArrowLeft||keys.a)G.tx-=14;if(keys.ArrowRight||keys.d)G.tx+=14;if(keys.ArrowUp||keys.w)G.ty-=12;if(keys.ArrowDown||keys.s)G.ty+=12;G.ty=Math.max(H*.3,Math.min(H-90,G.ty));G.tx=Math.max(0,Math.min(W,G.tx))}},16);
 function pause(){if(G.state==="play"){G.state="pause";$("ovPause").classList.remove("hide")}else if(G.state==="pause"){G.state="play";$("ovPause").classList.add("hide")}}
 $("go").onclick=start;$("again").onclick=start;$("bp").onclick=pause;$("resume").onclick=pause;
+$("bm").onclick=function(){MUS=!MUS;sv("fc_mus",MUS);texts();sfx("tap")};
 $("bs").onclick=function(){SND=!SND;sv("fc_snd",SND);texts();sfx("tap")};
 $("lang").onclick=function(){LANG=LANG==="km"?"en":"km";sv("fc_lang",LANG);texts()};
 $("share").onclick=function(){var s=t("st",{n:G.score})+" "+location.href;if(navigator.share)navigator.share({text:s}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(s)};
 document.addEventListener("visibilitychange",function(){if(document.hidden&&G.state==="play")pause()});
-window.FC={G:G,addItem:addItem,step:step,start:start,fit:fit};
+window.FC={MU:MU,bpm:bpm,G:G,addItem:addItem,step:step,start:start,fit:fit};
 fit();texts();requestAnimationFrame(loop);
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
 </script></body></html>
