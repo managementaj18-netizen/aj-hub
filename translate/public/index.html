@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="km"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#1f3a8a">
+<title>Soramma Translate</title>
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#eef3fb;--ink:#14213d;--mute:#5d6b86;--ac:#1f3a8a;--line:#d6dff0;--ok:#1b7a45;--bad:#c0392b}
+*{box-sizing:border-box}html,body{margin:0;background:var(--bg);color:var(--ink);font-family:"Kantumruy Pro",system-ui,sans-serif;line-height:1.5}
+header{background:var(--ac);color:#fff;padding:calc(12px + env(safe-area-inset-top)) 16px 12px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+header b{font-size:18px}header small{display:block;font-weight:400;opacity:.8;font-size:12px}header .sp{flex:1}
+.pill{border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700}.pill.on{background:#d8f3e6;color:#126b44}.pill.off{background:#ffe3df;color:#a8281b}
+main{max-width:640px;margin:0 auto;padding:14px 14px 40px}
+.card{background:#fff;border:1px solid var(--line);border-radius:18px;padding:14px;margin-bottom:12px}
+.dir{display:flex;align-items:center;gap:8px}.dir .l{flex:1;text-align:center;background:#e7eeff;border-radius:14px;padding:10px;font-weight:700}
+.sw{border:0;background:var(--ac);color:#fff;border-radius:50%;width:42px;height:42px;font-size:20px;cursor:pointer}
+textarea,input{width:100%;font:inherit;font-size:16px;padding:11px 12px;border:1px solid var(--line);border-radius:12px;background:#fff;color:var(--ink)}textarea{min-height:84px;resize:vertical}
+.row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.sp{flex:1}
+.b{border:0;background:var(--ac);color:#fff;font:inherit;font-weight:700;border-radius:12px;padding:11px 16px;cursor:pointer}.b.alt{background:#e7eeff;color:var(--ac)}.b.bad{background:#fde7e4;color:var(--bad)}.b.sm{padding:7px 12px;font-size:14px}.b:disabled{opacity:.5}
+.rec{width:100%;border:0;border-radius:18px;background:#d6336c;color:#fff;font:700 20px "Kantumruy Pro",system-ui,sans-serif;padding:18px;cursor:pointer;box-shadow:0 5px 0 #a3204f}.rec.on{background:#111;box-shadow:0 5px 0 #000;animation:pulse 1s infinite}
+@keyframes pulse{50%{opacity:.75}}
+.muted{color:var(--mute);font-size:13px}.item .o{font-size:15px;color:var(--mute)}.item .t{font-size:20px;font-weight:600;margin:6px 0}
+.st{font-size:12px;font-weight:700;border-radius:99px;padding:2px 10px;display:inline-block}.st.w{background:#fff1d6;color:#8a5a00}.st.p{background:#e0ecff;color:#1d4ed8}.st.d{background:#d8f3e6;color:#126b44}.st.e{background:#ffe3df;color:#a8281b}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#14213d;color:#fff;padding:10px 16px;border-radius:12px;z-index:30;font-size:14px}
+</style></head><body>
+<header><div><b>Soramma Translate</b><small id="sub"></small></div><span class="sp"></span><span class="pill on" id="net"></span><button class="b alt sm" id="lg"></button></header>
+<main>
+<div class="card" id="setup" style="display:none"><b id="sTitle"></b><p class="muted" id="sText"></p><input id="code" type="password" autocomplete="off"><div class="row" style="margin-top:8px"><button class="b" id="saveCode"></button></div></div>
+<div class="card dir"><div class="l" id="from"></div><button class="sw" id="swap">⇄</button><div class="l" id="to"></div></div>
+<div class="card"><button class="rec" id="rec"></button><p class="muted" id="recNote" style="margin:8px 0 0"></p></div>
+<div class="card"><textarea id="txt"></textarea><div class="row" style="margin-top:8px"><button class="b" id="go"></button><span class="sp"></span><button class="b alt sm" id="proc"></button></div></div>
+<div id="list"></div>
+<p class="muted" id="foot" style="text-align:center"></p>
+</main>
+<script>
+var TX={km:{sub:"ថតទុកសិន បកប្រែពេលមានអ៊ីនធឺណិត",on:"មានអ៊ីនធឺណិត",off:"គ្មានអ៊ីនធឺណិត",lang:"English",km:"ខ្មែរ",en:"English",rec:"🎙️ ចុចដើម្បីថត",stop:"⏹️ ចុចដើម្បីបញ្ឈប់",recNote:"ថតបានទោះគ្មានអ៊ីនធឺណិត ហើយកម្មវិធីនឹងបកប្រែពេលមានអ៊ីនធឺណិត។ ថតបានយូរបំផុត 2 នាទី។",ph:"ឬវាយអក្សរនៅទីនេះ…",go:"បកប្រែ",proc:"ដំណើរការឥឡូវ",wait:"⏳ រង់ចាំអ៊ីនធឺណិត",work:"⚙️ កំពុងដំណើរការ",done:"✅ រួច",err:"❌ បរាជ័យ",codeT:"ដាក់កូដចូលប្រើ",codeD:"សូមដាក់កូដសម្ងាត់ដែលម្ចាស់កម្មវិធីបានផ្តល់ឲ្យ។",save:"រក្សាទុក",mic_err:"មិនអាចប្រើមីក្រូហ្វូនបានទេ សូមអនុញ្ញាតក្នុងការកំណត់",speak:"🔊",copy:"📋",del:"🗑️",orig:"▶️ សំឡេងដើម",copied:"បានចម្លង",empty:"មិនទាន់មានអ្វីទេ ថតសំឡេង ឬវាយអក្សរ",bad_code:"កូដមិនត្រឹមត្រូវ",no_ai:"សេវាបកប្រែមិនទាន់ត្រៀម",nospeech:"ទូរស័ព្ទនេះមិនមានសំឡេងសម្រាប់ភាសានេះទេ",foot:"កំណត់ត្រាទាំងអស់នៅក្នុងទូរស័ព្ទរបស់អ្នក។ សំឡេងត្រូវផ្ញើទៅម៉ាស៊ីនបកប្រែ ពេលដំណើរការ។ ការបកប្រែអាចមានកំហុស សូមពិនិត្យសម្រាប់ព័ត៌មានសំខាន់។",silent:"រកមិនឃើញសំឡេងក្នុងការថតទេ",too_long:"ថតយូរពេក (អតិបរមា 2 នាទី)"},
+en:{sub:"Record now, translate when you have internet",on:"Online",off:"Offline",lang:"ខ្មែរ",km:"Khmer",en:"English",rec:"🎙️ Tap to record",stop:"⏹️ Tap to stop",recNote:"You can record without internet; the app translates when you are back online. Up to 2 minutes.",ph:"Or type text here…",go:"Translate",proc:"Process now",wait:"⏳ Waiting for internet",work:"⚙️ Working",done:"✅ Done",err:"❌ Failed",codeT:"Enter access code",codeD:"Enter the secret code the app owner gave you.",save:"Save",mic_err:"Cannot use the microphone. Please allow it in settings.",speak:"🔊",copy:"📋",del:"🗑️",orig:"▶️ Original audio",copied:"Copied",empty:"Nothing yet. Record a voice or type text.",bad_code:"Wrong code",no_ai:"Translation service is not ready",nospeech:"This phone has no voice for that language",foot:"All records stay on your phone. Audio is sent to the translation service when processed. Translations can be wrong; double-check anything important.",silent:"No sound found in the recording",too_long:"Recording too long (max 2 minutes)"}};
+function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+var LANG=ld("tr_lang",(navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en"),SRC=ld("tr_src","km"),CODE=ld("tr_code",""),$=function(i){return document.getElementById(i)};
+function t(k){return TX[LANG][k]||TX.en[k]||k}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function toast(m){var e=document.createElement("div");e.className="toast";e.textContent=m;document.body.appendChild(e);setTimeout(function(){e.remove()},2600)}
+var DST=function(){return SRC==="km"?"en":"km"};
+/* ---------- storage (IndexedDB): a queue that survives closing the app ---------- */
+var DB=null;
+function dbOpen(){return new Promise(function(res,rej){var r=indexedDB.open("soramma-translate",1);r.onupgradeneeded=function(){r.result.createObjectStore("items",{keyPath:"id"})};r.onsuccess=function(){DB=r.result;res()};r.onerror=function(){rej(r.error)}})}
+function dbAll(){return new Promise(function(res){var r=DB.transaction("items").objectStore("items").getAll();r.onsuccess=function(){res((r.result||[]).sort(function(a,b){return b.ts-a.ts}))};r.onerror=function(){res([])}})}
+function dbPut(it){return new Promise(function(res){var tx=DB.transaction("items","readwrite");tx.objectStore("items").put(it);tx.oncomplete=res;tx.onerror=res})}
+function dbDel(id){return new Promise(function(res){var tx=DB.transaction("items","readwrite");tx.objectStore("items").delete(id);tx.oncomplete=res})}
+/* ---------- texts ---------- */
+function texts(){document.documentElement.lang=LANG;$("sub").textContent=t("sub");$("lg").textContent=t("lang");$("from").textContent=t(SRC);$("to").textContent=t(DST());$("txt").placeholder=t("ph");$("go").textContent=t("go");$("proc").textContent=t("proc");
+ $("rec").textContent=recording?t("stop"):t("rec");$("recNote").textContent=t("recNote");$("foot").textContent=t("foot");$("sTitle").textContent=t("codeT");$("sText").textContent=t("codeD");$("saveCode").textContent=t("save");net()}
+function net(){var n=$("net"),o=navigator.onLine;n.textContent=t(o?"on":"off");n.className="pill "+(o?"on":"off")}
+/* ---------- recording: converted to 16 kHz mono WAV in the phone, so it works on every device ---------- */
+var recording=false,mr=null,chunks=[],stream=null,recTimer=null;
+function toWav(blob){return blob.arrayBuffer().then(function(ab){var AC=window.AudioContext||window.webkitAudioContext,ctx=new AC();return new Promise(function(res,rej){ctx.decodeAudioData(ab,res,rej)}).then(function(buf){
+  var sr=16000,len=Math.ceil(buf.duration*sr),oc=new (window.OfflineAudioContext||window.webkitOfflineAudioContext)(1,len,sr),s=oc.createBufferSource();s.buffer=buf;s.connect(oc.destination);s.start();return oc.startRendering()}).then(function(out){
+  var d=out.getChannelData(0),n=d.length,v=new DataView(new ArrayBuffer(44+n*2)),w=function(o,s){for(var i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i))},peak=0;
+  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVE");w(12,"fmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,16000,true);v.setUint32(28,32000,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  for(var i=0;i<n;i++){var x=Math.max(-1,Math.min(1,d[i]));peak=Math.max(peak,Math.abs(x));v.setInt16(44+i*2,x<0?x*32768:x*32767,true)}
+  return{blob:new Blob([v.buffer],{type:"audio/wav"}),peak:peak,dur:n/16000}})})}
+function startRec(){navigator.mediaDevices.getUserMedia({audio:true}).then(function(s){stream=s;chunks=[];mr=new MediaRecorder(s);mr.ondataavailable=function(e){if(e.data&&e.data.size)chunks.push(e.data)};mr.onstop=finishRec;mr.start();recording=true;$("rec").classList.add("on");texts();recTimer=setTimeout(function(){if(recording)stopRec()},120000)}).catch(function(){toast(t("mic_err"))})}
+function stopRec(){clearTimeout(recTimer);if(mr&&mr.state!=="inactive")mr.stop();recording=false;$("rec").classList.remove("on");texts()}
+function finishRec(){if(stream)stream.getTracks().forEach(function(x){x.stop()});var b=new Blob(chunks,{type:(mr&&mr.mimeType)||"audio/webm"});
+ toWav(b).then(function(w){if(w.peak<0.01){toast(t("silent"));return}if(w.dur>125){toast(t("too_long"));return}addItem({kind:"audio",blob:w.blob,dur:w.dur})}).catch(function(){toast(t("mic_err"))})}
+/* ---------- queue ---------- */
+function addItem(p){var it={id:Date.now().toString(36)+Math.random().toString(36).slice(2,6),ts:Date.now(),from:SRC,to:DST(),kind:p.kind,blob:p.blob||null,text:p.text||"",orig:p.kind==="text"?p.text:"",trans:"",status:"w",err:""};
+ return dbPut(it).then(function(){render();processQueue()})}
+var busy=false;
+function api(path,opt){opt=opt||{};var h={"x-code":CODE};if(opt.json){h["content-type"]="application/json"}return fetch("/api/"+path,{method:"POST",headers:h,body:opt.json?JSON.stringify(opt.json):opt.body}).then(function(r){return r.json().catch(function(){return{}}).then(function(j){if(!r.ok)throw{code:j.error||"err",status:r.status};return j})})}
+function processQueue(){if(busy||!navigator.onLine||!CODE)return Promise.resolve();busy=true;
+ return dbAll().then(function(all){return Promise.all(all.filter(function(x){return x.status==="p"}).map(function(x){x.status="w";return dbPut(x)})).then(function(){return all})}).then(function(all){all.forEach(function(x){if(x.status==="p")x.status="w"});var todo=all.filter(function(x){return x.status==="w"||x.status==="e"&&x.retry}).reverse();
+  return todo.reduce(function(p,it){return p.then(function(){it.status="p";return dbPut(it).then(render).then(function(){
+   var step=it.kind==="audio"?api("stt",{body:it.blob}).then(function(r){it.orig=r.text;return r.text}):Promise.resolve(it.text);
+   return step.then(function(text){if(!text){it.status="e";it.err="silent";return}return api("translate",{json:{text:text,from:it.from,to:it.to}}).then(function(r){it.trans=r.text;it.status="d"})})
+    .catch(function(e){if(e&&e.code==="bad_code"){it.status="w";CODE="";sv("tr_code","");toast(t("bad_code"));checkSetup();return dbPut(it).then(function(){throw e})}it.status="e";it.err=(e&&e.code)||"net";it.retry=!navigator.onLine||it.err==="net"})
+    .then(function(){return dbPut(it)}).then(render)})})},Promise.resolve())}).catch(function(){}).then(function(){busy=false})}
+/* ---------- screen ---------- */
+function speak(text,lang){if(!window.speechSynthesis){toast(t("nospeech"));return}var u=new SpeechSynthesisUtterance(text),code=lang==="km"?"km-KH":"en-US";u.lang=code;var v=speechSynthesis.getVoices().filter(function(x){return x.lang&&x.lang.toLowerCase().indexOf(lang)===0})[0];if(!v&&lang==="km"){toast(t("nospeech"));return}if(v)u.voice=v;speechSynthesis.cancel();speechSynthesis.speak(u)}
+function render(){dbAll().then(function(all){
+ $("list").innerHTML=all.length?all.map(function(it){var st={w:["w",t("wait")],p:["p",t("work")],d:["d",t("done")],e:["e",t("err")]}[it.status];
+  return'<div class="card item" data-id="'+it.id+'"><div class="row"><span class="st '+st[0]+'">'+esc(st[1])+'</span><span class="muted">'+esc(t(it.from))+' → '+esc(t(it.to))+' · '+new Date(it.ts).toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"})+'</span><span class="sp"></span><button class="b bad sm" data-a="del">'+t("del")+'</button></div>'+
+  (it.kind==="audio"?'<div class="row" style="margin-top:6px"><button class="b alt sm" data-a="play">'+esc(t("orig"))+'</button></div>':'')+
+  (it.orig?'<div class="o">'+esc(it.orig)+'</div>':'')+(it.trans?'<div class="t">'+esc(it.trans)+'</div><div class="row"><button class="b alt sm" data-a="speak">'+t("speak")+'</button><button class="b alt sm" data-a="copy">'+t("copy")+'</button></div>':'')+
+  (it.status==="e"&&it.err?'<div class="muted" style="color:var(--bad)">'+esc(it.err==="silent"?t("silent"):it.err==="no_ai"?t("no_ai"):it.err)+'</div>':'')+'</div>'}).join(""):'<p class="muted" style="text-align:center">'+esc(t("empty"))+'</p>'})}
+$("list").onclick=function(e){var b=e.target.closest("[data-a]");if(!b)return;var id=b.closest(".item").dataset.id;dbAll().then(function(all){var it=all.filter(function(x){return x.id===id})[0];if(!it)return;var a=b.dataset.a;
+ if(a==="del")return dbDel(id).then(render);if(a==="play"&&it.blob){var au=new Audio(URL.createObjectURL(it.blob));au.play();return}
+ if(a==="speak")return speak(it.trans,it.to);if(a==="copy"&&navigator.clipboard)navigator.clipboard.writeText(it.trans).then(function(){toast(t("copied"))})})};
+$("rec").onclick=function(){if(recording)stopRec();else startRec()};
+$("go").onclick=function(){var v=$("txt").value.trim();if(!v)return;$("txt").value="";addItem({kind:"text",text:v})};
+$("swap").onclick=function(){SRC=DST();sv("tr_src",SRC);texts()};
+$("lg").onclick=function(){LANG=LANG==="km"?"en":"km";sv("tr_lang",LANG);texts();render()};
+$("proc").onclick=function(){dbAll().then(function(all){return Promise.all(all.filter(function(x){return x.status==="e"}).map(function(x){x.status="w";return dbPut(x)}))}).then(function(){render();processQueue()})};
+$("saveCode").onclick=function(){var v=$("code").value.trim();if(!v)return;CODE=v;sv("tr_code",v);$("code").value="";checkSetup();processQueue()};
+function checkSetup(){$("setup").style.display=CODE?"none":"block"}
+window.addEventListener("online",function(){net();processQueue()});window.addEventListener("offline",net);
+document.addEventListener("visibilitychange",function(){if(!document.hidden)processQueue()});
+window.TR={process:processQueue,addItem:addItem,all:dbAll};
+dbOpen().then(function(){texts();checkSetup();render();processQueue()});
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
+</script></body></html>
