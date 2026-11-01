@@ -9,6 +9,9 @@ await p.goto('http://localhost:8803/');await p.waitForSelector('#go');
 ok(/ចាប់ផ្លែឈើ/.test(await p.locator('#tTitle').innerText()),'Khmer title');ok(!/\b(title|how|go)\b/.test(await p.locator('#ovStart').innerText().then(x=>x.replace(/\s+/g,' '))),'no raw keys');
 await p.screenshot({path:'/tmp/sc/game_menu.png'});
 await p.click('#go');await p.waitForTimeout(100);ok(await p.evaluate(()=>FC.G.state)==='play','game starts');ok(await p.evaluate(()=>!!beep.a&&beep.a.state==='running'),'sound engine is unlocked by the first touch (needed on iPhone)');
+await p.waitForTimeout(1200);ok(await p.evaluate(()=>FC.MU.step)>4,'background music plays while the game runs (steps '+await p.evaluate(()=>FC.MU.step)+')');
+ok(await p.evaluate(()=>{const a=FC.G.level;FC.G.level=1;const b1=FC.bpm();FC.G.level=6;const b6=FC.bpm();FC.G.level=a;return b6>b1+40}),'music gets faster with the level');
+await p.click('#bm');{const s=await p.evaluate(()=>FC.MU.step);await p.waitForTimeout(600);ok(await p.evaluate(()=>FC.MU.step)===s,'music button turns the music off')}await p.click('#bm');
 // freeze the random spawns, then drive the game deterministically
 await p.evaluate(()=>{FC.G.spawn=1e9;FC.G.items=[];FC.G.rng=()=>0.5});
 const W=await p.evaluate(()=>cv.clientWidth),H=await p.evaluate(()=>cv.clientHeight);
