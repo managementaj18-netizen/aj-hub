@@ -13,10 +13,14 @@ await p.click('#go');await p.waitForTimeout(100);ok(await p.evaluate(()=>FC.G.st
 await p.evaluate(()=>{FC.G.spawn=1e9;FC.G.items=[];FC.G.rng=()=>0.5});
 const W=await p.evaluate(()=>cv.clientWidth),H=await p.evaluate(()=>cv.clientHeight);
 // 1) basket follows a finger drag
+const H0=await p.evaluate(()=>cv.clientHeight);
 await p.touchscreen.tap(60,500);await p.waitForTimeout(250);let px=await p.evaluate(()=>FC.G.px);ok(px<120,'basket moves to the finger (left): '+Math.round(px));
 await p.touchscreen.tap(370,500);await p.waitForTimeout(400);px=await p.evaluate(()=>FC.G.px);ok(px>300,'basket moves to the finger (right): '+Math.round(px));
+await p.touchscreen.tap(200,300);await p.waitForTimeout(500);{const py=await p.evaluate(()=>FC.G.py);ok(py<H0-200,'basket can move up (y '+Math.round(py)+')')}
+await p.touchscreen.tap(200,700);await p.waitForTimeout(500);{const py=await p.evaluate(()=>FC.G.py);ok(py>300,'basket can move back down (y '+Math.round(py)+')')}
+await p.touchscreen.tap(200,380);await p.waitForTimeout(500);ok(await p.evaluate(()=>{const f=380-FC.G.py;return f>30}),'basket is drawn above the finger so it stays visible')
 // 2) catch a fruit = +1, then a gold = +5
-const drop=async(k,x)=>{await p.evaluate(([k,x])=>{FC.addItem(k);const it=FC.G.items[FC.G.items.length-1];it.x=x;it.y=cv.clientHeight-120},[k,x])};
+const drop=async(k,x)=>{await p.evaluate(([k,x])=>{FC.addItem(k);const it=FC.G.items[FC.G.items.length-1];it.x=x;it.y=FC.G.py},[k,x])};
 const run=async(n)=>{for(let i=0;i<n;i++)await p.evaluate(()=>FC.step(0.02))};
 const bx=await p.evaluate(()=>FC.G.px);
 await drop('ok',bx);await run(30);ok(await p.evaluate(()=>FC.G.score)===1,'catching a fruit gives +1');

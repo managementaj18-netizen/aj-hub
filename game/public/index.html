@@ -30,7 +30,7 @@ canvas{flex:1;width:100%;display:block}
 <div class="ov hide" id="ovEnd"><h1 id="tOver"></h1><div class="score" id="fs">0</div><p id="tBest"></p><button class="big" id="again"></button><button class="sm" id="share"></button></div>
 </div>
 <script>
-var TX={km:{title:"ចាប់ផ្លែឈើ",how:"អូសម្រាមដៃ (ឬចុចព្រួញ) ឲ្យកញ្ជើចាប់ផ្លែឈើដែលជ្រុះ។ ជៀសដង្កូវ!",ok:"+1",gold:"+5",bad:"បាត់ជីវិត",go:"ចាប់ផ្តើម",again:"លេងម្តងទៀត",pause:"ផ្អាក",resume:"បន្ត",over:"ចប់ហើយ!",best:"ពិន្ទុខ្ពស់បំផុត",newbest:"កំណត់ត្រាថ្មី! 🎉",share:"ចែករំលែកពិន្ទុ",st:"ពិន្ទុរបស់ខ្ញុំ {n} ក្នុងហ្គេម ចាប់ផ្លែឈើ! តើអ្នកអាចឈ្នះខ្ញុំបានទេ?"},
+var TX={km:{title:"ចាប់ផ្លែឈើ",how:"អូសម្រាមដៃ (ឬចុចព្រួញ) ឲ្យកញ្ជើ (ឡើងចុះបាន) ចាប់ផ្លែឈើដែលជ្រុះ។ ជៀសដង្កូវ!",ok:"+1",gold:"+5",bad:"បាត់ជីវិត",go:"ចាប់ផ្តើម",again:"លេងម្តងទៀត",pause:"ផ្អាក",resume:"បន្ត",over:"ចប់ហើយ!",best:"ពិន្ទុខ្ពស់បំផុត",newbest:"កំណត់ត្រាថ្មី! 🎉",share:"ចែករំលែកពិន្ទុ",st:"ពិន្ទុរបស់ខ្ញុំ {n} ក្នុងហ្គេម ចាប់ផ្លែឈើ! តើអ្នកអាចឈ្នះខ្ញុំបានទេ?"},
 en:{title:"Fruit Catch",how:"Drag your finger (or use the arrow keys) to catch the falling fruit with the basket. Avoid the bugs!",ok:"+1",gold:"+5",bad:"lose a life",go:"Play",again:"Play again",pause:"Paused",resume:"Resume",over:"Game over!",best:"Best score",newbest:"New record! 🎉",share:"Share my score",st:"I scored {n} in Fruit Catch! Can you beat me?"}};
 function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 var LANG=ld("fc_lang",(navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en"),BEST=ld("fc_best",0),SND=ld("fc_snd",true),$=function(i){return document.getElementById(i)};
@@ -40,9 +40,9 @@ function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("t
 var cv=$("c"),cx=cv.getContext("2d"),W=0,H=0,DPR=1;
 function fit(){DPR=Math.min(window.devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*DPR;cv.height=H*DPR;cx.setTransform(DPR,0,0,DPR,0,0)}
 window.addEventListener("resize",fit);
-var G={state:"menu",score:0,lives:3,level:1,items:[],px:0,tx:0,pw:84,t:0,spawn:0,fx:[],rng:Math.random};
+var G={state:"menu",score:0,lives:3,level:1,items:[],px:0,tx:0,py:0,ty:0,pw:112,t:0,spawn:0,fx:[],rng:Math.random};
 var GOOD=["🥭","🍌","🍉","🥥","🍊"],GOLD="🍍",BAD="🐛";
-function start(){G.state="play";G.score=0;G.lives=3;G.level=1;G.items=[];G.fx=[];G.spawn=0.6;G.t=0;G.px=G.tx=W/2;hud();["ovStart","ovEnd","ovPause"].forEach(function(i){$(i).classList.add("hide")})}
+function start(){G.state="play";G.score=0;G.lives=3;G.level=1;G.items=[];G.fx=[];G.spawn=0.6;G.t=0;G.px=G.tx=W/2;G.py=G.ty=H-130;hud();["ovStart","ovEnd","ovPause"].forEach(function(i){$(i).classList.add("hide")})}
 function hud(){$("sc").textContent=G.score;$("lv").textContent="Lv "+G.level;var h="";for(var i=0;i<3;i++)h+=i<G.lives?"❤️":"🖤";$("li").innerHTML=h}
 /* iPhone/Safari keep sound off until the first touch: create and resume the audio engine inside that touch */
 function unlockAudio(){try{var a=ctx();if(!a)return;if(a.state==="suspended")a.resume();var b=a.createBuffer(1,1,22050),s=a.createBufferSource();s.buffer=b;s.connect(a.destination);s.start(0)}catch(e){}}
@@ -68,10 +68,10 @@ function floatText(x,y,s,c){G.fx.push({x:x,y:y,s:s,c:c,a:1})}
 function step(dt){
  if(G.state!=="play")return;G.t+=dt;G.spawn-=dt;
  var gap=Math.max(.32,.95-G.level*.07);if(G.spawn<=0){addItem();G.spawn=gap*(.7+G.rng()*.6)}
- G.px+=(G.tx-G.px)*Math.min(1,dt*18);G.px=Math.max(G.pw/2,Math.min(W-G.pw/2,G.px));
- var by=H-70;
+ var k=1-Math.exp(-dt*28);G.px+=(G.tx-G.px)*k;G.py+=(G.ty-G.py)*k;G.px=Math.max(G.pw/2,Math.min(W-G.pw/2,G.px));G.py=Math.max(H*.3,Math.min(H-90,G.py));
+ var by=G.py+8;
  for(var i=G.items.length-1;i>=0;i--){var it=G.items[i];it.y+=it.vy*dt;it.rot+=dt*2;
-  if(it.y>by-14&&it.y<by+24&&Math.abs(it.x-G.px)<G.pw/2+8){G.items.splice(i,1);
+  if(it.y>by-34&&it.y<by+30&&Math.abs(it.x-G.px)<G.pw/2+6){G.items.splice(i,1);
    if(it.k==="bad"){G.lives--;sfx("bad");floatText(it.x,by-30,"💔","#c0392b");if(navigator.vibrate)navigator.vibrate(60);hud();if(G.lives<=0)return over()}
    else{var p=it.k==="gold"?5:1;G.score+=p;sfx(it.k==="gold"?"gold":"ok");floatText(it.x,by-30,"+"+p,it.k==="gold"?"#e0a100":"#1b7a3e");var lv=1+Math.floor(G.score/10);if(lv>G.level){G.level=lv;sfx("level");floatText(W/2,H/2,"Lv "+lv,"#fff")}hud()}}
   else if(it.y>H+40){G.items.splice(i,1)}}
@@ -80,13 +80,14 @@ function over(){G.state="over";var nb=G.score>BEST;if(nb){BEST=G.score;sv("fc_be
 function draw(){cx.clearRect(0,0,W,H);
  cx.font="40px serif";cx.textAlign="center";cx.textBaseline="middle";
  for(var i=0;i<G.items.length;i++){var it=G.items[i];cx.save();cx.translate(it.x,it.y);cx.rotate(Math.sin(it.rot)*.35);cx.font=(it.k==="gold"?46:40)+"px serif";cx.fillText(it.e,0,0);cx.restore()}
- if(G.state!=="menu"){cx.font="64px serif";cx.fillText("🧺",G.px,H-62)}
+ if(G.state!=="menu"){cx.font="96px serif";cx.fillText("🧺",G.px,G.py)}
  cx.font="bold 24px 'Kantumruy Pro',system-ui,sans-serif";for(var j=0;j<G.fx.length;j++){var f=G.fx[j];cx.globalAlpha=Math.max(0,f.a);cx.fillStyle=f.c;cx.fillText(f.s,f.x,f.y);cx.globalAlpha=1}}
 var last=0;function loop(ts){var dt=Math.min(.05,(ts-last)/1000||0);last=ts;step(dt);draw();requestAnimationFrame(loop)}
 function pos(e){var r=cv.getBoundingClientRect();return(e.touches?e.touches[0].clientX:e.clientX)-r.left}
-["pointerdown","pointermove"].forEach(function(n){cv.addEventListener(n,function(e){if(G.state==="play"&&(n==="pointerdown"||e.pressure>0||e.buttons||e.pointerType==="touch"||e.pointerType==="mouse")){G.tx=pos(e)}})});
+function posY(e){var r=cv.getBoundingClientRect();return(e.touches?e.touches[0].clientY:e.clientY)-r.top}
+["pointerdown","pointermove"].forEach(function(n){cv.addEventListener(n,function(e){if(G.state==="play"&&(n==="pointerdown"||e.pressure>0||e.buttons||e.pointerType==="touch"||e.pointerType==="mouse")){G.tx=pos(e);G.ty=posY(e)-90}})});
 var keys={};window.addEventListener("keydown",function(e){keys[e.key]=1;if(e.key===" "&&G.state==="play")pause()});window.addEventListener("keyup",function(e){keys[e.key]=0});
-setInterval(function(){if(G.state==="play"){if(keys.ArrowLeft||keys.a)G.tx-=14;if(keys.ArrowRight||keys.d)G.tx+=14;G.tx=Math.max(0,Math.min(W,G.tx))}},16);
+setInterval(function(){if(G.state==="play"){if(keys.ArrowLeft||keys.a)G.tx-=14;if(keys.ArrowRight||keys.d)G.tx+=14;if(keys.ArrowUp||keys.w)G.ty-=12;if(keys.ArrowDown||keys.s)G.ty+=12;G.ty=Math.max(H*.3,Math.min(H-90,G.ty));G.tx=Math.max(0,Math.min(W,G.tx))}},16);
 function pause(){if(G.state==="play"){G.state="pause";$("ovPause").classList.remove("hide")}else if(G.state==="pause"){G.state="play";$("ovPause").classList.add("hide")}}
 $("go").onclick=start;$("again").onclick=start;$("bp").onclick=pause;$("resume").onclick=pause;
 $("bs").onclick=function(){SND=!SND;sv("fc_snd",SND);texts();sfx("tap")};

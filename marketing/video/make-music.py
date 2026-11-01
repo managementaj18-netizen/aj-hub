@@ -23,7 +23,7 @@ def snare(vol=.25):
 def put(buf,x,pos):
     i=int(pos*SR);j=min(len(buf),i+len(x))
     if i<len(buf):buf[i:j]+=x[:j-i]
-def render(name,dur,bpm,melody,bass,chords,drums,mel_wave,swing=0):
+def build(dur,bpm,melody,bass,chords,drums,mel_wave):
     buf=np.zeros(int(SR*dur));beat=60/bpm;total=int(dur/beat)
     # drums
     for b in range(total*2):
@@ -48,6 +48,9 @@ def render(name,dur,bpm,melody,bass,chords,drums,mel_wave,swing=0):
             pos=(k*L+s)*beat/2
             if pos<dur and n:put(buf,tone(midi(n),d*beat/2*.92,mel_wave,.2,.004,.06),pos)
         k+=1
+    return buf
+def render(name,dur,bpm,melody,bass,chords,drums,mel_wave,swing=0):
+    buf=build(dur,bpm,melody,bass,chords,drums,mel_wave)
     # fades + normalise
     fi=int(SR*.25);fo=int(SR*2.2);buf[:fi]*=np.linspace(0,1,fi);buf[-fo:]*=np.linspace(1,0,fo)
     buf=buf/max(1e-6,np.abs(buf).max())*.85
@@ -59,6 +62,33 @@ hookA=[(0,C+12,1),(1,C+16,1),(2,C+19,2),(4,C+16,1),(5,C+12,1),(6,C+14,2),
        (8,C+17,1),(9,C+14,1),(10,C+19,2),(12,C+16,1),(13,C+14,1),(14,C+12,2)]
 bassA=[36,36,43,43,41,41,43,43]
 chA=[[60,64,67],[60,64,67],[65,69,72],[67,71,74]]
+
+# Tempo that speeds up with the game level: argv[1]=levels.json [{"lv":1,"t":6.2},...], argv[2]=total seconds
+if len(sys.argv)>2:
+    import json
+    lv=json.load(open(sys.argv[1]));total=float(sys.argv[2])
+    play0=min([x['t'] for x in lv if x['lv']==1] or [0.0])
+    def tempo(t):
+        ramp=100+(min(170,100+(t-play0)*2.6) -100 if t>=play0 else 0)   # steady speed-up while playing
+        floor=100+25*(max([x['lv'] for x in lv if x['t']<=t] or [1])-1) # jump up at each level
+        return int(round(max(ramp,floor)/5)*5)
+    bounds=[];t=0.0
+    while t<total:
+        bpm=tempo(t)
+        if not bounds or bounds[-1][1]!=bpm:bounds.append((t,bpm))
+        t+=.5
+    out=np.zeros(int(SR*total));fade=int(SR*.12)
+    for i,(t0,bpm) in enumerate(bounds):
+        t1=bounds[i+1][0] if i+1<len(bounds) else total
+        seg=build(t1-t0+.12,bpm,hookA,bassA,chA,True,'square')
+        seg[:fade]*=np.linspace(0,1,fade) if i else 1
+        seg[-fade:]*=np.linspace(1,0,fade)
+        a=int(t0*SR);b=min(len(out),a+len(seg));out[a:b]+=seg[:b-a]
+    fi=int(SR*.25);fo=int(SR*2.2);out[:fi]*=np.linspace(0,1,fi);out[-fo:]*=np.linspace(1,0,fo)
+    out=out/max(1e-6,np.abs(out).max())*.85
+    with wave.open('fruitcatch-ramp.wav','w') as w:
+        w.setnchannels(1);w.setsampwidth(2);w.setframerate(SR);w.writeframes((out*32767).astype('<i2').tobytes())
+    print('ramp',bounds);sys.exit(0)
 render('fruitcatch.wav',34,128,hookA,bassA,chA,True,'square')
 # calm, cheerful "puzzle" arpeggio
 hookB=[(0,C+16,2),(2,C+19,2),(4,C+21,2),(6,C+19,2),(8,C+17,2),(10,C+21,2),(12,C+24,2),(14,C+21,2)]
