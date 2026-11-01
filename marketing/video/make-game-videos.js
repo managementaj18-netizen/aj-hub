@@ -2,7 +2,7 @@ const {chromium}=require('/opt/node22/lib/node_modules/playwright');
 const http=require('http'),fs=require('fs'),path=require('path');
 const root='/home/user/aj-hub/game/public';
 const srv=http.createServer((q,r)=>{let f=path.join(root,q.url.split('?')[0]);if(f.endsWith('/'))f+='index.html';fs.readFile(f,(e,d)=>{if(e){r.writeHead(404);return r.end('nf')}r.writeHead(200,{'content-type':{'.html':'text/html','.js':'text/javascript','.json':'application/json','.png':'image/png'}[path.extname(f)]||'application/octet-stream'});r.end(d)})}).listen(8805);
-const W=540,H=960,URL_TXT='game-65w.pages.dev';
+const W=540,H=960,URL_TXT='play.soramma.app';
 const FONT="font-family:'Kantumruy Pro',system-ui,sans-serif";
 const card=(html)=>`(()=>{const e=document.createElement('div');e.id='__card';e.style.cssText="position:fixed;inset:0;z-index:100001;background:linear-gradient(135deg,#1f2a44,#2e3d63);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;text-align:center;${FONT};padding:28px";e.innerHTML=${JSON.stringify(html)};document.body.appendChild(e)})()`;
 async function rec(name,body){
@@ -24,17 +24,17 @@ const end=(title,sub)=>`<div style="font-weight:700;font-size:50px;line-height:1
   await p.click('#go');
   await p.evaluate(()=>{let s=12345;FC.G.rng=()=>{s=(s*1664525+1013904223)%4294967296;return s/4294967296}});
   // a simple "player": follow the lowest good fruit, step aside from bugs
-  await p.evaluate(()=>{window.__bot=setInterval(()=>{const G=FC.G;if(G.state!=='play')return;const by=cv.clientHeight-70;let tgt=null,ty=-1e9;
+  await p.evaluate(()=>{window.__bot=setInterval(()=>{const G=FC.G;if(G.state!=='play')return;const by=G.py+8;let tgt=null,ty=-1e9;
     G.items.forEach(it=>{if(it.k!=='bad'&&it.y<by&&it.y>ty){ty=it.y;tgt=it}});
     let x=tgt?tgt.x:G.px;
     G.items.forEach(it=>{if(it.k==='bad'&&it.y>by-260&&it.y<by+20&&Math.abs(it.x-x)<62){x=it.x<cv.clientWidth/2?it.x+95:it.x-95}});
-    G.tx=Math.max(30,Math.min(cv.clientWidth-30,x))},40)});
+    G.tx=Math.max(30,Math.min(cv.clientWidth-30,x));G.ty=cv.clientHeight-130},25)});
   await p.waitForTimeout(7000);await cap('🍍 មាស +5 · 🐛 ដង្កូវ បាត់ជីវិត',2500);await cap('',100);
   await p.waitForTimeout(4000);await cap('ពិន្ទុរាល់ 10 ឡើងកម្រិត ផ្លែឈើជ្រុះលឿនជាង',2800);await cap('',100);
   await p.waitForTimeout(4000);
   await showCard(end('ចាប់ផ្លែឈើ','លេងឥតគិតថ្លៃ លើទូរស័ព្ទ'),3500)});
  // ---------- Juice Sort ----------
- await rec('js',async(p,cap,showCard)=>{
+ if(process.env.WITH_SORT)await rec('js',async(p,cap,showCard)=>{
   await p.goto('http://localhost:8805/sort/');await p.waitForSelector('#undo');
   await showCard(hook('តម្រៀបពណ៌<br>ឲ្យបានមួយដប 🧪','លេងឥតគិតថ្លៃ'),2600);await p.evaluate(()=>document.getElementById('__card').remove());
   await p.evaluate(()=>JS.newLevel(3));await p.waitForTimeout(500);
