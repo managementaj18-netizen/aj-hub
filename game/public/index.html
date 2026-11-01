@@ -25,7 +25,7 @@ canvas{flex:1;width:100%;display:block}
 </style></head><body>
 <div id="wrap"><canvas id="c"></canvas>
 <div id="hud"><span id="sc">0</span><span id="lv">Lv 1</span><span id="li">❤️❤️❤️</span><span class="sp"></span><button class="btn" id="bs" aria-label="sound">🔊</button><button class="btn" id="bp" aria-label="pause">⏸️</button></div>
-<div class="ov" id="ovStart"><div style="font-size:64px">🧺🥭</div><h1 id="tTitle"></h1><p id="tHow"></p><div class="legend" id="tLeg"></div><div>🏆 <b id="best">0</b></div><button class="big" id="go"></button><button class="sm" id="lang"></button><a class="sm" href="sort/" style="text-decoration:none">🧪 ទឹកផ្លែឈើ · Juice Sort</a><a class="sm" href="kids/" style="text-decoration:none">🐶 មិត្តសត្វ · Animal Friends (កុមារ)</a></div>
+<div class="ov" id="ovStart"><div style="font-size:64px">🧺🥭</div><h1 id="tTitle"></h1><p id="tHow"></p><div class="legend" id="tLeg"></div><div>🏆 <b id="best">0</b></div><button class="big" id="go"></button><button class="sm" id="lang"></button><div style="font-size:14px;opacity:.9" id="soon"></div></div>
 <div class="ov hide" id="ovPause"><h1 id="tPause"></h1><button class="big" id="resume"></button></div>
 <div class="ov hide" id="ovEnd"><h1 id="tOver"></h1><div class="score" id="fs">0</div><p id="tBest"></p><button class="big" id="again"></button><button class="sm" id="share"></button></div>
 </div>
@@ -35,7 +35,7 @@ en:{title:"Fruit Catch",how:"Drag your finger (or use the arrow keys) to catch t
 function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 var LANG=ld("fc_lang",(navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en"),BEST=ld("fc_best",0),SND=ld("fc_snd",true),$=function(i){return document.getElementById(i)};
 function t(k,v){var s=TX[LANG][k]||TX.en[k]||k;if(v)for(var x in v)s=s.split("{"+x+"}").join(v[x]);return s}
-function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("title");$("tHow").textContent=t("how");$("go").textContent=t("go");$("again").textContent=t("again");$("tPause").textContent=t("pause");$("resume").textContent=t("resume");$("tOver").textContent=t("over");$("share").textContent=t("share");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("best").textContent=BEST;$("bs").textContent=SND?"🔊":"🔇";
+function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("title");$("tHow").textContent=t("how");$("go").textContent=t("go");$("again").textContent=t("again");$("tPause").textContent=t("pause");$("resume").textContent=t("resume");$("tOver").textContent=t("over");$("share").textContent=t("share");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("soon").textContent=LANG==="km"?"🎮 ហ្គេមថ្មីៗនឹងមកដល់ឆាប់ៗ · តាមដាន Page Soramma":"🎮 New games coming soon · follow Page Soramma";$("best").textContent=BEST;$("bs").textContent=SND?"🔊":"🔇";
  $("tLeg").innerHTML="<span>🥭🍌🍉 "+t("ok")+"</span><span>🍍 "+t("gold")+"</span><span>🐛 "+t("bad")+"</span>"}
 var cv=$("c"),cx=cv.getContext("2d"),W=0,H=0,DPR=1;
 function fit(){DPR=Math.min(window.devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*DPR;cv.height=H*DPR;cx.setTransform(DPR,0,0,DPR,0,0)}

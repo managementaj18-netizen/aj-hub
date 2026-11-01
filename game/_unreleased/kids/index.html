@@ -21,7 +21,7 @@ canvas{width:100%;height:100%;display:block}
 </style></head><body>
 <div id="wrap"><canvas id="c"></canvas>
 <div id="hud"><span id="st">⭐ 0</span><span class="sp"></span><button class="btn" id="bm">🎵</button><button class="btn" id="bb">🏠</button></div>
-<div class="ov" id="ovPick"><h1 id="tPick"></h1><div class="grid" id="grid"></div><a class="sm" href="../" id="more">🧺 ហ្គេមផ្សេងទៀត</a><button class="sm" id="lang"></button></div>
+<div class="ov" id="ovPick"><h1 id="tPick"></h1><div class="grid" id="grid"></div><button class="sm" id="lang"></button></div>
 </div>
 <script>
 var ANIMALS=[{id:"dog",e:"🐶",food:"🦴",km:"ឆ្កែ",en:"Dog",f:196,w:"saw",d:.14},{id:"cat",e:"🐱",food:"🐟",km:"ឆ្មា",en:"Cat",f:660,w:"sine",d:.28},{id:"panda",e:"🐼",food:"🎋",km:"ផាន់ដា",en:"Panda",f:262,w:"tri",d:.2},{id:"ele",e:"🐘",food:"🍌",km:"ដំរី",en:"Elephant",f:130,w:"saw",d:.34},{id:"lion",e:"🦁",food:"🍖",km:"តោ",en:"Lion",f:110,w:"saw",d:.3},{id:"monkey",e:"🐵",food:"🍌",km:"ស្វា",en:"Monkey",f:520,w:"square",d:.12}];
@@ -30,7 +30,7 @@ var TX={km:{pick:"ជ្រើសមិត្តរបស់អ្នក",say:["
 function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 var LANG=ld("ak_lang",(navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en"),MUS=ld("ak_mus",true),$=function(i){return document.getElementById(i)};
 function t(k){return TX[LANG][k]}
-function texts(){document.documentElement.lang=LANG;$("tPick").textContent=t("pick");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("more").textContent=t("more");$("bm").textContent=MUS?"🎵":"🔇";
+function texts(){document.documentElement.lang=LANG;$("tPick").textContent=t("pick");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("bm").textContent=MUS?"🎵":"🔇";
  $("grid").innerHTML=ANIMALS.map(function(a,i){return'<button class="card" data-i="'+i+'"><span class="e">'+a.e+'</span>'+(LANG==="km"?a.km:a.en)+'</button>'}).join("")}
 /* ----- sound: everything is synthesised, nothing is sampled ----- */
 var AC=null;function ac(){if(!AC){try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==="suspended")AC.resume();return AC}
