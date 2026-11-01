@@ -81,6 +81,7 @@ $("bb").onclick=function(){G.state="pick";$("ovPick").classList.remove("hide")};
 $("bm").onclick=function(){MUS=!MUS;sv("ak_mus",MUS);texts();if(MUS)startMusic();else stopMusic()};
 $("lang").onclick=function(){LANG=LANG==="km"?"en":"km";sv("ak_lang",LANG);texts()};
 document.addEventListener("visibilitychange",function(){if(document.hidden)stopMusic();else if(G.state==="play")startMusic()});
+window.addEventListener("pagehide",function(){stopMusic();try{if(AC)AC.suspend()}catch(e){}});
 window.AK={G:G,ANIMALS:ANIMALS,choose:choose,addItem:addItem,step:step,fit:fit};
 fit();texts();requestAnimationFrame(loop);
 </script></body></html>
