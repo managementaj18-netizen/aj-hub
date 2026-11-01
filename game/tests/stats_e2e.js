@@ -1,0 +1,23 @@
+const {chromium}=require('/opt/node22/lib/node_modules/playwright');
+const {spawn}=require('child_process');
+const ok=(c,m)=>{console.log(c?'PASS':'FAIL',m);if(!c)process.exitCode=1};
+(async()=>{
+ const srv=spawn('node',['server_stats.mjs'],{cwd:__dirname,env:{...process.env,PORT:'8811',ROOT:'/home/user/aj-hub/game/public',HANDLER:'/home/user/aj-hub/game/functions/api/[[path]].js'},stdio:'ignore'});
+ await new Promise(r=>setTimeout(r,1500));
+ const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
+ const mk=async()=>{const c=await b.newContext({viewport:{width:390,height:800},isMobile:true,hasTouch:true});return c};
+ const c1=await mk(),p=await c1.newPage();const errs=[];p.on('pageerror',e=>errs.push(e.message));
+ await p.goto('http://localhost:8811/?s=facebook');await p.waitForSelector('#go');await p.click('#go');await p.waitForTimeout(500);await p.click('#go').catch(()=>{});
+ const c2=await mk(),q=await c2.newPage();await q.goto('http://localhost:8811/?s=telegram');await q.waitForSelector('#go');await q.waitForTimeout(400);
+ await p.reload();await p.waitForTimeout(500);
+ const a=await b.newContext({viewport:{width:420,height:900}}),ad=await a.newPage();
+ await ad.goto('http://localhost:8811/admin.html');await ad.fill('#code','wrong');await ad.click('#go');await ad.waitForTimeout(900);
+ ok(/មិនត្រូវ/.test(await ad.locator('#err').innerText()),'admin page refuses a wrong code');
+ await ad.fill('#code','sekret-123');await ad.click('#go');await ad.waitForSelector('#out:not([hidden])');await ad.waitForTimeout(300);
+ const tiles=await ad.locator('#tiles').innerText();console.log(tiles.replace(/\n+/g,' | '));
+ ok(/2\s*\n?\s*👥/.test(tiles)||/^2\b/.test(tiles),'2 different phones counted');
+ const src=await ad.locator('#src').innerText();ok(/Facebook/.test(src)&&/Telegram/.test(src),'sources show Facebook and Telegram');
+ await ad.screenshot({path:'/tmp/sc/admin_stats.png',fullPage:true});
+ ok(errs.length===0,'no page errors in the game '+errs.join());
+ await b.close();srv.kill();
+})();

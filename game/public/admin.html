@@ -1,0 +1,39 @@
+<!doctype html><html lang="km"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Soramma Games · ចំនួនអ្នកលេង</title>
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;700&display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:"Kantumruy Pro",system-ui,sans-serif;background:#12202b;color:#eef3f6;padding:16px;max-width:760px;margin:auto}
+h1{font-size:22px;margin:6px 0 14px}.card{background:#1c3140;border-radius:14px;padding:14px;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.tile{background:#1c3140;border-radius:14px;padding:12px}.tile b{display:block;font-size:30px;color:#ffd166}.tile span{font-size:13px;opacity:.8}
+input,select,button{font:inherit;padding:10px 12px;border-radius:10px;border:0}input{width:100%;box-sizing:border-box;margin:8px 0}button{background:#ffb703;color:#3d2a00;font-weight:700;cursor:pointer}
+.row{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}.row i{display:block;height:12px;background:#ffb703;border-radius:6px;min-width:2px}.row span{width:84px;opacity:.8}.row em{font-style:normal;margin-left:4px}
+.muted{opacity:.7;font-size:13px}.err{color:#ff8a80}table{width:100%;border-collapse:collapse;font-size:14px}td,th{padding:6px 4px;text-align:left;border-bottom:1px solid #2a4254}
+</style></head><body>
+<h1>🎮 ចំនួនអ្នកលេងហ្គេម</h1>
+<div id="login" class="card"><div>លេខកូដម្ចាស់ (Admin)</div><input id="code" type="password" autocomplete="current-password" placeholder="លេខកូដ"><button id="go">មើល</button><div id="err" class="err"></div></div>
+<div id="out" hidden>
+ <div class="muted">រយៈពេល: <select id="days"><option value="7">៧ ថ្ងៃ</option><option value="14" selected>១៤ ថ្ងៃ</option><option value="30">៣០ ថ្ងៃ</option><option value="90">៩០ ថ្ងៃ</option></select> <button id="re" style="padding:6px 12px">⟳</button></div>
+ <div class="grid" id="tiles"></div>
+ <div class="card"><b>តាមថ្ងៃ</b> <span class="muted">(អ្នកចូល / គ្រាលេង)</span><div id="perday"></div></div>
+ <div class="card"><b>ចូលមកពីណា</b> <span class="muted">(អ្នកចូលផ្សេងគ្នា)</span><div id="src"></div></div>
+ <div class="card"><b>តាមហ្គេម</b><div id="games"></div></div>
+ <p class="muted">ទិន្នន័យអនាមិក៖ មិនរក្សាឈ្មោះ លេខទូរស័ព្ទ ឬ IP ទេ។ "អ្នកចូល" = ទូរស័ព្ទមួយគ្រឿងរាប់មួយដងក្នុងមួយថ្ងៃ។</p>
+</div>
+<script>
+var $=function(i){return document.getElementById(i)},CODE="";try{CODE=sessionStorage.getItem("gm_admin")||""}catch(e){}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function bars(rows,key){var mx=Math.max.apply(null,rows.map(function(r){return r[key]}).concat([1]));return rows.map(function(r){return'<div class="row"><span>'+esc(r.k)+'</span><i style="width:'+Math.round(r[key]/mx*55)+'%"></i><em>'+r[key]+'</em></div>'}).join("")}
+function load(){$("err").textContent="";fetch("/api/stats?days="+$("days").value,{headers:{"x-admin-code":CODE}}).then(function(r){return r.json().then(function(j){return[r.status,j]})}).then(function(a){var s=a[0],d=a[1];
+ if(s===401){$("err").textContent="លេខកូដមិនត្រូវ";$("login").hidden=false;$("out").hidden=true;return}
+ if(s===503){$("err").textContent=d.error==="no_admin_code"?"មិនទាន់កំណត់ ADMIN_CODE ក្នុង Cloudflare":"មិនទាន់ភ្ជាប់ database (DB)";return}
+ if(s!==200){$("err").textContent="កំហុស: "+(d.detail||d.error);return}
+ try{sessionStorage.setItem("gm_admin",CODE)}catch(e){}$("login").hidden=true;$("out").hidden=false;
+ var T=[["👥",d.visitors,"អ្នកចូលសរុប ("+d.days+" ថ្ងៃ)"],["🔁",d.returning,"ត្រឡប់មកលេងវិញ"],["🎮",d.plays,"គ្រាលេងសរុប"],["📲",d.installs,"ដាក់លើអេក្រង់ (install)"],["📤",d.shares,"ចុចចែករំលែក"],["👍",d.fbClicks,"ចុចទៅ Facebook Page"],["🌍",d.visitorsAllTime,"អ្នកចូលតាំងពីដើម"]];
+ $("tiles").innerHTML=T.map(function(t){return'<div class="tile"><b>'+t[1]+'</b><span>'+t[0]+" "+t[2]+"</span></div>"}).join("");
+ var days=Object.keys(d.perDay).reverse().map(function(k){return{k:k.slice(5),v:d.perDay[k].visitors,p:d.perDay[k].plays}});
+ $("perday").innerHTML=days.map(function(x){return'<div class="row"><span>'+x.k+'</span><i style="width:'+Math.round(x.v/Math.max.apply(null,days.map(function(y){return y.v}).concat([1]))*55)+'%"></i><em>'+x.v+" / "+x.p+"</em></div>"}).join("");
+ var names={direct:"ផ្ទាល់",facebook:"Facebook",instagram:"Instagram",telegram:"Telegram",google:"Google",tiktok:"TikTok",other:"ផ្សេងៗ"};
+ $("src").innerHTML=d.sources.length?bars(d.sources.map(function(x){return{k:names[x.src]||x.src,c:x.c}}),"c"):'<div class="muted">មិនទាន់មានទិន្នន័យ</div>';
+ var g=Object.keys(d.games);$("games").innerHTML=g.length?'<table><tr><th>ហ្គេម</th><th>អ្នកចូល</th><th>លេង</th><th>install</th></tr>'+g.map(function(k){var x=d.games[k];return"<tr><td>"+esc(k)+"</td><td>"+(x.visitors||0)+"</td><td>"+x.plays+"</td><td>"+x.installs+"</td></tr>"}).join("")+"</table>":'<div class="muted">មិនទាន់មានទិន្នន័យ</div>'}).catch(function(){$("err").textContent="មិនអាចភ្ជាប់បាន"})}
+$("go").onclick=function(){CODE=$("code").value.trim();if(CODE)load()};$("code").onkeydown=function(e){if(e.key==="Enter")$("go").onclick()};
+$("days").onchange=$("re").onclick=load;if(CODE)load();
+</script></body></html>

@@ -20,3 +20,11 @@ Art is plain emoji and the mechanic is generic; nothing is copied from another g
 2. Optional custom domain, e.g. `play.soramma.app`.
 
 Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `node tests/sort_test.js`, `node tests/kids_test.js` (Playwright; controls, scoring, lives, level-up, pause, game over, best score).
+
+## Visitor counter (owner only)
+- Games send anonymous events (`visit`, `play`, `install`, `share`, `fb`) to `/api/hit` (`game/public/track.js`). Only a random id made in the phone is stored — no name, number or IP.
+- Owner page: `https://play.soramma.app/admin.html` (needs the secret `ADMIN_CODE`).
+- Cloudflare setup for project **game** (one time): Settings → Bindings → add **D1 database**, variable name `DB`, pick the existing shared database `soramma-laundrypro-db` (tables are prefixed `gm_`); Settings → Variables and Secrets → add secret `ADMIN_CODE`; then redeploy.
+- Use `?s=name` on a link to label where it was shared (e.g. `play.soramma.app/?s=fb-post1`).
+- Put the Facebook Page link in `FB` at the top of `game/public/track.js` to turn the "coming soon" line into a tap-to-follow link that is counted.
+- Tests: `node game/tests/stats_test.mjs`, `node game/tests/stats_e2e.js`.
