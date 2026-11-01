@@ -8,11 +8,12 @@ const card=(html)=>`(()=>{const e=document.createElement('div');e.id='__card';e.
 async function rec(name,body){
  const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});
  const c=await b.newContext({viewport:{width:W,height:H},isMobile:true,hasTouch:true,recordVideo:{dir:'/tmp/sc/gv/'+name,size:{width:W,height:H}}});
- const p=await c.newPage();p.on('pageerror',e=>console.log('ERR',e.message));
+ const T0=Date.now();const p=await c.newPage();p.on('pageerror',e=>console.log('ERR',e.message));
  await p.addInitScript(()=>{localStorage.setItem('fc_lang','"km"');localStorage.setItem('js_lang','"km"');localStorage.removeItem('js_lv');localStorage.removeItem('fc_best')});
  const cap=async(txt,ms)=>{await p.evaluate(([t,f])=>{let e=document.getElementById('__cap');if(!e){e=document.createElement('div');e.id='__cap';e.style.cssText="position:fixed;left:14px;right:14px;top:96px;z-index:99999;background:#1f2a44ee;color:#fff;border:2px solid #f1d58a;border-radius:18px;padding:12px 16px;font-weight:700;font-size:25px;line-height:1.35;text-align:center;box-shadow:0 8px 24px #0006;pointer-events:none;"+f;document.body.appendChild(e)}e.textContent=t;e.style.display=t?'block':'none'},[txt,FONT]);await p.waitForTimeout(ms)};
  const showCard=async(html,ms)=>{await p.evaluate(card(html));await p.waitForTimeout(ms)};
- await body(p,cap,showCard);await c.close();await b.close()}
+ await p.addInitScript(()=>{window.__lvlog=[];let l=0;setInterval(()=>{try{if(FC.G.state==='play'&&FC.G.level!==l){l=FC.G.level;window.__lvlog.push({lv:l,t:Date.now()})}}catch(e){}},50)});
+ await body(p,cap,showCard);if(name==='fc'){const L=await p.evaluate(()=>window.__lvlog);fs.writeFileSync('/tmp/sc/gv/levels.json',JSON.stringify(L.map(x=>({lv:x.lv,t:(x.t-T0)/1000}))));console.log('levels',JSON.stringify(L.map(x=>[x.lv,(x.t-T0)/1000])))}await c.close();await b.close()}
 const hook=(l1,l2)=>`<div style="font-weight:700;font-size:56px;line-height:1.3">${l1}</div><div style="font-weight:700;font-size:36px;line-height:1.4;color:#f1d58a">${l2}</div>`;
 const end=(title,sub)=>`<div style="font-weight:700;font-size:50px;line-height:1.2">${title}</div><div style="font-weight:700;font-size:30px;line-height:1.4">${sub}</div><div style="font-weight:700;font-size:30px;color:#f1d58a">${URL_TXT}</div><div style="margin-top:10px;background:#f1d58a;color:#1f2a44;border-radius:99px;padding:10px 22px;font-weight:700;font-size:26px">👍 តាមដាន Page Soramma</div>`;
 (async()=>{
