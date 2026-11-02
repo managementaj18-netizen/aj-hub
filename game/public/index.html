@@ -1,6 +1,2 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Soramma Games</title>
-<script>
-/* Old Fruit Catch links (challenge links and posts that used ?s=) still open Fruit Catch; a plain visit shows the list of games. */
-(function(){var q=location.search,p=new URLSearchParams(q),legacy=p.has("c")||/^(fb|ig|tg|ch|fc|test)$/i.test(p.get("s")||"");
- if(legacy&&!p.has("hub"))location.replace("/fruit/"+q);else location.replace("/games/"+q)})();
-</script></head><body style="font-family:system-ui;text-align:center;padding:40px"><p>Soramma Games</p><p><a href="/games/">All games</a> · <a href="/fruit/">Fruit Catch</a> · <a href="/abc/">English Friends</a></p></body></html>
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Soramma</title>
+<script>location.replace("/fruit/"+location.search)</script></head><body style="font-family:system-ui;text-align:center;padding:40px"><p><a href="/fruit/">Fruit Catch</a></p></body></html>
