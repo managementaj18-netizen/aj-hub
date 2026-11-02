@@ -5,7 +5,7 @@ const srv=http.createServer((q,r)=>{let f=path.join(root,q.url.split('?')[0]);if
 (async()=>{const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium'});const ok=(c,m)=>{console.log(c?'PASS':'FAIL',m);if(!c)process.exitCode=1};const errs=[];
 const c=await b.newContext({viewport:{width:430,height:860},isMobile:true,hasTouch:true,deviceScaleFactor:2});const p=await c.newPage();p.on('pageerror',e=>errs.push(e.message));
 await p.addInitScript(()=>{localStorage.setItem('fc_lang','"km"');localStorage.removeItem('fc_best')});
-await p.goto('http://localhost:8803/');await p.waitForSelector('#go');
+await p.goto('http://localhost:8803/fruit/');await p.waitForSelector('#go');
 ok(/ចាប់ផ្លែឈើ/.test(await p.locator('#tTitle').innerText()),'Khmer title');ok(!/\b(title|how|go)\b/.test(await p.locator('#ovStart').innerText().then(x=>x.replace(/\s+/g,' '))),'no raw keys');
 await p.screenshot({path:'/tmp/sc/game_menu.png'});
 await p.click('#go');await p.waitForTimeout(100);ok(await p.evaluate(()=>FC.G.state)==='play','game starts');ok(await p.evaluate(()=>!!beep.a&&beep.a.state==='running'),'sound engine is unlocked by the first touch (needed on iPhone)');

@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="km"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
+<meta name="theme-color" content="#1f6f4a">
+<title>ចាប់ផ្លែឈើ · Fruit Catch</title>
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;overflow:hidden;background:#143d2b;color:#fff;font-family:"Kantumruy Pro",system-ui,sans-serif;touch-action:none;user-select:none;-webkit-user-select:none}
+#wrap{position:fixed;inset:0;display:flex;flex-direction:column;max-width:560px;margin:0 auto;background:linear-gradient(#8fd6ff,#d7f3ff 55%,#9fd98b 55%,#4c9a4a)}
+canvas{flex:1;width:100%;display:block}
+#hud{position:absolute;top:calc(8px + env(safe-area-inset-top));left:10px;right:10px;display:flex;gap:8px;align-items:center;pointer-events:none;color:#103a28;font-weight:700;text-shadow:0 1px 0 #fff8}
+#hud span{background:#ffffffcc;border-radius:99px;padding:4px 10px;font-size:15px;white-space:nowrap}
+#hud .sp{flex:1;background:none}
+.btn{pointer-events:auto;border:0;background:#ffffffcc;border-radius:99px;width:38px;height:38px;font-size:18px;cursor:pointer}
+.ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0d2f2099;text-align:center;padding:24px}
+.ov.hide{display:none}
+.ov h1{font-size:34px;margin:0}.ov p{margin:0;font-size:16px;opacity:.95;max-width:340px}
+.big{background:#ffb703;color:#3d2a00;border:0;border-radius:18px;padding:14px 34px;font:700 22px "Kantumruy Pro",system-ui,sans-serif;cursor:pointer;box-shadow:0 5px 0 #c98a00}
+.big:active{transform:translateY(3px);box-shadow:0 2px 0 #c98a00}
+#ovEnd .sm,#ovPause .sm{background:#ffffffee;color:#103a28;font-weight:700;font-size:16px;padding:11px 20px;box-shadow:0 3px 0 #0003}
+.row{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}.big.sec{background:#ffffff2e;color:#fff;box-shadow:none;font-size:17px;padding:10px 18px}.tabs{display:flex;gap:6px}.tabs button{border:0;border-radius:99px;padding:7px 14px;font:inherit;font-size:14px;font-weight:700;background:#ffffff33;color:#fff;cursor:pointer}.tabs button.on{background:#ffd166;color:#3d2a00}
+#lbList{list-style:none;margin:0;padding:0;width:100%;max-width:340px;max-height:46vh;overflow:auto}#lbList li{display:flex;align-items:center;gap:10px;background:#ffffff1f;border-radius:14px;padding:8px 12px;margin:5px 0;font-weight:700}#lbList li.me{background:#ffd16655;outline:2px solid #ffd166}#lbList li b{width:34px;text-align:left}#lbList li span{flex:1;text-align:left;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}#lbList li i{font-style:normal;color:#ffd166}
+.chal{background:#ffd16638;border:2px solid #ffd166;border-radius:16px;padding:10px 14px;font-weight:700;font-size:17px;max-width:340px;line-height:1.4}.chal.hide,#goal.hide{display:none}
+#nm,#nm0{border:0;border-radius:99px;padding:9px 16px;font:inherit;font-size:15px;text-align:center;width:230px;background:#ffffffee;color:#103a28}
+.sm{background:#ffffff33;color:#fff;border:0;border-radius:99px;padding:8px 16px;font:inherit;font-size:14px;cursor:pointer}
+.score{font-size:46px;font-weight:700;color:#ffd166}
+.legend{display:flex;gap:14px;font-size:15px;justify-content:center;flex-wrap:wrap}
+</style></head><body>
+<div id="wrap"><canvas id="c"></canvas>
+<div id="hud"><span id="sc">0</span><span id="lv">Lv 1</span><span id="li">❤️❤️❤️</span><span id="goal" class="hide">🎯</span><span class="sp"></span><button class="btn" id="bm" aria-label="music">🎵</button><button class="btn" id="bs" aria-label="sound">🔊</button><button class="btn" id="bp" aria-label="pause">⏸️</button></div>
+<div class="ov" id="ovStart"><div style="font-size:64px">🧺🥭</div><h1 id="tTitle"></h1><div class="chal hide" id="tChal"></div><p id="tHow"></p><div class="legend" id="tLeg"></div><input id="nm0" maxlength="14" autocomplete="off"><div>🏆 <b id="best">0</b></div><button class="big" id="go"></button><div class="row"><button class="big sec" id="lb"></button><button class="big sec" id="chb"></button></div><button class="sm" id="lang"></button><div style="font-size:14px;opacity:.9" id="soon"></div><a class="sm" href="/games/" id="more" style="text-decoration:none"></a></div>
+<div class="ov hide" id="ovLB"><h1 id="tLB"></h1><div class="tabs" id="lbTabs"><button data-p="day"></button><button data-p="week"></button><button data-p="all"></button></div><ul id="lbList"></ul><p id="lbMe"></p><button class="big" id="lbBack"></button></div>
+<div class="ov hide" id="ovPause"><h1 id="tPause"></h1><button class="big" id="resume"></button><button class="sm" id="homeP"></button></div>
+<div class="ov hide" id="ovEnd"><h1 id="tOver"></h1><div class="score" id="fs">0</div><p id="tBest"></p><div class="chal hide" id="tRes"></div><p id="tRank"></p><input id="nm" maxlength="14" autocomplete="off"><button class="big" id="again"></button><div class="row"><button class="sm" id="share"></button><button class="sm" id="homeB"></button></div></div>
+</div>
+<script src="../track.js"></script>
+<script>
+var TX={km:{title:"ចាប់ផ្លែឈើ",how:"អូសម្រាមដៃ (ឬចុចព្រួញ) ឲ្យកញ្ជើ (ឡើងចុះបាន) ចាប់ផ្លែឈើដែលជ្រុះ។ ជៀសដង្កូវ!",ok:"+1",gold:"+5",bad:"បាត់ជីវិត",go:"ចាប់ផ្តើម",again:"លេងម្តងទៀត",pause:"ផ្អាក",resume:"បន្ត",over:"ចប់ហើយ!",best:"ពិន្ទុខ្ពស់បំផុត",newbest:"កំណត់ត្រាថ្មី! 🎉",share:"ចែករំលែកពិន្ទុ",st:"ពិន្ទុរបស់ខ្ញុំ {n} ក្នុងហ្គេម ចាប់ផ្លែឈើ! តើអ្នកអាចឈ្នះខ្ញុំបានទេ?",chal:"🏆 {n} ទទួលបាន {s} ពិន្ទុ! តើអ្នកឈ្នះបានទេ?",win:"🎉 អ្នកឈ្នះ {n}! ({s} ទល់នឹង {o})",tie:"🤝 ស្មើនឹង {n} ({s})!",lose:"{n} នៅមុនអ្នក {d} ពិន្ទុ។ សាកម្តងទៀត!",name:"ឈ្មោះរបស់អ្នក (សម្រាប់ប្រកួត)",friend:"មិត្តរបស់អ្នក",lb:"🏆 តារាងចំណាត់ថ្នាក់",chb:"🤝 ប្រកួតជាមួយមិត្ត",lbT:"តារាងចំណាត់ថ្នាក់",day:"ថ្ងៃនេះ",week:"សប្តាហ៍នេះ",all:"គ្រប់ពេល",back:"ត្រឡប់ក្រោយ",homeB:"🏠 ទំព័រដើម",rank:"🏅 អ្នកលេខ {d} ថ្ងៃនេះ · លេខ {w} សប្តាហ៍នេះ · លេខ {a} គ្រប់ពេល",addname:"សរសេរឈ្មោះខាងក្រោម ដើម្បីចូលតារាងចំណាត់ថ្នាក់",empty:"មិនទាន់មាននរណាម្នាក់ទេ។ អ្នកអាចជាលេខ ១!",off:"តារាងចំណាត់ថ្នាក់មិនទាន់ដំណើរការ សូមព្យាយាមម្តងទៀត",you:"អ្នក៖ លេខ {r} ({s} ពិន្ទុ)",playfirst:"លេងសិន ដើម្បីប្រកួត",nm0:"ឈ្មោះរបស់អ្នក"},
+en:{title:"Fruit Catch",how:"Drag your finger (or use the arrow keys) to catch the falling fruit with the basket. Avoid the bugs!",ok:"+1",gold:"+5",bad:"lose a life",go:"Play",again:"Play again",pause:"Paused",resume:"Resume",over:"Game over!",best:"Best score",newbest:"New record! 🎉",share:"Share my score",st:"I scored {n} in Fruit Catch! Can you beat me?",chal:"🏆 {n} scored {s}! Can you beat it?",win:"🎉 You beat {n}! ({s} vs {o})",tie:"🤝 A tie with {n} ({s})!",lose:"{n} leads by {d}. Try again!",name:"Your name (for challenges)",friend:"A friend",lb:"🏆 Leaderboard",chb:"🤝 Challenge a friend",lbT:"Leaderboard",day:"Today",week:"This week",all:"All time",back:"Back",homeB:"🏠 Home",rank:"🏅 You are #{d} today · #{w} this week · #{a} all time",addname:"Type your name below to join the leaderboard",empty:"Nobody yet. You could be #1!",off:"The leaderboard is not available right now. Try again later.",you:"You: #{r} ({s} points)",playfirst:"Play first to challenge",nm0:"Your name"}};
+function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
+var LANG=ld("fc_lang",(navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en"),BEST=ld("fc_best",0),SND=ld("fc_snd",true),MUS=ld("fc_mus",true),$=function(i){return document.getElementById(i)};
+function t(k,v){var s=TX[LANG][k]||TX.en[k]||k;if(v)for(var x in v)s=s.split("{"+x+"}").join(v[x]);return s}
+/* friendly challenge: a shared link carries a score (?c=325&n=Sok); the friend plays to beat it. No account, no money. */
+var CH=null,NM=ld("fc_name","");
+function cleanName(x){return String(x||"").replace(/[^\p{L}\p{M}\p{N} ._-]/gu,"").trim().slice(0,14)}
+try{var QS=new URLSearchParams(location.search),CS=parseInt(QS.get("c"),10);if(CS>=0&&CS<=99999)CH={s:CS,n:cleanName(QS.get("n"))}}catch(e){}
+function chalTexts(){if(!CH)return;if(!CH.n)CH.n=t("friend");$("tChal").textContent=t("chal",{n:CH.n,s:CH.s});$("tChal").classList.remove("hide");$("goal").textContent="🎯 "+CH.s;$("goal").classList.remove("hide")}
+function api(p,o){return fetch(p,o).then(function(x){return x.json().then(function(j){return{s:x.status,j:j}})})}
+function myVid(){return window.GT&&GT.vid||""}
+function setName(v){NM=cleanName(v);sv("fc_name",NM);$("nm").value=NM;$("nm0").value=NM;submitScore()}
+var LAST=null;
+function submitScore(){if(!NM||!LAST||LAST.sent||LAST.score<1)return;LAST.sent=1;
+ api("/api/score",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({game:"fruit",vid:myVid(),name:NM,score:LAST.score,t:LAST.t})}).then(function(r){if(r.s===200){var k=r.j.ranks;$("tRank").textContent=t("rank",{d:k.day.rank,w:k.week.rank,a:k.all.rank})}else LAST.sent=0}).catch(function(){LAST.sent=0})}
+function showLB(per){var L=$("lbList");L.innerHTML="";$("lbMe").textContent="";var tb=$("lbTabs").children;for(var i=0;i<3;i++)tb[i].classList.toggle("on",tb[i].getAttribute("data-p")===per);
+ api("/api/top?game=fruit&period="+per+"&vid="+encodeURIComponent(myVid())).then(function(r){if(r.s!==200){$("lbMe").textContent=t("off");return}
+  if(!r.j.top.length){$("lbMe").textContent=t("empty");return}
+  r.j.top.forEach(function(x,i){var li=document.createElement("li");if(x.me)li.className="me";var b=document.createElement("b"),n=document.createElement("span"),sc=document.createElement("i");b.textContent=i<3?["🥇","🥈","🥉"][i]:"#"+(i+1);n.textContent=x.name;sc.textContent=x.score;li.appendChild(b);li.appendChild(n);li.appendChild(sc);L.appendChild(li)});
+  if(r.j.me&&r.j.me.rank>10)$("lbMe").textContent=t("you",{r:r.j.me.rank,s:r.j.me.score})}).catch(function(){$("lbMe").textContent=t("off")})}
+function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("title");$("tHow").textContent=t("how");$("go").textContent=t("go");$("again").textContent=t("again");$("tPause").textContent=t("pause");$("resume").textContent=t("resume");$("tOver").textContent=t("over");$("share").textContent=t("share");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("soon").textContent=LANG==="km"?"🐵 ថ្មី! English Friends ហ្គេមកូនរៀនអង់គ្លេស →":"🐵 New! English Friends: kids learn English →";$("best").textContent=BEST;$("bs").textContent=SND?"🔊":"🔇";$("nm").placeholder=t("name");$("nm").value=NM;$("nm0").placeholder=t("nm0");$("nm0").value=NM;$("lb").textContent=t("lb");$("chb").textContent=BEST>0?t("chb"):t("playfirst");$("tLB").textContent=t("lbT");var tb=$("lbTabs").children;for(var i=0;i<3;i++)tb[i].textContent=t(["day","week","all"][i]);$("lbBack").textContent=t("back");$("homeB").textContent=t("homeB");$("more").textContent=LANG==="km"?"🎮 ហ្គេមទាំងអស់":"🎮 All games";$("homeP").textContent=t("homeB");chalTexts();$("bm").style.opacity=MUS?1:.45;
+ $("tLeg").innerHTML="<span>🥭🍌🍉 "+t("ok")+"</span><span>🍍 "+t("gold")+"</span><span>🐛 "+t("bad")+"</span>"}
+var cv=$("c"),cx=cv.getContext("2d"),W=0,H=0,DPR=1;
+function fit(){DPR=Math.min(window.devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*DPR;cv.height=H*DPR;cx.setTransform(DPR,0,0,DPR,0,0)}
+window.addEventListener("resize",fit);
+var G={state:"menu",score:0,lives:3,level:1,items:[],px:0,tx:0,py:0,ty:0,pw:112,t:0,spawn:0,fx:[],rng:Math.random};
+var GOOD=["🥭","🍌","🍉","🥥","🍊"],GOLD="🍍",BAD="🐛";
+function start(){try{GT.hit("play","fruit")}catch(e){}mstart();G.state="play";G.score=0;G.lives=3;G.level=1;G.items=[];G.fx=[];G.spawn=0.6;G.t=0;G.px=G.tx=W/2;G.py=G.ty=H-130;hud();["ovStart","ovEnd","ovPause"].forEach(function(i){$(i).classList.add("hide")})}
+function hud(){$("sc").textContent=G.score;$("lv").textContent="Lv "+G.level;var h="";for(var i=0;i<3;i++)h+=i<G.lives?"❤️":"🖤";$("li").innerHTML=h}
+/* iPhone/Safari keep sound off until the first touch: create and resume the audio engine inside that touch */
+function unlockAudio(){try{var a=ctx();if(!a)return;if(a.state==="suspended")a.resume();var b=a.createBuffer(1,1,22050),s=a.createBufferSource();s.buffer=b;s.connect(a.destination);s.start(0)}catch(e){}}
+["pointerdown","touchstart","click","keydown"].forEach(function(n){window.addEventListener(n,unlockAudio,{passive:true})});
+function ctx(){var A=window.AudioContext||window.webkitAudioContext;if(!A)return null;var a=beep.a||(beep.a=new A());if(!beep.m){var c=a.createDynamicsCompressor(),m=a.createGain(),f=a.createBiquadFilter();f.type="lowpass";f.frequency.value=5200;m.gain.value=.55;m.connect(f);f.connect(c);c.connect(a.destination);beep.m=m}return a}
+/* one soft note: smooth attack + release (no clicks), sine body + quiet octave for sparkle */
+function note(f,t0,d,v,ty){var a=ctx();if(!a)return;var T=a.currentTime+t0;[[1,1,ty||"sine"],[2,.18,"sine"]].forEach(function(p){var o=a.createOscillator(),g=a.createGain();o.type=p[2];o.frequency.value=f*p[0];g.gain.setValueAtTime(.0001,T);g.gain.linearRampToValueAtTime((v||.3)*p[1],T+.012);g.gain.exponentialRampToValueAtTime(.0001,T+d);o.connect(g);g.connect(beep.m);o.start(T);o.stop(T+d+.03)})}
+function sfx(k){if(!SND)return;try{var a=ctx();if(!a)return;if(a.state==="suspended")a.resume();
+ if(k==="ok"){note(784,0,.16,.32);note(1047,.07,.22,.3)}
+ else if(k==="gold"){[784,988,1175,1568].forEach(function(f,i){note(f,i*.065,.3,.3)})}
+ else if(k==="level"){[523,659,784,1047].forEach(function(f,i){note(f,i*.09,.34,.3)})}
+ else if(k==="bad"){note(330,0,.22,.3,"triangle");note(247,.12,.34,.3,"triangle")}
+ else if(k==="over"){[392,349,311,262].forEach(function(f,i){note(f,i*.2,.45,.3,"triangle")})}
+ else note(660,0,.12,.25)}catch(e){}}
+function beep(){sfx("tap")}
+
+/* background music: original tune, speeds up with the level; plays only while a game is running */
+var MU={step:0,next:0,id:null},HOOK=[72,76,79,0,76,72,74,0,77,74,79,0,76,74,72,0],BASS=[36,36,43,43,41,41,43,43];
+function mf(n){return 440*Math.pow(2,(n-69)/12)}
+function mnote(f,T,d,v,ty){var a=ctx();var o=a.createOscillator(),g=a.createGain();o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(.0001,T);g.gain.linearRampToValueAtTime(v,T+.01);g.gain.exponentialRampToValueAtTime(.0001,T+d);o.connect(g);g.connect(beep.m);o.start(T);o.stop(T+d+.03)}
+function bpm(){return Math.min(172,100+12*(G.level-1))}
+function mtick(){if(!MUS||!SND||G.state!=="play"||document.hidden){return}
+ var a=ctx();if(!a)return;if(a.state==="suspended")a.resume();
+ if(MU.next<a.currentTime-.2)MU.next=a.currentTime+.05;
+ while(MU.next<a.currentTime+.3){var sd=60/bpm()/2,i=MU.step%16,n=HOOK[i];
+  if(n)mnote(mf(n),MU.next,sd*1.6,.07,"triangle");
+  if(i%2===0)mnote(mf(BASS[(i/2)%8]),MU.next,sd*1.8,.1,"sine");
+  if(i%4===0)mnote(mf(40),MU.next,.1,.16,"sine");
+  MU.next+=sd;MU.step++}}
+function mstart(){if(!MU.id){MU.step=0;MU.next=0;MU.id=setInterval(mtick,80)}}
+function mstop(){clearInterval(MU.id);MU.id=null}
+/* stop everything when the page is left, so no sound stays stuck */
+function hush(){try{if(beep.a&&beep.a.state==="running")beep.a.suspend()}catch(e){}}
+function wake(){try{if(beep.a&&beep.a.state==="suspended")beep.a.resume()}catch(e){}}
+window.addEventListener("pagehide",hush);document.addEventListener("visibilitychange",function(){document.hidden?hush():wake()});
+function addItem(kind){var x=30+G.rng()*(W-60),k=kind||(G.rng()<.2?"bad":G.rng()<.1?"gold":"ok");
+ G.items.push({x:x,y:-30,k:k,e:k==="bad"?BAD:k==="gold"?GOLD:GOOD[Math.floor(G.rng()*GOOD.length)],vy:(120+G.level*22)*(.85+G.rng()*.3),r:26,rot:G.rng()*6})}
+function floatText(x,y,s,c){G.fx.push({x:x,y:y,s:s,c:c,a:1})}
+function step(dt){
+ if(G.state!=="play")return;G.t+=dt;G.spawn-=dt;
+ var gap=Math.max(.32,.95-G.level*.07);if(G.spawn<=0){addItem();G.spawn=gap*(.7+G.rng()*.6)}
+ var k=1-Math.exp(-dt*28);G.px+=(G.tx-G.px)*k;G.py+=(G.ty-G.py)*k;G.px=Math.max(G.pw/2,Math.min(W-G.pw/2,G.px));G.py=Math.max(H*.3,Math.min(H-90,G.py));
+ var by=G.py+8;
+ for(var i=G.items.length-1;i>=0;i--){var it=G.items[i];it.y+=it.vy*dt;it.rot+=dt*2;
+  if(it.y>by-34&&it.y<by+30&&Math.abs(it.x-G.px)<G.pw/2+6){G.items.splice(i,1);
+   if(it.k==="bad"){G.lives--;sfx("bad");floatText(it.x,by-30,"💔","#c0392b");if(navigator.vibrate)navigator.vibrate(60);hud();if(G.lives<=0)return over()}
+   else{var p=it.k==="gold"?5:1;G.score+=p;sfx(it.k==="gold"?"gold":"ok");floatText(it.x,by-30,"+"+p,it.k==="gold"?"#e0a100":"#1b7a3e");var lv=1+Math.floor(G.score/10);if(lv>G.level){G.level=lv;sfx("level");floatText(W/2,H/2,"Lv "+lv,"#fff")}hud()}}
+  else if(it.y>H+40){G.items.splice(i,1)}}
+ for(var j=G.fx.length-1;j>=0;j--){var f=G.fx[j];f.y-=40*dt;f.a-=dt*1.1;if(f.a<=0)G.fx.splice(j,1)}}
+function over(){G.state="over";var nb=G.score>BEST;if(nb){BEST=G.score;sv("fc_best",BEST)}$("fs").textContent=G.score;$("tBest").textContent=nb?t("newbest"):t("best")+": "+BEST;$("best").textContent=BEST;$("ovEnd").classList.remove("hide");LAST={score:G.score,t:Math.round(G.t),sent:0};$("tRank").textContent=NM?"":t("addname");submitScore();
+ var rs=$("tRes");if(CH){var d=CH.s-G.score,tx;if(G.score>CH.s){tx=t("win",{n:CH.n,s:G.score,o:CH.s});sfx("level")}else if(G.score===CH.s)tx=t("tie",{n:CH.n,s:G.score});else tx=t("lose",{n:CH.n,d:d});rs.textContent=tx;rs.classList.remove("hide")}else rs.classList.add("hide");
+ sfx("over")}
+function draw(){cx.clearRect(0,0,W,H);
+ cx.font="40px serif";cx.textAlign="center";cx.textBaseline="middle";
+ for(var i=0;i<G.items.length;i++){var it=G.items[i];cx.save();cx.translate(it.x,it.y);cx.rotate(Math.sin(it.rot)*.35);cx.font=(it.k==="gold"?46:40)+"px serif";cx.fillText(it.e,0,0);cx.restore()}
+ if(G.state!=="menu"){cx.font="96px serif";cx.fillText("🧺",G.px,G.py)}
+ cx.font="bold 24px 'Kantumruy Pro',system-ui,sans-serif";for(var j=0;j<G.fx.length;j++){var f=G.fx[j];cx.globalAlpha=Math.max(0,f.a);cx.fillStyle=f.c;cx.fillText(f.s,f.x,f.y);cx.globalAlpha=1}}
+var last=0;function loop(ts){var dt=Math.min(.05,(ts-last)/1000||0);last=ts;step(dt);draw();requestAnimationFrame(loop)}
+function pos(e){var r=cv.getBoundingClientRect();return(e.touches?e.touches[0].clientX:e.clientX)-r.left}
+function posY(e){var r=cv.getBoundingClientRect();return(e.touches?e.touches[0].clientY:e.clientY)-r.top}
+["pointerdown","pointermove"].forEach(function(n){cv.addEventListener(n,function(e){if(G.state==="play"&&(n==="pointerdown"||e.pressure>0||e.buttons||e.pointerType==="touch"||e.pointerType==="mouse")){G.tx=pos(e);G.ty=posY(e)-90}})});
+var keys={};window.addEventListener("keydown",function(e){keys[e.key]=1;if(e.key===" "&&G.state==="play")pause()});window.addEventListener("keyup",function(e){keys[e.key]=0});
+setInterval(function(){if(G.state==="play"){if(keys.ArrowLeft||keys.a)G.tx-=14;if(keys.ArrowRight||keys.d)G.tx+=14;if(keys.ArrowUp||keys.w)G.ty-=12;if(keys.ArrowDown||keys.s)G.ty+=12;G.ty=Math.max(H*.3,Math.min(H-90,G.ty));G.tx=Math.max(0,Math.min(W,G.tx))}},16);
+function pause(){if(G.state==="play"){G.state="pause";$("ovPause").classList.remove("hide")}else if(G.state==="pause"){G.state="play";$("ovPause").classList.add("hide")}}
+$("go").onclick=start;$("again").onclick=start;$("bp").onclick=pause;$("resume").onclick=pause;
+$("bm").onclick=function(){MUS=!MUS;sv("fc_mus",MUS);texts();sfx("tap")};
+$("bs").onclick=function(){SND=!SND;sv("fc_snd",SND);texts();sfx("tap")};
+$("lang").onclick=function(){LANG=LANG==="km"?"en":"km";sv("fc_lang",LANG);texts()};
+$("nm0").onchange=function(){setName(this.value)};$("nm").onchange=function(){setName(this.value)};
+$("lb").onclick=function(){$("ovStart").classList.add("hide");$("ovLB").classList.remove("hide");showLB("day")};
+$("lbTabs").onclick=function(e){var b=e.target.closest("button");if(b)showLB(b.getAttribute("data-p"))};
+$("lbBack").onclick=function(){$("ovLB").classList.add("hide");$("ovStart").classList.remove("hide")};
+$("homeP").onclick=function(){$("ovPause").classList.add("hide");$("ovStart").classList.remove("hide");G.state="menu";texts()};
+$("homeB").onclick=function(){$("ovEnd").classList.add("hide");$("ovStart").classList.remove("hide");G.state="menu";texts()};
+$("chb").onclick=function(){if(!(BEST>0))return;NM=cleanName($("nm0").value)||NM;sv("fc_name",NM);var link=location.origin+location.pathname+"?c="+BEST+(NM?"&n="+encodeURIComponent(NM):"")+"&s=ch",s=t("st",{n:BEST})+" "+link;try{GT.hit("share","fruit")}catch(e){}if(navigator.share)navigator.share({text:s}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(s)};
+$("share").onclick=function(){try{GT.hit("share","fruit")}catch(e){}NM=cleanName($("nm").value);sv("fc_name",NM);var base=location.origin+location.pathname,link=base+"?c="+G.score+(NM?"&n="+encodeURIComponent(NM):"")+"&s=ch";var s=t("st",{n:G.score})+" "+link;if(navigator.share)navigator.share({text:s}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(s)};
+document.addEventListener("visibilitychange",function(){if(document.hidden&&G.state==="play")pause()});
+window.FC={LB:showLB,submit:submitScore,CH:function(){return CH},cleanName:cleanName,MU:MU,bpm:bpm,G:G,addItem:addItem,step:step,start:start,fit:fit};
+fit();texts();requestAnimationFrame(loop);
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
+try{GT.hit("visit","fruit");$("soon").style.cursor="pointer";$("soon").onclick=function(){try{GT.hit("fb","fruit")}catch(e){}location.href="/abc/?s=fc"};if(GT.FB){$("soon").style.cursor="pointer";$("soon").onclick=GT.openFB}}catch(e){}
+</script></body></html>

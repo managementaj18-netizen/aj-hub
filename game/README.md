@@ -2,7 +2,7 @@
 
 **Release plan: one game at a time.** Only `public/` is deployed. Finished games that are not announced yet wait in `public/try-6d7b31c6ea/` (not linked anywhere, only the owner knows the address). To release one: `sh game/release.sh sort` (or `kids`), commit, push.
 
-- Released: Fruit Catch (`/`), English Friends (`/abc/`)
+- Released: Fruit Catch (`/fruit/`), English Friends (`/abc/`); list of games at `/games/`
 - Held back: Juice Sort, Animal Friends (private test folder, see below)
 
 - `/` Fruit Catch · ចាប់ផ្លែឈើ
@@ -41,3 +41,11 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 - Remove a name: `curl -X POST https://play.soramma.app/api/score-delete -H 'x-admin-code: <ADMIN_CODE>' -d '{"name":"BadName"}'`.
 - Cambodia time (UTC+7) decides the day; the week starts on Monday.
 - Tests: `node game/tests/score_test.mjs`, `node game/tests/home_e2e.js`, `node game/tests/challenge_test.js`.
+
+## Addresses (play.soramma.app)
+- `/` : a plain visit goes to `/games/`; old Fruit Catch links (`?c=` challenge links or `?s=fb|ig|tg|ch|fc|test`) still open Fruit Catch. Add `hub=1` to force the list.
+- `/games/` : the list of games (add each released game here as a card).
+- `/fruit/` : Fruit Catch (own manifest, service worker and icons).
+- `/abc/` : English Friends.
+- Source labels: `s=hub` = tapped from the list. The visit counter shows game `hub` for list visits.
+- Test: `node game/tests/hub_test.js`.
