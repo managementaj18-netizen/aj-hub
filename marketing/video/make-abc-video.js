@@ -14,7 +14,7 @@ const card=(html,bg)=>`(()=>{const e=document.createElement('div');e.id='__card'
  const c=await b.newContext({viewport:{width:W,height:H},isMobile:true,hasTouch:true,recordVideo:{dir:OUT,size:{width:W,height:H}}});
  const T0=Date.now(),now=()=>(Date.now()-T0)/1000,EV=[],CUTS=[];
  const p=await c.newPage();p.on('pageerror',e=>console.log('ERR',e.message));
- await p.addInitScript(()=>{localStorage.setItem('ef_lang','"km"');localStorage.setItem('ef_mus','false');localStorage.setItem('ef_snd','false');localStorage.removeItem('ef_done');localStorage.removeItem('ef_stars');
+ await p.addInitScript(()=>{localStorage.setItem('ef_mus','false');localStorage.setItem('ef_snd','false');localStorage.removeItem('ef_done');localStorage.removeItem('ef_stars');
   window.__sp=[];let n=0;setInterval(()=>{try{if(EF.SPOKEN.length>n){for(;n<EF.SPOKEN.length;n++)window.__sp.push({w:EF.SPOKEN[n],t:Date.now()})}}catch(e){}},25)});
  // ef_snd=false keeps the recording silent (sound is added afterwards); EF.SPOKEN still logs every word
  const cap=async(txt,ms,top)=>{await p.evaluate(([t,f,tp])=>{let e=document.getElementById('__cap');if(!e){e=document.createElement('div');e.id='__cap';e.style.cssText="position:fixed;left:14px;right:14px;top:"+tp+"px;z-index:99999;background:#ffffffee;color:#2b3a67;border:3px solid #ff9a3c;border-radius:18px;padding:12px 16px;font-weight:700;font-size:25px;line-height:1.35;text-align:center;box-shadow:0 8px 24px #0006;pointer-events:none;"+f;document.body.appendChild(e)}e.style.top=tp+'px';e.textContent=t;e.style.display=t?'block':'none'},[txt,FONT,top||560]);await p.waitForTimeout(ms)};
@@ -31,29 +31,29 @@ const card=(html,bg)=>`(()=>{const e=document.createElement('div');e.id='__card'
  await p.evaluate(card(`<div style="font-weight:800;font-size:58px;line-height:1.3;text-shadow:0 3px 0 #0003">កូនរៀនអង់គ្លេស<br>ដោយការលេង! 🐵</div><div style="font-weight:800;font-size:36px;line-height:1.4;color:#fff6c2;text-shadow:0 2px 0 #0003">English Friends</div>`));await p.waitForTimeout(4200);
  await p.evaluate(()=>document.getElementById('__card').remove());
  // 2. menu
- await cap('៦ ជំពូក · ៣៦ ពាក្យអង់គ្លេស',3600,730);await cap('',100);
+ await cap('6 worlds · 36 English words',3600,730);await cap('',100);
  // 3. farm story
- await p.locator('.w[data-i="0"]').tap();ev('tap');await cap('ម៉ូម៉ូទៅកសិដ្ឋាន ជួយរកមិត្តសត្វ',3200,640);await cap('',100);
+ await p.locator('.w[data-i="0"]').tap();ev('tap');await cap('Momo is at the farm!',3200,640);await cap('',100);
  await p.locator('#stGo').tap();ev('tap');
- await cap('មើលអក្សរ ស្តាប់សំឡេង ហើយចុចរូប',100);
+ await cap('Read, listen and tap the picture',100);
  for(let i=0;i<3;i++){await p.waitForTimeout(i===0?2300:1900);await answer(i===0?3200:2800);if(i===0)await cap('',100);await next()}
  // fast-forward learn rounds 4-6 (cut out of the video)
  let a=now();await fast(3);CUTS.push([a,now()]);
  // 4. practice (no words)
- await cap('ជុំក្រោយ ដកអក្សរចេញ ស្តាប់ឲ្យល្អ',3400);await cap('',100);
+ await cap('Next: the words disappear. Listen!',3400);await cap('',100);
  await p.waitForTimeout(800);await answer(2800);await next();
  await p.waitForTimeout(1600);await answer(2600);await next();
  // spelling round
- await cap('បន្ទាប់ ត្រូវតម្រៀបអក្សរ',2200);await cap('',100);
+ await cap('Then spell the word',2200);await cap('',100);
  await p.waitForTimeout(1700);
  {const w=await p.evaluate(()=>EF.G.spell.word);for(const ch of w.split('')){await p.locator(`.tile[data-l="${ch}"]:not(.used)`).first().tap();ev('tile');await p.waitForTimeout(950)}}
  await p.waitForTimeout(2400);await next();
  a=now();await fast(3);CUTS.push([a,now()]);
- await p.waitForSelector('#sDone:not(.hide)');ev('win');await p.waitForTimeout(500);await cap('ចប់ជំពូក ទទួលផ្កាយ និងស្ទីគ័រ ⭐',4200);await cap('',100);
+ await p.waitForSelector('#sDone:not(.hide)');ev('win');await p.waitForTimeout(500);await cap('Finish a world, earn stars and stickers ⭐',4200);await cap('',100);
  // 5. family characters
  await p.locator('#bhome').tap();ev('tap');await p.waitForTimeout(900);
  await p.locator('.w[data-i="4"]').tap();ev('tap');await p.waitForTimeout(1800);await p.locator('#stGo').tap();ev('tap');
- await cap('គ្រួសារ៖ តួខុសគ្នាច្បាស់ ងាយចាំ',100);await p.waitForTimeout(3600);await answer(2800);await cap('',100);
+ await cap('Family: easy-to-tell characters',100);await p.waitForTimeout(3600);await answer(2800);await cap('',100);
  // 6. end card
  await p.evaluate(card(`<div style="font-weight:800;font-size:52px;line-height:1.25">English Friends</div><div style="font-weight:700;font-size:30px;line-height:1.4">ក្មេងរៀនអង់គ្លេស ដោយការលេង<br>ឥតគិតថ្លៃ</div><div style="font-weight:800;font-size:32px;color:#fff6c2">${URL_TXT}</div><div style="margin-top:8px;background:#fff6c2;color:#1c5d7a;border-radius:99px;padding:10px 24px;font-weight:700;font-size:26px">👍 តាមដាន Page Soramma</div>`,'linear-gradient(160deg,#35c48b,#1c8fd1)'));
  await p.waitForTimeout(5200);
