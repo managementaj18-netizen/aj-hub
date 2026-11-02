@@ -9,6 +9,19 @@ const SCHEMA=[
 "CREATE TABLE IF NOT EXISTS gm_score(game TEXT,vid TEXT,period TEXT,name TEXT,score INTEGER,ts INTEGER,PRIMARY KEY(game,vid,period))",
 "CREATE INDEX IF NOT EXISTS gm_score_top ON gm_score(game,period,score DESC)"
 ];
+// Everything the owner runs, in one list. Only sent to someone who knows the owner code, so the private test addresses stay private.
+const OWNER={
+  games:[
+    {id:"fruit",name:"Fruit Catch",e:"🧺",url:"https://play.soramma.app/",status:"live",note:"leaderboard + challenges"},
+    {id:"abc",name:"English Friends",e:"🐵",url:"https://play.soramma.app/abc/",status:"live",note:"36 words, kids"},
+    {id:"sort",name:"Juice Sort",e:"🧪",url:"https://play.soramma.app/try-6d7b31c6ea/sort/",status:"held",note:"ready, not announced"},
+    {id:"kids",name:"Animal Friends",e:"🐾",url:"https://play.soramma.app/try-6d7b31c6ea/kids/",status:"held",note:"ready, not announced"}],
+  apps:[
+    {name:"Laundry Pro",e:"🧺",url:"https://laundrypro.soramma.app",status:"live",note:"own login, multi-shop"},
+    {name:"Family location",e:"📍",url:"https://family-1zn.pages.dev",status:"live",note:"own login"},
+    {name:"Shop",e:"🛍️",url:"https://soramma-shop.pages.dev",status:"live",note:"own login"},
+    {name:"Soramma landing",e:"🌐",url:"https://soramma.app",status:"live",note:"contact page"},
+    {name:"Translate (Khmer-English)",e:"🗣️",url:"",status:"todo",note:"built, not set up on Cloudflare yet"}]};
 let ready=false;
 const J=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
 const EV=["visit","play","install","share","fb"];
@@ -78,6 +91,12 @@ export async function onRequest(ctx){
       let b={};try{b=JSON.parse((await req.text()).slice(0,500))}catch(e){return J({error:"bad"},400)}
       const name=cleanName(b.name);if(!name)return J({error:"bad"},400);
       await db.prepare("DELETE FROM gm_score WHERE name=?").bind(name).run();return J({ok:true})}
+
+    // ---- the owner page: every app and game in one list (needs the secret code) ----
+    if(route==="owner"&&m==="GET"){
+      const code=env.ADMIN_CODE;if(!code)return J({error:"no_admin_code"},503);
+      if(!same(req.headers.get("x-admin-code")||"",code)){await new Promise(r=>setTimeout(r,400));return J({error:"denied"},401)}
+      return J(OWNER)}
 
     // ---- numbers for the owner (needs the secret code) ----
     if(route==="stats"&&m==="GET"){
