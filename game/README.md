@@ -1,12 +1,13 @@
 # Games (static, no account, no database)
 
-**Release plan: one game at a time.** Only `public/` is deployed. Finished games that are not announced yet wait in `_unreleased/` (nobody can open them). To release one: `sh game/release.sh sort` (or `kids`), commit, push.
+**Release plan: one game at a time.** Only `public/` is deployed. Finished games that are not announced yet wait in `_unreleased/` (nobody can open them). To release one: `sh game/release.sh sort` (or `kids`, `abc`), commit, push.
 
 - Released: Fruit Catch (`/`)
-- Held back: Juice Sort (`/sort/`), Animal Friends (`/kids/`)
+- Held back: Juice Sort (`/sort/`), Animal Friends (`/kids/`), English Friends (`/abc/`)
 
 - `/` Fruit Catch · ចាប់ផ្លែឈើ
 - `/kids/` Animal Friends · មិត្តសត្វ (for small children: pick a cartoon animal, catch its favourite food, silly items bounce away, no losing, a star + confetti every 5 catches, synthesised sounds and soft background music, no ads, no links out except back to the games)
+- `/abc/` English Friends · មិត្តអង់គ្លេស (kids learn 36 English words in 6 little stories: farm, fruits, colours, numbers, family, body. The phone says the word, the child taps the picture, then spells short words; no losing, gentle hints, stars, stickers, confetti, soft music; Khmer meaning shown; nothing is sent anywhere)
 - `/sort/` Juice Sort · ទឹកផ្លែឈើ (colour-sorting puzzle: pour layers between bottles, levels 1-60+ generated and checked solvable, undo, restart, one extra bottle per level, progress saved)
 
 # Fruit Catch · ចាប់ផ្លែឈើ
@@ -19,4 +20,12 @@ Art is plain emoji and the mechanic is generic; nothing is copied from another g
 1. Pages project `game`: connect this repo, root directory `game`, build output `public`, no build command.
 2. Optional custom domain, e.g. `play.soramma.app`.
 
-Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `node tests/sort_test.js`, `node tests/kids_test.js` (Playwright; controls, scoring, lives, level-up, pause, game over, best score).
+Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `node tests/sort_test.js`, `node tests/kids_test.js`, `node tests/abc_test.js` (Playwright; controls, scoring, lives, level-up, pause, game over, best score).
+
+## Visitor counter (owner only)
+- Games send anonymous events (`visit`, `play`, `install`, `share`, `fb`) to `/api/hit` (`game/public/track.js`). Only a random id made in the phone is stored — no name, number or IP.
+- Owner page: `https://play.soramma.app/admin.html` (needs the secret `ADMIN_CODE`).
+- Cloudflare setup for project **game** (one time): Settings → Bindings → add **D1 database**, variable name `DB`, pick the existing shared database `soramma-laundrypro-db` (tables are prefixed `gm_`); Settings → Variables and Secrets → add secret `ADMIN_CODE`; then redeploy.
+- Use `?s=name` on a link to label where it was shared (e.g. `play.soramma.app/?s=fb-post1`).
+- Put the Facebook Page link in `FB` at the top of `game/public/track.js` to turn the "coming soon" line into a tap-to-follow link that is counted.
+- Tests: `node game/tests/stats_test.mjs`, `node game/tests/stats_e2e.js`.
