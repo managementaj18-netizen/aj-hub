@@ -1,6 +1,6 @@
 const {chromium}=require('/opt/node22/lib/node_modules/playwright');
 const http=require('http'),fs=require('fs'),path=require('path');
-const root='/home/user/aj-hub/game/public/try-6d7b31c6ea';
+const root='/home/user/aj-hub/game/public';
 const mime={'.html':'text/html','.mp3':'audio/mpeg','.json':'application/json'};
 const srv=http.createServer((q,r)=>{let f=path.join(root,q.url.split('?')[0]);if(f.endsWith('/'))f+='index.html';fs.readFile(f,(e,d)=>{if(e){r.writeHead(404);return r.end('nf')}r.writeHead(200,{'content-type':mime[path.extname(f)]||'application/octet-stream'});r.end(d)})}).listen(8808);
 (async()=>{const ok=(c,m)=>{console.log(c?'PASS':'FAIL',m);if(!c)process.exitCode=1};const errs=[];
