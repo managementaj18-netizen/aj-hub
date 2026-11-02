@@ -7,6 +7,6 @@ http.createServer(async(req,res)=>{try{
  if(req.url.startsWith('/api/')){const chunks=[];for await(const c of req)chunks.push(c);const body=chunks.length?Buffer.concat(chunks):undefined;
   const r=await onRequest({request:new Request('http://localhost:8799'+req.url,{method:req.method,headers:req.headers,body:['GET','HEAD'].includes(req.method)?undefined:body}),env:{DB,ADMIN_CODE:'sekret-123'}});
   res.writeHead(r.status,{'content-type':'application/json'});res.end(await r.text());return}
- let f=req.url.split('?')[0];if(f==='/')f='/index.html';const fp=path.join(root,f);
+ let f=req.url.split('?')[0];if(f.endsWith('/'))f+='index.html';const fp=path.join(root,f);
  if(!fs.existsSync(fp)){res.writeHead(404);res.end('nf');return}
  res.writeHead(200,{'content-type':mime[path.extname(fp)]||'application/octet-stream'});res.end(fs.readFileSync(fp))}catch(e){res.writeHead(500);res.end(String(e))}}).listen(+(process.env.PORT||8799),()=>console.log('up'));

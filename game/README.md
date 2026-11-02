@@ -47,3 +47,8 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 - Old path style keeps working: `play.soramma.app/fruit/`, `play.soramma.app/abc/`; `play.soramma.app/` and old challenge/post links (`?c=`, `?s=`) open Fruit Catch. `admin.html` stays on `play.soramma.app`.
 - The games do not link to each other (no combined list).
 - Tests: `node game/tests/host_test.mjs`, `node game/tests/host_e2e.js`.
+
+## Owner page (`play.soramma.app/admin.html`)
+- One private page for the owner (secret `ADMIN_CODE`): every game and app in one list with status (released / held back / not set up), an Open button each, visitor and play numbers per game, per-day and per-source charts, and the Fruit Catch leaderboard with a ✕ button to remove a name.
+- The list of apps/games (including the private test addresses) lives in `game/functions/api/[[path]].js` (`OWNER`) and is only sent to someone who knows the code; the public page file contains no private addresses. Update `OWNER` when a game is released or an app is added.
+- Tests: `node game/tests/owner_e2e.js`. Note: the test servers must serve folder addresses (`/fruit/`).
