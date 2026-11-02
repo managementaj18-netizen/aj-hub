@@ -1,6 +1,6 @@
 # Games (static, no account, no database)
 
-**Release plan: one game at a time.** Only `public/` is deployed. Finished games that are not announced yet wait in `_unreleased/` (nobody can open them). To release one: `sh game/release.sh sort` (or `kids`, `abc`), commit, push.
+**Release plan: one game at a time.** Only `public/` is deployed. Finished games that are not announced yet wait in `public/try-6d7b31c6ea/` (not linked anywhere, only the owner knows the address). To release one: `sh game/release.sh sort` (or `kids`, `abc`), commit, push.
 
 - Released: Fruit Catch (`/`)
 - Held back: Juice Sort (`/sort/`), Animal Friends (`/kids/`), English Friends (`/abc/`)
