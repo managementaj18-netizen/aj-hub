@@ -11,7 +11,7 @@ html,body{margin:0;height:100%;overflow:hidden;background:#143d2b;color:#fff;fon
 #wrap{position:fixed;inset:0;display:flex;flex-direction:column;max-width:560px;margin:0 auto;background:linear-gradient(#8fd6ff,#d7f3ff 55%,#9fd98b 55%,#4c9a4a)}
 canvas{flex:1;width:100%;display:block}
 #hud{position:absolute;top:calc(8px + env(safe-area-inset-top));left:10px;right:10px;display:flex;gap:8px;align-items:center;pointer-events:none;color:#103a28;font-weight:700;text-shadow:0 1px 0 #fff8}
-#hud span{background:#ffffffcc;border-radius:99px;padding:4px 12px;font-size:16px}
+#hud span{background:#ffffffcc;border-radius:99px;padding:4px 10px;font-size:15px;white-space:nowrap}
 #hud .sp{flex:1;background:none}
 .btn{pointer-events:auto;border:0;background:#ffffffcc;border-radius:99px;width:38px;height:38px;font-size:18px;cursor:pointer}
 .ov{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;background:#0d2f2099;text-align:center;padding:24px}
@@ -19,24 +19,31 @@ canvas{flex:1;width:100%;display:block}
 .ov h1{font-size:34px;margin:0}.ov p{margin:0;font-size:16px;opacity:.95;max-width:340px}
 .big{background:#ffb703;color:#3d2a00;border:0;border-radius:18px;padding:14px 34px;font:700 22px "Kantumruy Pro",system-ui,sans-serif;cursor:pointer;box-shadow:0 5px 0 #c98a00}
 .big:active{transform:translateY(3px);box-shadow:0 2px 0 #c98a00}
+.chal{background:#ffd16638;border:2px solid #ffd166;border-radius:16px;padding:10px 14px;font-weight:700;font-size:17px;max-width:340px;line-height:1.4}.chal.hide,#goal.hide{display:none}
+#nm{border:0;border-radius:99px;padding:9px 16px;font:inherit;font-size:15px;text-align:center;width:230px;background:#ffffffee;color:#103a28}
 .sm{background:#ffffff33;color:#fff;border:0;border-radius:99px;padding:8px 16px;font:inherit;font-size:14px;cursor:pointer}
 .score{font-size:46px;font-weight:700;color:#ffd166}
 .legend{display:flex;gap:14px;font-size:15px;justify-content:center;flex-wrap:wrap}
 </style></head><body>
 <div id="wrap"><canvas id="c"></canvas>
-<div id="hud"><span id="sc">0</span><span id="lv">Lv 1</span><span id="li">❤️❤️❤️</span><span class="sp"></span><button class="btn" id="bm" aria-label="music">🎵</button><button class="btn" id="bs" aria-label="sound">🔊</button><button class="btn" id="bp" aria-label="pause">⏸️</button></div>
-<div class="ov" id="ovStart"><div style="font-size:64px">🧺🥭</div><h1 id="tTitle"></h1><p id="tHow"></p><div class="legend" id="tLeg"></div><div>🏆 <b id="best">0</b></div><button class="big" id="go"></button><button class="sm" id="lang"></button><div style="font-size:14px;opacity:.9" id="soon"></div></div>
+<div id="hud"><span id="sc">0</span><span id="lv">Lv 1</span><span id="li">❤️❤️❤️</span><span id="goal" class="hide">🎯</span><span class="sp"></span><button class="btn" id="bm" aria-label="music">🎵</button><button class="btn" id="bs" aria-label="sound">🔊</button><button class="btn" id="bp" aria-label="pause">⏸️</button></div>
+<div class="ov" id="ovStart"><div style="font-size:64px">🧺🥭</div><h1 id="tTitle"></h1><div class="chal hide" id="tChal"></div><p id="tHow"></p><div class="legend" id="tLeg"></div><div>🏆 <b id="best">0</b></div><button class="big" id="go"></button><button class="sm" id="lang"></button><div style="font-size:14px;opacity:.9" id="soon"></div></div>
 <div class="ov hide" id="ovPause"><h1 id="tPause"></h1><button class="big" id="resume"></button></div>
-<div class="ov hide" id="ovEnd"><h1 id="tOver"></h1><div class="score" id="fs">0</div><p id="tBest"></p><button class="big" id="again"></button><button class="sm" id="share"></button></div>
+<div class="ov hide" id="ovEnd"><h1 id="tOver"></h1><div class="score" id="fs">0</div><p id="tBest"></p><div class="chal hide" id="tRes"></div><input id="nm" maxlength="14" autocomplete="off"><button class="big" id="again"></button><button class="sm" id="share"></button></div>
 </div>
 <script src="track.js"></script>
 <script>
-var TX={km:{title:"ចាប់ផ្លែឈើ",how:"អូសម្រាមដៃ (ឬចុចព្រួញ) ឲ្យកញ្ជើ (ឡើងចុះបាន) ចាប់ផ្លែឈើដែលជ្រុះ។ ជៀសដង្កូវ!",ok:"+1",gold:"+5",bad:"បាត់ជីវិត",go:"ចាប់ផ្តើម",again:"លេងម្តងទៀត",pause:"ផ្អាក",resume:"បន្ត",over:"ចប់ហើយ!",best:"ពិន្ទុខ្ពស់បំផុត",newbest:"កំណត់ត្រាថ្មី! 🎉",share:"ចែករំលែកពិន្ទុ",st:"ពិន្ទុរបស់ខ្ញុំ {n} ក្នុងហ្គេម ចាប់ផ្លែឈើ! តើអ្នកអាចឈ្នះខ្ញុំបានទេ?"},
-en:{title:"Fruit Catch",how:"Drag your finger (or use the arrow keys) to catch the falling fruit with the basket. Avoid the bugs!",ok:"+1",gold:"+5",bad:"lose a life",go:"Play",again:"Play again",pause:"Paused",resume:"Resume",over:"Game over!",best:"Best score",newbest:"New record! 🎉",share:"Share my score",st:"I scored {n} in Fruit Catch! Can you beat me?"}};
+var TX={km:{title:"ចាប់ផ្លែឈើ",how:"អូសម្រាមដៃ (ឬចុចព្រួញ) ឲ្យកញ្ជើ (ឡើងចុះបាន) ចាប់ផ្លែឈើដែលជ្រុះ។ ជៀសដង្កូវ!",ok:"+1",gold:"+5",bad:"បាត់ជីវិត",go:"ចាប់ផ្តើម",again:"លេងម្តងទៀត",pause:"ផ្អាក",resume:"បន្ត",over:"ចប់ហើយ!",best:"ពិន្ទុខ្ពស់បំផុត",newbest:"កំណត់ត្រាថ្មី! 🎉",share:"ចែករំលែកពិន្ទុ",st:"ពិន្ទុរបស់ខ្ញុំ {n} ក្នុងហ្គេម ចាប់ផ្លែឈើ! តើអ្នកអាចឈ្នះខ្ញុំបានទេ?",chal:"🏆 {n} ទទួលបាន {s} ពិន្ទុ! តើអ្នកឈ្នះបានទេ?",win:"🎉 អ្នកឈ្នះ {n}! ({s} ទល់នឹង {o})",tie:"🤝 ស្មើនឹង {n} ({s})!",lose:"{n} នៅមុនអ្នក {d} ពិន្ទុ។ សាកម្តងទៀត!",name:"ឈ្មោះរបស់អ្នក (សម្រាប់ប្រកួត)",friend:"មិត្តរបស់អ្នក"},
+en:{title:"Fruit Catch",how:"Drag your finger (or use the arrow keys) to catch the falling fruit with the basket. Avoid the bugs!",ok:"+1",gold:"+5",bad:"lose a life",go:"Play",again:"Play again",pause:"Paused",resume:"Resume",over:"Game over!",best:"Best score",newbest:"New record! 🎉",share:"Share my score",st:"I scored {n} in Fruit Catch! Can you beat me?",chal:"🏆 {n} scored {s}! Can you beat it?",win:"🎉 You beat {n}! ({s} vs {o})",tie:"🤝 A tie with {n} ({s})!",lose:"{n} leads by {d}. Try again!",name:"Your name (for challenges)",friend:"A friend"}};
 function ld(k,d){try{var v=localStorage.getItem(k);return v==null?d:JSON.parse(v)}catch(e){return d}}function sv(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 var LANG=ld("fc_lang",(navigator.language||"").toLowerCase().indexOf("km")===0?"km":"en"),BEST=ld("fc_best",0),SND=ld("fc_snd",true),MUS=ld("fc_mus",true),$=function(i){return document.getElementById(i)};
 function t(k,v){var s=TX[LANG][k]||TX.en[k]||k;if(v)for(var x in v)s=s.split("{"+x+"}").join(v[x]);return s}
-function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("title");$("tHow").textContent=t("how");$("go").textContent=t("go");$("again").textContent=t("again");$("tPause").textContent=t("pause");$("resume").textContent=t("resume");$("tOver").textContent=t("over");$("share").textContent=t("share");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("soon").textContent=LANG==="km"?"🎮 ហ្គេមថ្មីៗនឹងមកដល់ឆាប់ៗ · តាមដាន Page Soramma":"🎮 New games coming soon · follow Page Soramma";$("best").textContent=BEST;$("bs").textContent=SND?"🔊":"🔇";$("bm").style.opacity=MUS?1:.45;
+/* friendly challenge: a shared link carries a score (?c=325&n=Sok); the friend plays to beat it. No account, no money. */
+var CH=null,NM=ld("fc_name","");
+function cleanName(x){return String(x||"").replace(/[^\p{L}\p{M}\p{N} ._-]/gu,"").trim().slice(0,14)}
+try{var QS=new URLSearchParams(location.search),CS=parseInt(QS.get("c"),10);if(CS>=0&&CS<=99999)CH={s:CS,n:cleanName(QS.get("n"))}}catch(e){}
+function chalTexts(){if(!CH)return;if(!CH.n)CH.n=t("friend");$("tChal").textContent=t("chal",{n:CH.n,s:CH.s});$("tChal").classList.remove("hide");$("goal").textContent="🎯 "+CH.s;$("goal").classList.remove("hide")}
+function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("title");$("tHow").textContent=t("how");$("go").textContent=t("go");$("again").textContent=t("again");$("tPause").textContent=t("pause");$("resume").textContent=t("resume");$("tOver").textContent=t("over");$("share").textContent=t("share");$("lang").textContent=LANG==="km"?"English":"ខ្មែរ";$("soon").textContent=LANG==="km"?"🎮 ហ្គេមថ្មីៗនឹងមកដល់ឆាប់ៗ · តាមដាន Page Soramma":"🎮 New games coming soon · follow Page Soramma";$("best").textContent=BEST;$("bs").textContent=SND?"🔊":"🔇";$("nm").placeholder=t("name");$("nm").value=NM;chalTexts();$("bm").style.opacity=MUS?1:.45;
  $("tLeg").innerHTML="<span>🥭🍌🍉 "+t("ok")+"</span><span>🍍 "+t("gold")+"</span><span>🐛 "+t("bad")+"</span>"}
 var cv=$("c"),cx=cv.getContext("2d"),W=0,H=0,DPR=1;
 function fit(){DPR=Math.min(window.devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*DPR;cv.height=H*DPR;cx.setTransform(DPR,0,0,DPR,0,0)}
@@ -93,7 +100,9 @@ function step(dt){
    else{var p=it.k==="gold"?5:1;G.score+=p;sfx(it.k==="gold"?"gold":"ok");floatText(it.x,by-30,"+"+p,it.k==="gold"?"#e0a100":"#1b7a3e");var lv=1+Math.floor(G.score/10);if(lv>G.level){G.level=lv;sfx("level");floatText(W/2,H/2,"Lv "+lv,"#fff")}hud()}}
   else if(it.y>H+40){G.items.splice(i,1)}}
  for(var j=G.fx.length-1;j>=0;j--){var f=G.fx[j];f.y-=40*dt;f.a-=dt*1.1;if(f.a<=0)G.fx.splice(j,1)}}
-function over(){G.state="over";var nb=G.score>BEST;if(nb){BEST=G.score;sv("fc_best",BEST)}$("fs").textContent=G.score;$("tBest").textContent=nb?t("newbest"):t("best")+": "+BEST;$("best").textContent=BEST;$("ovEnd").classList.remove("hide");sfx("over")}
+function over(){G.state="over";var nb=G.score>BEST;if(nb){BEST=G.score;sv("fc_best",BEST)}$("fs").textContent=G.score;$("tBest").textContent=nb?t("newbest"):t("best")+": "+BEST;$("best").textContent=BEST;$("ovEnd").classList.remove("hide");
+ var rs=$("tRes");if(CH){var d=CH.s-G.score,tx;if(G.score>CH.s){tx=t("win",{n:CH.n,s:G.score,o:CH.s});sfx("level")}else if(G.score===CH.s)tx=t("tie",{n:CH.n,s:G.score});else tx=t("lose",{n:CH.n,d:d});rs.textContent=tx;rs.classList.remove("hide")}else rs.classList.add("hide");
+ sfx("over")}
 function draw(){cx.clearRect(0,0,W,H);
  cx.font="40px serif";cx.textAlign="center";cx.textBaseline="middle";
  for(var i=0;i<G.items.length;i++){var it=G.items[i];cx.save();cx.translate(it.x,it.y);cx.rotate(Math.sin(it.rot)*.35);cx.font=(it.k==="gold"?46:40)+"px serif";cx.fillText(it.e,0,0);cx.restore()}
@@ -110,9 +119,9 @@ $("go").onclick=start;$("again").onclick=start;$("bp").onclick=pause;$("resume")
 $("bm").onclick=function(){MUS=!MUS;sv("fc_mus",MUS);texts();sfx("tap")};
 $("bs").onclick=function(){SND=!SND;sv("fc_snd",SND);texts();sfx("tap")};
 $("lang").onclick=function(){LANG=LANG==="km"?"en":"km";sv("fc_lang",LANG);texts()};
-$("share").onclick=function(){try{GT.hit("share","fruit")}catch(e){}var s=t("st",{n:G.score})+" "+location.href;if(navigator.share)navigator.share({text:s}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(s)};
+$("share").onclick=function(){try{GT.hit("share","fruit")}catch(e){}NM=cleanName($("nm").value);sv("fc_name",NM);var base=location.origin+location.pathname,link=base+"?c="+G.score+(NM?"&n="+encodeURIComponent(NM):"")+"&s=ch";var s=t("st",{n:G.score})+" "+link;if(navigator.share)navigator.share({text:s}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(s)};
 document.addEventListener("visibilitychange",function(){if(document.hidden&&G.state==="play")pause()});
-window.FC={MU:MU,bpm:bpm,G:G,addItem:addItem,step:step,start:start,fit:fit};
+window.FC={CH:function(){return CH},cleanName:cleanName,MU:MU,bpm:bpm,G:G,addItem:addItem,step:step,start:start,fit:fit};
 fit();texts();requestAnimationFrame(loop);
 if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
 try{GT.hit("visit","fruit");if(GT.FB){$("soon").style.cursor="pointer";$("soon").onclick=GT.openFB}}catch(e){}
