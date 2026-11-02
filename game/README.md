@@ -2,7 +2,7 @@
 
 **Release plan: one game at a time.** Only `public/` is deployed. Finished games that are not announced yet wait in `public/try-6d7b31c6ea/` (not linked anywhere, only the owner knows the address). To release one: `sh game/release.sh sort` (or `kids`), commit, push.
 
-- Released: Fruit Catch (`/fruit/`), English Friends (`/abc/`); list of games at `/games/`
+- Released: Fruit Catch (`/fruit/`), English Friends (`/abc/`)
 - Held back: Juice Sort, Animal Friends (private test folder, see below)
 
 - `/` Fruit Catch · ចាប់ផ្លែឈើ
@@ -42,10 +42,8 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 - Cambodia time (UTC+7) decides the day; the week starts on Monday.
 - Tests: `node game/tests/score_test.mjs`, `node game/tests/home_e2e.js`, `node game/tests/challenge_test.js`.
 
-## Addresses (play.soramma.app)
-- `/` : a plain visit goes to `/games/`; old Fruit Catch links (`?c=` challenge links or `?s=fb|ig|tg|ch|fc|test`) still open Fruit Catch. Add `hub=1` to force the list.
-- `/games/` : the list of games (add each released game here as a card).
-- `/fruit/` : Fruit Catch (own manifest, service worker and icons).
-- `/abc/` : English Friends.
-- Source labels: `s=hub` = tapped from the list. The visit counter shows game `hub` for list visits.
-- Test: `node game/tests/hub_test.js`.
+## Addresses: one address per game, no combined list
+- `fruit.soramma.app` -> Fruit Catch; `english.soramma.app` -> English Friends. Add each as a **custom domain of the Pages project "game"**; `game/functions/_middleware.js` serves that game's folder at the root of its own address (the data service `/api/*` and `track.js` are shared). Add a new game by adding one line to `HOSTS` and the domain.
+- Old path style keeps working: `play.soramma.app/fruit/`, `play.soramma.app/abc/`; `play.soramma.app/` and old challenge/post links (`?c=`, `?s=`) open Fruit Catch. `admin.html` stays on `play.soramma.app`.
+- The games do not link to each other (no combined list).
+- Tests: `node game/tests/host_test.mjs`, `node game/tests/host_e2e.js`.

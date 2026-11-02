@@ -1,0 +1,17 @@
+import fs from 'node:fs';import path from 'node:path';
+import {onRequest} from '../functions/_middleware.js';
+const root='/home/user/aj-hub/game/public';
+const ok=(c,m)=>{console.log(c?'PASS':'FAIL',m);if(!c)process.exitCode=1};
+const ASSETS={fetch:async(req)=>{let f=path.join(root,new URL(req.url).pathname);if(f.endsWith('/'))f+='index.html';return fs.existsSync(f)?new Response(fs.readFileSync(f),{status:200,headers:{'x-file':path.relative(root,f)}}):new Response('nf',{status:404})}};
+const call=async(u)=>{let nexted=false;const r=await onRequest({request:new Request(u),env:{ASSETS},next:async()=>{nexted=true;return new Response('next')}});return{nexted,file:r.headers.get('x-file'),status:r.status}};
+let r=await call('https://fruit.soramma.app/?s=fb');ok(!r.nexted&&r.file==='fruit/index.html','fruit.soramma.app opens Fruit Catch at its root');
+r=await call('https://fruit.soramma.app/manifest.json');ok(r.file==='fruit/manifest.json','fruit.soramma.app: its manifest comes from the Fruit Catch folder');
+r=await call('https://fruit.soramma.app/sw.js');ok(r.file==='fruit/sw.js','fruit.soramma.app: its own service worker');
+r=await call('https://english.soramma.app/');ok(r.file==='abc/index.html','english.soramma.app opens English Friends at its root');
+r=await call('https://english.soramma.app/audio/dog.mp3');ok(r.file==='abc/audio/dog.mp3','english.soramma.app: voice files come from the English Friends folder');
+r=await call('https://english.soramma.app/record.html');ok(r.file==='abc/record.html','english.soramma.app/record.html is the recorder page');
+r=await call('https://english.soramma.app/api/top?game=fruit');ok(r.nexted,'the API is shared (passed on to the data service)');
+r=await call('https://fruit.soramma.app/track.js');ok(r.nexted,'the counter script is shared');
+r=await call('https://fruit.soramma.app/abc/');ok(!r.nexted&&r.status===404,'the Fruit Catch address does not show English Friends');
+r=await call('https://play.soramma.app/fruit/');ok(r.nexted,'play.soramma.app is not changed');
+r=await call('https://game-65w.pages.dev/abc/');ok(r.nexted,'the pages.dev address is not changed');
