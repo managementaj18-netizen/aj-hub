@@ -9,6 +9,7 @@
 :root{--sky1:#8fd8ff;--sky2:#e9f8ff;--hill1:#8fdc6a;--hill2:#62c24c;--ink:#2b3a67;--card:#fff;--shadow:#bcd7ee}
 html,body{margin:0;height:100%;overflow:hidden;background:#cfeeff;font-family:"Baloo 2","Kantumruy Pro",system-ui,sans-serif;touch-action:manipulation;user-select:none;-webkit-user-select:none;color:var(--ink)}
 #wrap{position:fixed;inset:0;max-width:560px;margin:0 auto;overflow:hidden;background:linear-gradient(var(--sky1),var(--sky2) 62%);transition:background .6s}
+.toast{position:absolute;z-index:8;top:calc(64px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);background:#2b3a67;color:#fff;border-radius:99px;padding:6px 16px;font-size:14px;font-weight:700;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;transition:opacity .3s;pointer-events:none}.toast.on{opacity:1}
 .cloud{position:absolute;font-size:64px;opacity:.9;animation:drift linear infinite;will-change:transform}
 .c1{top:12%;animation-duration:55s}.c2{top:26%;font-size:44px;animation-duration:80s;animation-delay:-30s}.c3{top:40%;font-size:54px;animation-duration:68s;animation-delay:-12s}
 @keyframes drift{from{transform:translateX(-120px)}to{transform:translateX(640px)}}
@@ -58,7 +59,8 @@ h1{margin:0;font-size:32px;line-height:1.1}
 <div id="wrap">
  <div class="cloud c1">☁️</div><div class="cloud c2">☁️</div><div class="cloud c3">☁️</div>
  <div class="hill h2"></div><div class="hill h1"></div>
- <div id="hud"><span class="pill" id="st">⭐ 0</span><span class="sp"></span><button class="btn" id="bhome" aria-label="home">🏠</button><button class="btn" id="bm" aria-label="music">🎵</button><button class="btn" id="bs" aria-label="sound">🔊</button></div>
+ <div class="toast" id="toast"></div>
+ <div id="hud"><span class="pill" id="st">⭐ 0</span><span class="sp"></span><button class="btn" id="bhome" aria-label="home">🏠</button><button class="btn" id="bv" aria-label="voice">🗣️</button><button class="btn" id="bm" aria-label="music">🎵</button><button class="btn" id="bs" aria-label="sound">🔊</button></div>
 
  <div class="screen" id="sMenu"><div class="mascot">🐵</div><h1 id="tTitle"></h1><p class="sub" id="tSub"></p><div class="worlds" id="worlds"></div><button class="sm" id="lang"></button></div>
 
@@ -129,12 +131,22 @@ function mstop(){MU.on=false;clearInterval(MU.id);MU.id=null}
 function hush(){try{if(AC&&AC.state==="running")AC.suspend()}catch(e){}try{if(window.speechSynthesis)speechSynthesis.cancel()}catch(e){}}
 window.addEventListener("pagehide",hush);document.addEventListener("visibilitychange",function(){if(document.hidden)hush();else if(AC&&AC.state==="suspended")AC.resume()});
 ["pointerdown","touchstart","click"].forEach(function(n){window.addEventListener(n,function(){ac()},{passive:true})});
-/* ===== voice: the phone says the English word ===== */
-var SPOKEN=[],VOICE=null;
-function voice(){if(VOICE||!window.speechSynthesis)return VOICE;var v=speechSynthesis.getVoices()||[];VOICE=v.filter(function(x){return /^en[-_]US/i.test(x.lang)})[0]||v.filter(function(x){return /^en/i.test(x.lang)})[0]||null;return VOICE}
-if(window.speechSynthesis)speechSynthesis.onvoiceschanged=function(){VOICE=null;voice()};
-function say(w){SPOKEN.push(w);if(!SND||!window.speechSynthesis)return;try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(w);u.lang="en-US";u.rate=.8;u.pitch=1.15;var v=voice();if(v)u.voice=v;
- if(MG)MG.gain.value=.25;var back=function(){if(MG)MG.gain.value=.6};u.onend=back;u.onerror=back;setTimeout(back,2500);speechSynthesis.speak(u)}catch(e){}}
+/* ===== voice: the phone says the English word (voices differ a lot between phones, so the child/parent can pick the clearest) ===== */
+var SPOKEN=[],VOICES=[],VOICE=null;
+function rank(v){var n=(v.name||"")+" "+(v.voiceURI||""),k=0;if(/premium|enhanced|natural|neural|siri/i.test(n))k+=50;if(/samantha|ava\b|allison|susan|zoe|nicky|karen|moira|google (us|uk) english|aria|jenny|libby|sonia/i.test(n))k+=30;if(/^en[-_]US/i.test(v.lang))k+=10;else if(/^en[-_](GB|AU|IN|IE|ZA)/i.test(v.lang))k+=6;if(/compact|espeak|robot|novelty|bad news|whisper|zarvox|trinoids|bells|organ/i.test(n))k-=40;return k}
+function loadVoices(){if(!window.speechSynthesis)return;var all=(speechSynthesis.getVoices()||[]).filter(function(v){return /^en/i.test(v.lang)});VOICES=all.sort(function(a,b){return rank(b)-rank(a)}).slice(0,8);
+ var saved=ld("ef_voice",null);VOICE=VOICES.filter(function(v){return v.name===saved})[0]||VOICES[0]||null}
+if(window.speechSynthesis){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
+function toast(m){var e=$("toast");e.textContent=m;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove("on")},2200)}
+function speak(text,rate,pitch,delay){var u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=rate;u.pitch=pitch;u.volume=1;if(VOICE)u.voice=VOICE;return u}
+/* a clear word: said slowly, a short pause, then once more even slower; the music gets quiet while the voice talks */
+function say(w){SPOKEN.push(w);if(!SND||!window.speechSynthesis)return;try{speechSynthesis.cancel();
+ var u1=speak(w+".",.62,1.0),u2=speak(w+".",.48,1.0);
+ if(MG)MG.gain.value=.18;var back=function(){if(MG)MG.gain.value=.6};u2.onend=back;u2.onerror=back;u1.onerror=back;setTimeout(back,4500);
+ speechSynthesis.speak(u1);setTimeout(function(){try{speechSynthesis.speak(u2)}catch(e){}},120)}catch(e){}}
+function nextVoice(){if(!window.speechSynthesis)return;loadVoices();if(!VOICES.length){toast(LANG==="km"?"ទូរស័ព្ទនេះគ្មានសំឡេងអង់គ្លេស":"No English voice on this phone");return}
+ var i=VOICES.indexOf(VOICE);VOICE=VOICES[(i+1)%VOICES.length];sv("ef_voice",VOICE.name);toast("🗣️ "+(VOICES.indexOf(VOICE)+1)+"/"+VOICES.length+" · "+VOICE.name);
+ try{speechSynthesis.cancel();var u=speak("Banana. Dog. Apple.",.6,1.0);speechSynthesis.speak(u)}catch(e){}}
 /* ===== game ===== */
 var G={w:null,wi:0,order:[],r:0,wrong:0,target:null,locked:false,spell:null,rounds:[]};
 function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("title");$("tSub").textContent=t("sub");$("stGo").textContent=t("go");$("dNext").textContent=t("next");$("dHome").textContent=t("home");
@@ -177,9 +189,10 @@ $("tiles").addEventListener("click",function(e){var b=e.target.closest(".tile");
 $("again").onclick=$("again2").onclick=function(){if(G.target)say(G.target[0])};
 $("dNext").onclick=function(){sfx("tap");if(G.wi<WORLDS.length-1)openWorld(G.wi+1);else menu()};
 $("dHome").onclick=$("bhome").onclick=function(){sfx("tap");menu()};
+$("bv").onclick=function(){sfx("tap");nextVoice()};
 $("bm").onclick=function(){MUS=!MUS;sv("ef_mus",MUS);texts();if(MUS)mstart();else mstop();sfx("tap")};
 $("bs").onclick=function(){SND=!SND;sv("ef_snd",SND);texts();if(!SND){try{speechSynthesis.cancel()}catch(e){}}else sfx("tap")};
 $("lang").onclick=function(){LANG=LANG==="km"?"en":"km";sv("ef_lang",LANG);texts()};
-window.EF={G:G,WORLDS:WORLDS,SPOKEN:SPOKEN,MU:MU,openWorld:openWorld,startPlay:startPlay,menu:menu};
+window.EF={nextVoice:nextVoice,VOICES:function(){return VOICES},G:G,WORLDS:WORLDS,SPOKEN:SPOKEN,MU:MU,openWorld:openWorld,startPlay:startPlay,menu:menu};
 texts();menu();
 </script></body></html>
