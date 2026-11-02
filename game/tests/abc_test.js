@@ -17,6 +17,7 @@ ok(await p.evaluate(()=>AC&&AC.state==='running'),'sound engine unlocked by the 
 ok(/កសិដ្ឋាន/.test(await p.locator('#stT').innerText()),'story intro shown');await p.screenshot({path:'/tmp/sc/abc_story.png'});
 await p.tap('#stGo');await p.waitForTimeout(700);
 ok(await p.locator('#sPlay:not(.hide)').count()===1&&(await p.locator('.opt').count())===3,'round 1: 3 pictures to choose from');
+ok(await p.locator('.opt .lab').count()===3,'first half: each picture shows its English word so the child can read and tap');
 let said=await p.evaluate(()=>EF.SPOKEN);ok(said.length>=1&&said[0]===(await p.evaluate(()=>EF.G.target[0])),'the English word is spoken: '+said[0]);
 ok(await p.evaluate(()=>Object.keys(EF.AB).length)===36,'all 36 clear voice files were downloaded');
 ok(await p.evaluate(()=>EF.PLAYED.length>=1),'the clear recorded voice is played (not the phone voice)');
@@ -37,16 +38,16 @@ let spelled=0;
 await p.waitForTimeout(1300);ok(await p.locator('#pNext:not(.hide)').count()===1,'after a right answer a Next button appears (child controls the pace)');
 await p.waitForTimeout(2500);ok(await p.evaluate(()=>EF.G.r)===0,'the game does not jump to the next question by itself');
 await p.locator('#pNext').tap();await p.waitForTimeout(500);
-for(let i=0;i<8;i++){
+let hid=false;for(let i=0;i<16;i++){
  if(await p.locator('#sDone:not(.hide)').count())break;
  if(await p.locator('#sSpell:not(.hide)').count()){spelled++;const w=await p.evaluate(()=>EF.G.spell.word);
   for(const ch of w.split('')){await p.locator(`.tile[data-l="${ch}"]:not(.used)`).first().tap();await p.waitForTimeout(60)}
   if(spelled===1){await p.screenshot({path:'/tmp/sc/abc_spell.png'})}
   await p.waitForTimeout(1100);await p.locator('#spNext').tap();await p.waitForTimeout(450)}
- else if(await p.locator('#sPlay:not(.hide)').count()){const t2=await p.evaluate(()=>EF.G.target[0]);await p.locator(`.opt[data-w="${t2}"]`).tap();await p.waitForTimeout(1100);await p.locator('#pNext').tap();await p.waitForTimeout(450)}
+ else if(await p.locator('#sPlay:not(.hide)').count()){if(!hid&&(await p.evaluate(()=>EF.G.r))>=6){hid=true;ok(await p.locator('.opt .lab').count()===0,'second half: the words are removed, the child must listen');ok(/គ្មានអក្សរ/.test(await p.locator('#pB').innerText()),'a message tells the child the words are gone')}const t2=await p.evaluate(()=>EF.G.target[0]);await p.locator(`.opt[data-w="${t2}"]`).tap();await p.waitForTimeout(1100);await p.locator('#pNext').tap();await p.waitForTimeout(450)}
 }
 await p.waitForTimeout(2000);
-ok(spelled>=1,'a spelling round appears ('+spelled+' spelled)');
+ok(hid,'the second half (without words) was reached');ok(spelled>=1,'a spelling round appears ('+spelled+' spelled)');
 ok(await p.locator('#sDone:not(.hide)').count()===1,'world completed: celebration screen');
 ok(await p.evaluate(()=>JSON.parse(localStorage.ef_done).indexOf('farm')>=0),'sticker saved for the Farm world');
 ok(await p.locator('.confetti').count()>0,'confetti falls');
