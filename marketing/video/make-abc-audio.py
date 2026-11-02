@@ -4,7 +4,7 @@ import json,subprocess,sys,glob,os,numpy as np,wave
 SR=24000
 OUT=sys.argv[1] if len(sys.argv)>1 else '/tmp/sc/abcv'
 AUD=glob.glob('/home/user/aj-hub/game/public/try-*/abc/audio')[0]
-d=json.load(open(OUT+'/events.json'));cuts=d['cuts'];D=d['duration']
+d=json.load(open(OUT+'/events.json'));cuts=d['cuts'];D=d['duration'];LAG=d.get('lag',0)
 def kept(t):
     off=0
     for a,b in cuts:
@@ -41,6 +41,7 @@ def dec(p):
 for e in d['events']:
     t=kept(e['t'])
     if t is None or t<0:continue
+    t+=LAG
     if e['type']=='say':
         x=dec(f"{AUD}/{e['w'].lower()}.mp3");put(vo,x*1.0,t+.03);vt.append((t,t+len(x)/SR))
     elif e['type']=='ok':
@@ -50,13 +51,13 @@ for e in d['events']:
         for i,n in enumerate([72,72,79,76,84,79,88,91]):put(fx,note(midi(n),.35,.32),t+i*.13)
 # duck music under words and sounds
 env=np.ones(N)
-for a,b in vt+[(t,t+.6) for t in []]:
-    i0=max(0,int((a-.1)*SR));i1=min(N,int((b+.25)*SR));env[i0:i1]=.35
+for a,b in vt:
+    i0=max(0,int((a-.15)*SR));i1=min(N,int((b+.3)*SR));env[i0:i1]=.3
 from numpy import convolve
 env=convolve(env,np.ones(int(SR*.08))/int(SR*.08),mode='same')
 fi=int(SR*1.2);fo=int(SR*2.5);mus[:fi]*=np.linspace(0,1,fi);mus[int(D*SR)-fo:int(D*SR)]*=np.linspace(1,0,fo);mus[int(D*SR):]=0
-mix=mus*env*.9+vo*1.0+fx*.7
-mix=mix[:int(D*SR)];mix=mix/max(1e-6,np.abs(mix).max())*.9
+mix=mus*env*.42+vo*1.5+fx*.55
+mix=mix[:int(D*SR)];mix=np.tanh(mix*1.1)*.9
 with wave.open(OUT+'/audio.wav','w') as w:
     w.setnchannels(1);w.setsampwidth(2);w.setframerate(SR);w.writeframes((mix*32767).astype('<i2').tobytes())
 print('audio ok',round(D,1),'s')

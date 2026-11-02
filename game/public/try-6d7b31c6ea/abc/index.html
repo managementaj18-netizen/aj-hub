@@ -220,7 +220,7 @@ function card(w,w0){var d=w[2];if(FAM[w[0]])return FAM[w[0]];return /^\d$/.test(
 function pickRound(learn){show("sPlay");$("pB").textContent=learn?t("find1"):(G.r===6?t("phase2"):t("find"));$("opts").className="opts"+(learn?" lab":"");$("pM").classList.remove("dance");
  var others=shuffle(G.w.words.filter(function(w){return w!==G.target})).slice(0,2),opts=shuffle([G.target].concat(others));
  $("opts").innerHTML=opts.map(function(w,i){return'<button class="opt" data-w="'+w[0]+'">'+card(w)+(learn?'<span class="lab">'+w[0]+'</span>':'')+'</button>'}).join("");
- setTimeout(function(){say(G.target[0])},350)}
+ setTimeout(function(){say(G.target[0])},750)}
 function good(){var g=pick(t("good"));return g}
 function answerPick(el){if(G.locked)return;var w=el.getAttribute("data-w");
  if(w===G.target[0]){G.locked=true;el.classList.add("right");sfx("ok");STARS++;sv("ef_stars",STARS);$("st").textContent="⭐ "+STARS;$("pB").textContent=good()+" "+G.target[0]+" = "+G.target[1];
@@ -230,7 +230,7 @@ function answerPick(el){if(G.locked)return;var w=el.getAttribute("data-w");
 function spellRound(){show("sSpell");var w=G.target[0].toUpperCase();G.spell={word:w,pos:0};$("spB").textContent=t("spell");$("spPic").innerHTML=card(G.target);$("spPic").style.fontSize=/^\d$/.test(G.target[2])?"72px":"96px";
  $("slots").innerHTML=w.split("").map(function(){return'<div class="slot"></div>'}).join("");
  var letters=shuffle(w.split(""));$("tiles").innerHTML=letters.map(function(l,i){return'<button class="tile" data-l="'+l+'" data-i="'+i+'">'+l+'</button>'}).join("");
- setTimeout(function(){say(G.target[0])},350)}
+ setTimeout(function(){say(G.target[0])},750)}
 function answerTile(el){if(G.locked)return;var l=el.getAttribute("data-l"),S=G.spell;
  if(l===S.word.charAt(S.pos)){el.classList.add("used");var s=$("slots").children[S.pos];s.textContent=l;s.classList.add("on");S.pos++;sfx("tap");
   if(S.pos>=S.word.length){G.locked=true;sfx("ok");STARS++;sv("ef_stars",STARS);$("st").textContent="⭐ "+STARS;$("spB").textContent=good()+" "+G.target[0]+" = "+G.target[1];setTimeout(function(){say(G.target[0])},500);setTimeout(function(){$("spNext").classList.remove("hide")},900)}}
