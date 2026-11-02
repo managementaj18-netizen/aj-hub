@@ -132,21 +132,31 @@ function hush(){try{if(AC&&AC.state==="running")AC.suspend()}catch(e){}try{if(wi
 window.addEventListener("pagehide",hush);document.addEventListener("visibilitychange",function(){if(document.hidden)hush();else if(AC&&AC.state==="suspended")AC.resume()});
 ["pointerdown","touchstart","click"].forEach(function(n){window.addEventListener(n,function(){ac()},{passive:true})});
 /* ===== voice: the phone says the English word (voices differ a lot between phones, so the child/parent can pick the clearest) ===== */
-var SPOKEN=[],VOICES=[],VOICE=null;
+var SPOKEN=[],VOICES=[],VOICE=null,VOICE_MODE=ld("ef_vm",0);
 function rank(v){var n=(v.name||"")+" "+(v.voiceURI||""),k=0;if(/premium|enhanced|natural|neural|siri/i.test(n))k+=50;if(/samantha|ava\b|allison|susan|zoe|nicky|karen|moira|google (us|uk) english|aria|jenny|libby|sonia/i.test(n))k+=30;if(/^en[-_]US/i.test(v.lang))k+=10;else if(/^en[-_](GB|AU|IN|IE|ZA)/i.test(v.lang))k+=6;if(/compact|espeak|robot|novelty|bad news|whisper|zarvox|trinoids|bells|organ/i.test(n))k-=40;return k}
 function loadVoices(){if(!window.speechSynthesis)return;var all=(speechSynthesis.getVoices()||[]).filter(function(v){return /^en/i.test(v.lang)});VOICES=all.sort(function(a,b){return rank(b)-rank(a)}).slice(0,8);
  var saved=ld("ef_voice",null);VOICE=VOICES.filter(function(v){return v.name===saved})[0]||VOICES[0]||null}
 if(window.speechSynthesis){loadVoices();speechSynthesis.onvoiceschanged=loadVoices}
 function toast(m){var e=$("toast");e.textContent=m;e.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){e.classList.remove("on")},2200)}
 function speak(text,rate,pitch,delay){var u=new SpeechSynthesisUtterance(text);u.lang="en-US";u.rate=rate;u.pitch=pitch;u.volume=1;if(VOICE)u.voice=VOICE;return u}
-/* a clear word: said slowly, a short pause, then once more even slower; the music gets quiet while the voice talks */
-function say(w){SPOKEN.push(w);if(!SND||!window.speechSynthesis)return;try{speechSynthesis.cancel();
- var u1=speak(w+".",.62,1.0),u2=speak(w+".",.48,1.0);
- if(MG)MG.gain.value=.18;var back=function(){if(MG)MG.gain.value=.6};u2.onend=back;u2.onerror=back;u1.onerror=back;setTimeout(back,4500);
- speechSynthesis.speak(u1);setTimeout(function(){try{speechSynthesis.speak(u2)}catch(e){}},120)}catch(e){}}
-function nextVoice(){if(!window.speechSynthesis)return;loadVoices();if(!VOICES.length){toast(LANG==="km"?"ទូរស័ព្ទនេះគ្មានសំឡេងអង់គ្លេស":"No English voice on this phone");return}
- var i=VOICES.indexOf(VOICE);VOICE=VOICES[(i+1)%VOICES.length];sv("ef_voice",VOICE.name);toast("🗣️ "+(VOICES.indexOf(VOICE)+1)+"/"+VOICES.length+" · "+VOICE.name);
- try{speechSynthesis.cancel();var u=speak("Banana. Dog. Apple.",.6,1.0);speechSynthesis.speak(u)}catch(e){}}
+/* Recorded-quality voice files (36 words) are used first: they sound the same on every phone and have clear consonants.
+   If a file is missing the phone's own voice is used instead. */
+var AB={},BUF={},PLAYED=[],WORDS=[];WORLDS.forEach(function(w){w.words.forEach(function(x){WORDS.push(x[0])})});
+function lc(w){return w.toLowerCase()}
+WORDS.forEach(function(w){try{fetch("audio/"+lc(w)+".mp3").then(function(r){return r.ok?r.arrayBuffer():null}).then(function(b){if(b)AB[w]=b}).catch(function(){})}catch(e){}});
+var CUR=null;
+function playBuf(buf,at,gain){var a=ac();if(!a)return 0;var s=a.createBufferSource(),g=a.createGain();s.buffer=buf;g.gain.value=gain||1.6;s.connect(g);g.connect(a.destination);s.start(a.currentTime+(at||0));return buf.duration}
+function getBuf(w,cb){if(BUF[w])return cb(BUF[w]);if(!AB[w])return cb(null);var a=ac();if(!a)return cb(null);var copy=AB[w].slice(0);var done=function(b){BUF[w]=b;cb(b)};try{var p=a.decodeAudioData(copy,done,function(){cb(null)});if(p&&p.catch)p.catch(function(){})}catch(e){cb(null)}}
+function sayPhone(w){try{speechSynthesis.cancel();var u1=speak(w+".",.62,1.0),u2=speak(w+".",.48,1.0);u2.onend=u2.onerror=u1.onerror=duckBack;speechSynthesis.speak(u1);setTimeout(function(){try{speechSynthesis.speak(u2)}catch(e){}},120)}catch(e){}}
+function duck(ms){if(MG)MG.gain.value=.15;clearTimeout(duck.t);duck.t=setTimeout(duckBack,ms)}
+function duckBack(){if(MG)MG.gain.value=.6}
+function say(w){SPOKEN.push(w);if(!SND)return;var phoneOnly=VOICE_MODE>0;
+ if(!phoneOnly){getBuf(w,function(b){if(b){PLAYED.push(w);CUR=w;var d=playBuf(b,0.02);playBuf(b,d+.7);duck((d*2+1.1)*1000)}else if(window.speechSynthesis){duck(4500);sayPhone(w)}});return}
+ if(window.speechSynthesis){duck(4500);sayPhone(w)}}
+function nextVoice(){loadVoices();var n=VOICES.length,m=(VOICE_MODE+1)%(n+1);VOICE_MODE=m;sv("ef_vm",m);
+ if(m===0){toast("🗣️ "+(LANG==="km"?"សំឡេងច្បាស់ (ឯកសារ)":"Clear voice (recorded)"));say("Banana");return}
+ VOICE=VOICES[m-1];sv("ef_voice",VOICE.name);toast("🗣️ "+(m+1)+"/"+(n+1)+" · "+VOICE.name);
+ try{speechSynthesis.cancel();speechSynthesis.speak(speak("Banana. Dog. Apple.",.6,1.0))}catch(e){}}
 /* ===== game ===== */
 var G={w:null,wi:0,order:[],r:0,wrong:0,target:null,locked:false,spell:null,rounds:[]};
 function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("title");$("tSub").textContent=t("sub");$("stGo").textContent=t("go");$("dNext").textContent=t("next");$("dHome").textContent=t("home");
@@ -193,6 +203,6 @@ $("bv").onclick=function(){sfx("tap");nextVoice()};
 $("bm").onclick=function(){MUS=!MUS;sv("ef_mus",MUS);texts();if(MUS)mstart();else mstop();sfx("tap")};
 $("bs").onclick=function(){SND=!SND;sv("ef_snd",SND);texts();if(!SND){try{speechSynthesis.cancel()}catch(e){}}else sfx("tap")};
 $("lang").onclick=function(){LANG=LANG==="km"?"en":"km";sv("ef_lang",LANG);texts()};
-window.EF={nextVoice:nextVoice,VOICES:function(){return VOICES},G:G,WORLDS:WORLDS,SPOKEN:SPOKEN,MU:MU,openWorld:openWorld,startPlay:startPlay,menu:menu};
+window.EF={PLAYED:PLAYED,AB:AB,BUF:BUF,nextVoice:nextVoice,VOICES:function(){return VOICES},G:G,WORLDS:WORLDS,SPOKEN:SPOKEN,MU:MU,openWorld:openWorld,startPlay:startPlay,menu:menu};
 texts();menu();
 </script></body></html>
