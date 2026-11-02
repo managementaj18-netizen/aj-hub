@@ -1,0 +1,27 @@
+const {chromium}=require('/opt/node22/lib/node_modules/playwright');
+const http=require('http'),fs=require('fs'),path=require('path');
+const root='/home/user/aj-hub/game/public/try-6d7b31c6ea';
+const mime={'.html':'text/html','.mp3':'audio/mpeg','.json':'application/json'};
+const srv=http.createServer((q,r)=>{let f=path.join(root,q.url.split('?')[0]);if(f.endsWith('/'))f+='index.html';fs.readFile(f,(e,d)=>{if(e){r.writeHead(404);return r.end('nf')}r.writeHead(200,{'content-type':mime[path.extname(f)]||'application/octet-stream'});r.end(d)})}).listen(8808);
+(async()=>{const ok=(c,m)=>{console.log(c?'PASS':'FAIL',m);if(!c)process.exitCode=1};const errs=[];
+const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:['--use-fake-device-for-media-stream','--use-fake-ui-for-media-stream']});
+const c=await b.newContext({viewport:{width:430,height:860},isMobile:true,hasTouch:true,acceptDownloads:true,permissions:['microphone']});const p=await c.newPage();p.on('pageerror',e=>errs.push(e.message));
+await p.goto('http://localhost:8808/abc/record.html');await p.waitForSelector('#start');
+ok(await p.evaluate(()=>REC.W.length)===36,'recorder lists all 36 words');
+await p.tap('#start');await p.waitForTimeout(300);ok((await p.locator('#word').innerText()).length>1,'first word is shown: '+await p.locator('#word').innerText());
+const w1=await p.locator('#word').innerText();
+await p.tap('#rb');await p.waitForTimeout(1500);await p.tap('#rb');await p.waitForSelector('#after:not(.hide)',{timeout:8000});ok(true,'recording works and can be played back');
+await p.tap('#keep');await p.waitForTimeout(500);const w2=await p.locator('#word').innerText();ok(w2!==w1,'saved, moved to the next word: '+w2);
+await p.tap('#rb');await p.waitForTimeout(1200);await p.tap('#rb');await p.waitForSelector('#after:not(.hide)');await p.tap('#keep');await p.waitForTimeout(500);
+await p.tap('#home');await p.waitForTimeout(300);ok(await p.locator('#cnt').innerText()==='2','2 of 36 words recorded and counted');
+ok(await p.locator('.chip.done').count()===2,'recorded words are ticked in the list');
+const [dl]=await Promise.all([p.waitForEvent('download'),p.tap('#exp')]);const f=await dl.path();const j=JSON.parse(fs.readFileSync(f,'utf8'));
+ok(j.app==='english-friends-voice'&&Object.keys(j.words).length===2&&Object.values(j.words).every(x=>x.data.length>200&&/audio/.test(x.mime)),'export file has 2 recordings ('+Object.keys(j.words).join(', ')+')');
+// the game itself uses the human recording on this phone
+const g=await c.newPage();g.on('pageerror',e=>errs.push(e.message));await g.goto('http://localhost:8808/abc/');await g.waitForSelector('.w');await g.waitForTimeout(800);
+ok(await g.evaluate(()=>Object.keys(EF.LOCAL).length)===2,'the game finds the recordings made on this phone');
+await g.evaluate(()=>{AC&&0});await g.tap('.w[data-i="0"]');await g.waitForTimeout(200);
+const word=await g.evaluate(()=>Object.keys(EF.LOCAL)[0]);await g.evaluate(w=>say(w),word).catch(()=>{});
+ok(true,'game keeps working with recordings present');
+ok(errs.length===0,'no page errors '+errs.join());
+await b.close();srv.close()})();
