@@ -15,7 +15,7 @@ await p.screenshot({path:'/tmp/sc/abc_menu.png'});
 await p.tap('.w[data-i="0"]');await p.waitForTimeout(150);
 ok(await p.evaluate(()=>AC&&AC.state==='running'),'sound engine unlocked by the first touch (iPhone)');
 ok(/កសិដ្ឋាន/.test(await p.locator('#stT').innerText()),'story intro shown');await p.screenshot({path:'/tmp/sc/abc_story.png'});
-await p.tap('#stGo');await p.waitForTimeout(700);
+await p.tap('#stGo');await p.waitForTimeout(1300);
 ok(await p.locator('#sPlay:not(.hide)').count()===1&&(await p.locator('.opt').count())===3,'round 1: 3 pictures to choose from');
 ok(await p.locator('.opt .lab').count()===3,'first half: each picture shows its English word so the child can read and tap');
 let said=await p.evaluate(()=>EF.SPOKEN);ok(said.length>=1&&said[0]===(await p.evaluate(()=>EF.G.target[0])),'the English word is spoken: '+said[0]);
