@@ -6,7 +6,7 @@ const srv=http.createServer((q,r)=>{let f=path.join(root,q.url.split('?')[0]);if
 const c=await b.newContext({viewport:{width:430,height:860},isMobile:true,hasTouch:true,deviceScaleFactor:2});const p=await c.newPage();p.on('pageerror',e=>errs.push(e.message));
 await p.addInitScript(()=>{localStorage.setItem('ef_lang','"km"');window.__said=[];
  window.SpeechSynthesisUtterance=function(t){this.text=t};
- Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{speak(u){window.__said.push(u.text);setTimeout(()=>u.onend&&u.onend(),50)},cancel(){},getVoices(){return[]},onvoiceschanged:null}})});
+ Object.defineProperty(window,'speechSynthesis',{configurable:true,value:{speak(u){window.__said.push(u.text.replace(/\.$/,''));setTimeout(()=>u.onend&&u.onend(),50)},cancel(){},getVoices(){return[{name:'Robot espeak',lang:'en-US'},{name:'Samantha',lang:'en-US'},{name:'Daniel',lang:'en-GB'},{name:'Thai',lang:'th-TH'}]},onvoiceschanged:null}})});
 await p.goto('http://localhost:8807/abc/');await p.waitForSelector('.w');
 ok((await p.locator('.w').count())===6,'6 story worlds to choose from');ok(/មិត្តអង់គ្លេស/.test(await p.locator('#tTitle').innerText()),'Khmer title');
 // every world has 6 words with Khmer meaning and a picture
@@ -52,6 +52,9 @@ await p.tap('#bhome');await p.waitForTimeout(200);ok((await p.locator('.w .done'
 const s1=await p.evaluate(()=>EF.MU.step);await p.waitForTimeout(800);ok(await p.evaluate(()=>EF.MU.step)>s1,'soft background music plays');
 await p.tap('#bm');const s2=await p.evaluate(()=>EF.MU.step);await p.waitForTimeout(600);ok(await p.evaluate(()=>EF.MU.step)===s2,'music button turns music off');
 await p.tap('#lang');ok(/English Friends/.test(await p.locator('#tTitle').innerText()),'English interface');
+// voice: best English voice is chosen first, child/parent can cycle voices
+ok(await p.evaluate(()=>EF.VOICES().length===3&&EF.VOICES()[0].name==='Samantha'&&EF.VOICES()[2].name==='Robot espeak'),'best-sounding English voices first, robotic ones last, non-English dropped');
+await p.tap('#bv');await p.waitForTimeout(200);ok(await p.evaluate(()=>JSON.parse(localStorage.ef_voice))==='Daniel','voice button switches to the next voice and remembers it');ok(/Daniel/.test(await p.locator('#toast').innerText()),'the chosen voice name is shown');
 // all worlds playable: every target is spoken
 ok(await p.evaluate(()=>new Set(EF.WORLDS.flatMap(w=>w.words.map(x=>x[0]))).size)===36,'36 different words in total');
 // no data leaves the phone
