@@ -93,7 +93,7 @@ h1{margin:0;font-size:32px;line-height:1.1}
  <div class="toast" id="toast"></div>
  <div id="hud"><span class="pill" id="st">⭐ 0</span><span class="sp"></span><button class="btn" id="bhome" aria-label="home">🏠</button><button class="btn" id="bv" aria-label="voice">🗣️</button><button class="btn" id="bm" aria-label="music">🎵</button><button class="btn" id="bs" aria-label="sound">🔊</button></div>
 
- <div class="screen" id="sMenu"><div class="mascot">🐵</div><h1 id="tTitle"></h1><p class="sub" id="tSub"></p><div class="worlds" id="worlds"></div><button class="sm" id="lang"></button></div>
+ <div class="screen" id="sMenu"><div class="mascot">🐵</div><h1 id="tTitle"></h1><p class="sub" id="tSub"></p><div class="worlds" id="worlds"></div><button class="sm" id="lang"></button><div id="foll" style="font-size:14px;font-weight:700;opacity:.85;margin-top:4px">🎈 New games and apps are coming soon · follow Page Soramma</div></div>
 
  <div class="screen hide" id="sStory"><div class="mascot" id="stM">🐵</div><div class="bubble" id="stT"></div><div class="word" id="stE"></div><button class="big" id="stGo"></button></div>
 
@@ -254,6 +254,6 @@ $("bm").onclick=function(){MUS=!MUS;sv("ef_mus",MUS);texts();if(MUS)mstart();els
 $("bs").onclick=function(){SND=!SND;sv("ef_snd",SND);texts();if(!SND){try{speechSynthesis.cancel()}catch(e){}}else sfx("tap")};
 $("lang").onclick=function(){LANG=LANG==="km"?"en":"km";sv("ef_lang",LANG);texts()};
 window.EF={LOCAL:LOCAL,loadLocal:loadLocal,PLAYED:PLAYED,AB:AB,BUF:BUF,nextVoice:nextVoice,VOICES:function(){return VOICES},G:G,WORLDS:WORLDS,SPOKEN:SPOKEN,MU:MU,openWorld:openWorld,startPlay:startPlay,menu:menu};
-try{GT.hit("visit","abc")}catch(e){}
+try{GT.hit("visit","abc");if(GT.FB){var f=document.getElementById("foll");f.style.cursor="pointer";f.style.textDecoration="underline";f.onclick=GT.openFB}}catch(e){}
 texts();menu();
 </script></body></html>
