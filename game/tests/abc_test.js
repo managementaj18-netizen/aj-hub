@@ -17,13 +17,15 @@ ok(await p.evaluate(()=>AC&&AC.state==='running'),'sound engine unlocked by the 
 ok(/កសិដ្ឋាន/.test(await p.locator('#stT').innerText()),'story intro shown');await p.screenshot({path:'/tmp/sc/abc_story.png'});
 await p.tap('#stGo');await p.waitForTimeout(700);
 ok(await p.locator('#sPlay:not(.hide)').count()===1&&(await p.locator('.opt').count())===3,'round 1: 3 pictures to choose from');
-let said=await p.evaluate(()=>window.__said);ok(said.length>=1&&said[0]===(await p.evaluate(()=>EF.G.target[0])),'the phone says the English word: '+said[0]);
+let said=await p.evaluate(()=>EF.SPOKEN);ok(said.length>=1&&said[0]===(await p.evaluate(()=>EF.G.target[0])),'the English word is spoken: '+said[0]);
+ok(await p.evaluate(()=>Object.keys(EF.AB).length)===36,'all 36 clear voice files were downloaded');
+ok(await p.evaluate(()=>EF.PLAYED.length>=1),'the clear recorded voice is played (not the phone voice)');
 await p.screenshot({path:'/tmp/sc/abc_play.png'});
 // wrong answer: no penalty, hears word again, hint after 2 wrong
 const tg=await p.evaluate(()=>EF.G.target[0]);
 const wrongSel=`.opt:not([data-w="${tg}"])`;
 await p.locator(wrongSel).first().tap();await p.waitForTimeout(700);
-ok(/មិនអី/.test(await p.locator('#pB').innerText()),'wrong tap: gentle message, no penalty');ok((await p.evaluate(()=>window.__said.filter(w=>w===EF.G.target[0]).length))>=2,'the word is said again');
+ok(/មិនអី/.test(await p.locator('#pB').innerText()),'wrong tap: gentle message, no penalty');ok((await p.evaluate(()=>EF.SPOKEN.filter(w=>w===EF.G.target[0]).length))>=2,'the word is said again');
 await p.locator(wrongSel).nth(1).tap();await p.waitForTimeout(300);
 ok(await p.locator('.opt.hint').count()===1,'after 2 mistakes the right picture pulses as a hint');
 const stars0=await p.evaluate(()=>+JSON.parse(localStorage.ef_stars||0));
@@ -54,7 +56,7 @@ await p.tap('#bm');const s2=await p.evaluate(()=>EF.MU.step);await p.waitForTime
 await p.tap('#lang');ok(/English Friends/.test(await p.locator('#tTitle').innerText()),'English interface');
 // voice: best English voice is chosen first, child/parent can cycle voices
 ok(await p.evaluate(()=>EF.VOICES().length===3&&EF.VOICES()[0].name==='Samantha'&&EF.VOICES()[2].name==='Robot espeak'),'best-sounding English voices first, robotic ones last, non-English dropped');
-await p.tap('#bv');await p.waitForTimeout(200);ok(await p.evaluate(()=>JSON.parse(localStorage.ef_voice))==='Daniel','voice button switches to the next voice and remembers it');ok(/Daniel/.test(await p.locator('#toast').innerText()),'the chosen voice name is shown');
+await p.tap('#bv');await p.waitForTimeout(200);await p.tap('#bv');await p.waitForTimeout(200);ok(await p.evaluate(()=>JSON.parse(localStorage.ef_voice))==='Daniel','voice button: recorded voice first, then each phone voice; choice remembered');ok(/Daniel/.test(await p.locator('#toast').innerText()),'the chosen voice name is shown');
 // all worlds playable: every target is spoken
 ok(await p.evaluate(()=>new Set(EF.WORLDS.flatMap(w=>w.words.map(x=>x[0]))).size)===36,'36 different words in total');
 // no data leaves the phone
