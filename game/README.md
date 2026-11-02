@@ -1,9 +1,9 @@
 # Games (static, no account, no database)
 
-**Release plan: one game at a time.** Only `public/` is deployed. Finished games that are not announced yet wait in `public/try-6d7b31c6ea/` (not linked anywhere, only the owner knows the address). To release one: `sh game/release.sh sort` (or `kids`, `abc`), commit, push.
+**Release plan: one game at a time.** Only `public/` is deployed. Finished games that are not announced yet wait in `public/try-6d7b31c6ea/` (not linked anywhere, only the owner knows the address). To release one: `sh game/release.sh sort` (or `kids`), commit, push.
 
-- Released: Fruit Catch (`/`)
-- Held back: Juice Sort (`/sort/`), Animal Friends (`/kids/`), English Friends (`/abc/`)
+- Released: Fruit Catch (`/`), English Friends (`/abc/`)
+- Held back: Juice Sort, Animal Friends (private test folder, see below)
 
 - `/` Fruit Catch · ចាប់ផ្លែឈើ
 - `/kids/` Animal Friends · មិត្តសត្វ (for small children: pick a cartoon animal, catch its favourite food, silly items bounce away, no losing, a star + confetti every 5 catches, synthesised sounds and soft background music, no ads, no links out except back to the games)

@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="km"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow">
+<html lang="km"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#7fd1ff">
 <title>English Friends</title>
@@ -103,6 +103,7 @@ h1{margin:0;font-size:32px;line-height:1.1}
 
  <div class="screen hide" id="sDone"><div class="mascot" id="dM">🐵</div><h1 id="dT"></h1><div class="stickers" id="dS"></div><div class="bubble" id="dB"></div><button class="big" id="dNext"></button><button class="sm" id="dHome"></button></div>
 </div>
+<script src="../track.js"></script>
 <script>
 /* ===== content: 6 little stories, 6 words each ===== */
 var WORLDS=[
@@ -212,7 +213,7 @@ function texts(){document.documentElement.lang=LANG;$("tTitle").textContent=t("t
  $("worlds").innerHTML=WORLDS.map(function(w,i){return'<button class="w" data-i="'+i+'"><span class="e">'+w.e+'</span>'+w.en+(DONE.indexOf(w.id)>=0?'<span class="done">⭐</span>':'')+'</button>'}).join("")}
 function menu(){mstart();G.w=null;theme(null);show("sMenu");texts()}
 function openWorld(i){G.wi=i;G.w=WORLDS[i];theme(G.w);$("stM").textContent="🐵";$("stT").textContent=G.w.story[LANG];$("stE").textContent=G.w.e;show("sStory");$("stM").classList.remove("dance");void $("stM").offsetWidth;$("stM").classList.add("dance");sfx("tap")}
-function startPlay(){var a=shuffle(G.w.words),b=shuffle(G.w.words);if(b[0]===a[5])b.push(b.shift());G.order=a.concat(b);G.r=0;G.rounds=[];for(var i=0;i<6;i++)G.rounds.push("learn");for(var j=0;j<6;j++)G.rounds.push((j===2||j===5)&&b[j][0].length<=6?"spell":"pick");nextRound()}
+function startPlay(){try{GT.hit("play","abc")}catch(e){}var a=shuffle(G.w.words),b=shuffle(G.w.words);if(b[0]===a[5])b.push(b.shift());G.order=a.concat(b);G.r=0;G.rounds=[];for(var i=0;i<6;i++)G.rounds.push("learn");for(var j=0;j<6;j++)G.rounds.push((j===2||j===5)&&b[j][0].length<=6?"spell":"pick");nextRound()}
 function bar(){var p=Math.round(G.r/12*100)+"%";$("bar").style.width=p;$("bar2").style.width=p}
 function nextRound(){bar();$("pNext").classList.add("hide");$("spNext").classList.add("hide");if(G.r>=12)return finish();G.wrong=0;G.locked=false;G.target=G.order[G.r];
  if(G.rounds[G.r]==="spell")spellRound();else pickRound(G.rounds[G.r]==="learn")}
@@ -253,5 +254,6 @@ $("bm").onclick=function(){MUS=!MUS;sv("ef_mus",MUS);texts();if(MUS)mstart();els
 $("bs").onclick=function(){SND=!SND;sv("ef_snd",SND);texts();if(!SND){try{speechSynthesis.cancel()}catch(e){}}else sfx("tap")};
 $("lang").onclick=function(){LANG=LANG==="km"?"en":"km";sv("ef_lang",LANG);texts()};
 window.EF={LOCAL:LOCAL,loadLocal:loadLocal,PLAYED:PLAYED,AB:AB,BUF:BUF,nextVoice:nextVoice,VOICES:function(){return VOICES},G:G,WORLDS:WORLDS,SPOKEN:SPOKEN,MU:MU,openWorld:openWorld,startPlay:startPlay,menu:menu};
+try{GT.hit("visit","abc")}catch(e){}
 texts();menu();
 </script></body></html>
