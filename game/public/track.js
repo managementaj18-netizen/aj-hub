@@ -12,5 +12,5 @@ function hit(ev,game){try{var body=JSON.stringify({ev:ev,game:game||"fruit",src:
  if(navigator.sendBeacon&&navigator.sendBeacon("/api/hit",new Blob([body],{type:"application/json"})))return;
  fetch("/api/hit",{method:"POST",body:body,headers:{"content-type":"application/json"},keepalive:true}).catch(function(){})}catch(e){}}
 window.addEventListener("appinstalled",function(){hit("install",window.GT&&GT.game)});
-window.GT={hit:hit,FB:FB,game:"fruit",openFB:function(){hit("fb",GT.game);if(FB)window.open(FB,"_blank")}};
+window.GT={hit:hit,vid:vid,FB:FB,game:"fruit",openFB:function(){hit("fb",GT.game);if(FB)window.open(FB,"_blank")}};
 })();

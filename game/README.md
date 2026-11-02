@@ -34,3 +34,10 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 - The game plays recorded words: first recordings made on this phone (`abc/record.html`, stored on the phone only), then the bundled files `abc/audio/*.mp3` (synthetic fallback), then the phone's own voice.
 - To ship a real human voice to everyone: record the 36 words with `abc/record.html`, tap export, send `english-friends-voice.json`; convert with ffmpeg into `abc/audio/<word>.mp3`.
 - Tests: `node tests/abc_rec_test.js`.
+
+## Home page, names and leaderboard (Fruit Catch)
+- Home page: your name, best score, Play, 🏆 Leaderboard (today / this week / all time, top 10 + your place), 🤝 Challenge a friend (shares your best score as a link).
+- Scores are sent to `/api/score` after a game if the player typed a name (nickname only). A score must be possible for the time played (max about 15 points per second) and one phone may send 60 per day. Anyone can still forge a request, so this is a friendly board, not a verified contest: do not give money prizes without checking the top scores by hand.
+- Remove a name: `curl -X POST https://play.soramma.app/api/score-delete -H 'x-admin-code: <ADMIN_CODE>' -d '{"name":"BadName"}'`.
+- Cambodia time (UTC+7) decides the day; the week starts on Monday.
+- Tests: `node game/tests/score_test.mjs`, `node game/tests/home_e2e.js`, `node game/tests/challenge_test.js`.
