@@ -14,6 +14,13 @@ html,body{margin:0;height:100%;overflow:hidden;background:#cfeeff;font-family:"B
 .c1{top:12%;animation-duration:55s}.c2{top:26%;font-size:44px;animation-duration:80s;animation-delay:-30s}.c3{top:40%;font-size:54px;animation-duration:68s;animation-delay:-12s}
 @keyframes drift{from{transform:translateX(-120px)}to{transform:translateX(640px)}}
 .hill{position:absolute;left:-10%;right:-10%;border-radius:50% 50% 0 0;transition:background .6s}
+.sw{transform-box:fill-box;transform-origin:50% 100%;animation:sway 3.2s ease-in-out infinite}@keyframes sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.sun{position:absolute;z-index:1;top:calc(74px + env(safe-area-inset-top));right:16px;width:74px;height:74px;pointer-events:none}.sun svg{width:100%;height:100%}.sun .rays{transform-origin:50% 50%;animation:spin 40s linear infinite}@keyframes spin{to{transform:rotate(360deg)}}
+.fly{position:absolute;z-index:1;pointer-events:none;font-size:26px;will-change:transform}
+.bird{top:19%;left:-40px;animation:cross 26s linear infinite}.bird.b2{top:30%;font-size:20px;animation-duration:38s;animation-delay:-14s}
+@keyframes cross{from{transform:translateX(0) translateY(0)}25%{transform:translateX(150px) translateY(-14px)}50%{transform:translateX(300px) translateY(6px)}75%{transform:translateX(450px) translateY(-10px)}to{transform:translateX(640px) translateY(0)}}
+.bf{bottom:19%;left:12%;animation:flutter 9s ease-in-out infinite}.bf.f2{bottom:24%;left:68%;font-size:22px;animation-duration:12s;animation-delay:-5s}
+@keyframes flutter{0%,100%{transform:translate(0,0) rotate(-8deg)}20%{transform:translate(50px,-30px) rotate(10deg)}45%{transform:translate(110px,-8px) rotate(-6deg)}70%{transform:translate(40px,-44px) rotate(8deg)}}
 .scene{position:absolute;left:0;bottom:0;width:100%;height:auto;max-height:46%;pointer-events:none;z-index:1}
 #hud{position:absolute;z-index:5;top:calc(8px + env(safe-area-inset-top));left:10px;right:10px;display:flex;gap:8px;align-items:center}
 #hud .pill{background:#ffffffdd;border-radius:99px;padding:4px 14px;font-weight:800;font-size:20px}
@@ -57,10 +64,13 @@ h1{margin:0;font-size:32px;line-height:1.1}
 .stickers{font-size:46px;letter-spacing:6px}
 .confetti{position:absolute;top:-20px;font-size:26px;animation:fall 2.4s linear forwards;pointer-events:none;z-index:9}
 @keyframes fall{to{transform:translateY(110vh) rotate(360deg)}}
-@media (prefers-reduced-motion:reduce){.cloud,.mascot,.screen,.opt,.next{animation:none!important}}
+@media (prefers-reduced-motion:reduce){.cloud,.mascot,.screen,.opt,.next,.sw,.sun .rays,.fly{animation:none!important}}
 </style></head><body>
 <div id="wrap">
  <div class="cloud c1">☁️</div><div class="cloud c2">☁️</div><div class="cloud c3">☁️</div>
+ <div class="sun"><svg viewBox="0 0 80 80"><g class="rays" stroke="#ffc83d" stroke-width="4" stroke-linecap="round"><line x1="40" y1="6" x2="40" y2="14" transform="rotate(0 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(30 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(60 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(90 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(120 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(150 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(180 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(210 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(240 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(270 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(300 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(330 40 40)"/></g><circle cx="40" cy="40" r="19" fill="#ffd84d"/><circle cx="34" cy="35" r="6" fill="#fff6c2" opacity=".7"/></svg></div>
+ <div class="fly bird">🐦</div><div class="fly bird b2">🐦</div>
+ <div class="fly bf">🦋</div><div class="fly bf f2">🦋</div>
  <svg class="scene" viewBox="0 0 400 240" preserveAspectRatio="xMidYMax slice" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
  <defs>
   <g id="tuft"><path d="M0 0 L-3 -11 L0 -5 L2 -13 L4 -5 L8 -10 L5 0Z" fill="#4c9a3d"/><path d="M-6 0 L-8 -7 L-4 -3 L-2 0Z" fill="#5fb04a"/></g>
@@ -77,8 +87,8 @@ h1{margin:0;font-size:32px;line-height:1.1}
  <ellipse cx="72" cy="226" rx="52" ry="11" fill="#8ed3ee"/><ellipse cx="72" cy="226" rx="44" ry="8" fill="#a9e0f4" opacity=".6"/>
  <use href="#lt" x="58" y="226"/><use href="#lt" x="90" y="229" transform="translate(0 0) scale(.85)" style="transform-origin:90px 229px"/>
  <ellipse cx="338" cy="230" rx="44" ry="9" fill="#8ed3ee"/><use href="#lt" x="338" y="231"/><use href="#lt" x="314" y="233" style="transform-origin:314px 233px;transform:scale(.7)"/>
- <use href="#tuft" x="14" y="205"/><use href="#tuft" x="132" y="203"/><use href="#tuft" x="158" y="214"/><use href="#tuft" x="222" y="205"/><use href="#tuft" x="262" y="216"/><use href="#tuft" x="388" y="208"/><use href="#tuft" x="188" y="228"/>
- <use href="#fl" x="30" y="214" style="color:#fff"/><use href="#fl" x="120" y="212" style="color:#ff9ec1"/><use href="#fl" x="146" y="224" style="color:#fff"/><use href="#fl" x="176" y="209" style="color:#ffd84d"/><use href="#fl" x="208" y="222" style="color:#ff9ec1"/><use href="#fl" x="246" y="210" style="color:#fff"/><use href="#fl" x="278" y="224" style="color:#ffd84d"/><use href="#fl" x="372" y="214" style="color:#ff9ec1"/>
+ <use href="#tuft" x="14" y="205" class="sw" style="animation-delay:-0.7s"/><use href="#tuft" x="132" y="203" class="sw" style="animation-delay:-1.4s"/><use href="#tuft" x="158" y="214" class="sw" style="animation-delay:-2.1s"/><use href="#tuft" x="222" y="205" class="sw" style="animation-delay:-2.8s"/><use href="#tuft" x="262" y="216" class="sw" style="animation-delay:-0.5s"/><use href="#tuft" x="388" y="208" class="sw" style="animation-delay:-1.2s"/><use href="#tuft" x="188" y="228" class="sw" style="animation-delay:-1.9s"/>
+ <use href="#fl" x="30" y="214" style="color:#fff" class="sw" style="animation-delay:-2.6s;color:#fff"/><use href="#fl" x="120" y="212" style="color:#ff9ec1" class="sw" style="animation-delay:-0.3s;color:#ff9ec1"/><use href="#fl" x="146" y="224" style="color:#fff" class="sw" style="animation-delay:-1.0s;color:#fff"/><use href="#fl" x="176" y="209" style="color:#ffd84d" class="sw" style="animation-delay:-1.7s;color:#ffd84d"/><use href="#fl" x="208" y="222" style="color:#ff9ec1" class="sw" style="animation-delay:-2.4s;color:#ff9ec1"/><use href="#fl" x="246" y="210" style="color:#fff" class="sw" style="animation-delay:-0.1s;color:#fff"/><use href="#fl" x="278" y="224" style="color:#ffd84d" class="sw" style="animation-delay:-0.8s;color:#ffd84d"/><use href="#fl" x="372" y="214" style="color:#ff9ec1" class="sw" style="animation-delay:-1.5s;color:#ff9ec1"/>
 </svg>
  <div class="toast" id="toast"></div>
  <div id="hud"><span class="pill" id="st">⭐ 0</span><span class="sp"></span><button class="btn" id="bhome" aria-label="home">🏠</button><button class="btn" id="bv" aria-label="voice">🗣️</button><button class="btn" id="bm" aria-label="music">🎵</button><button class="btn" id="bs" aria-label="sound">🔊</button></div>
