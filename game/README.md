@@ -29,3 +29,8 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 - Use `?s=name` on a link to label where it was shared (e.g. `play.soramma.app/?s=fb-post1`).
 - Put the Facebook Page link in `FB` at the top of `game/public/track.js` to turn the "coming soon" line into a tap-to-follow link that is counted.
 - Tests: `node game/tests/stats_test.mjs`, `node game/tests/stats_e2e.js`.
+
+## English Friends: human voice
+- The game plays recorded words: first recordings made on this phone (`abc/record.html`, stored on the phone only), then the bundled files `abc/audio/*.mp3` (synthetic fallback), then the phone's own voice.
+- To ship a real human voice to everyone: record the 36 words with `abc/record.html`, tap export, send `english-friends-voice.json`; convert with ffmpeg into `abc/audio/<word>.mp3`.
+- Tests: `node tests/abc_rec_test.js`.

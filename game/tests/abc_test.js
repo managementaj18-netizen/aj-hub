@@ -33,13 +33,17 @@ await p.locator(`.opt[data-w="${tg}"]`).tap();await p.waitForTimeout(200);
 ok(await p.evaluate(()=>+JSON.parse(localStorage.ef_stars))===stars0+1,'right tap gives a star');ok(await p.locator('.opt.right').count()===1,'right card celebrates');
 // play through the whole world (pick + spell rounds)
 let spelled=0;
+// after a right answer the game WAITS: the child taps Next (no sudden jump)
+await p.waitForTimeout(1300);ok(await p.locator('#pNext:not(.hide)').count()===1,'after a right answer a Next button appears (child controls the pace)');
+await p.waitForTimeout(2500);ok(await p.evaluate(()=>EF.G.r)===0,'the game does not jump to the next question by itself');
+await p.locator('#pNext').tap();await p.waitForTimeout(500);
 for(let i=0;i<8;i++){
- await p.waitForTimeout(1900);
  if(await p.locator('#sDone:not(.hide)').count())break;
  if(await p.locator('#sSpell:not(.hide)').count()){spelled++;const w=await p.evaluate(()=>EF.G.spell.word);
   for(const ch of w.split('')){await p.locator(`.tile[data-l="${ch}"]:not(.used)`).first().tap();await p.waitForTimeout(60)}
-  if(spelled===1){await p.screenshot({path:'/tmp/sc/abc_spell.png'})}}
- else if(await p.locator('#sPlay:not(.hide)').count()){const t2=await p.evaluate(()=>EF.G.target[0]);await p.locator(`.opt[data-w="${t2}"]`).tap()}
+  if(spelled===1){await p.screenshot({path:'/tmp/sc/abc_spell.png'})}
+  await p.waitForTimeout(1100);await p.locator('#spNext').tap();await p.waitForTimeout(450)}
+ else if(await p.locator('#sPlay:not(.hide)').count()){const t2=await p.evaluate(()=>EF.G.target[0]);await p.locator(`.opt[data-w="${t2}"]`).tap();await p.waitForTimeout(1100);await p.locator('#pNext').tap();await p.waitForTimeout(450)}
 }
 await p.waitForTimeout(2000);
 ok(spelled>=1,'a spelling round appears ('+spelled+' spelled)');

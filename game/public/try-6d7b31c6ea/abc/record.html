@@ -1,0 +1,60 @@
+<!doctype html><html lang="km"><head><meta charset="utf-8"><meta name="robots" content="noindex,nofollow"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><title>ថតសំឡេង · English Friends</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Kantumruy+Pro:wght@400;700&display=swap" rel="stylesheet">
+<style>*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}body{margin:0;font-family:"Baloo 2","Kantumruy Pro",system-ui,sans-serif;background:#eaf6ff;color:#2b3a67;min-height:100vh;display:flex;justify-content:center}
+#app{width:100%;max-width:520px;padding:18px 16px 40px;display:flex;flex-direction:column;gap:12px;align-items:center;text-align:center}
+h1{margin:6px 0 0;font-size:26px}p{margin:0;opacity:.85;font-size:15px;line-height:1.5}.card{background:#fff;border-radius:22px;padding:16px;width:100%;box-shadow:0 6px 0 #bcd7ee}
+.pic{font-size:88px;line-height:1.1}.pic .n{font-size:70px;font-weight:800;color:#e0457b}.word{font-size:54px;font-weight:800;letter-spacing:1px}.km{font-size:19px;opacity:.7;font-weight:700}
+button{border:0;border-radius:18px;font:800 20px "Baloo 2","Kantumruy Pro",sans-serif;padding:12px 22px;cursor:pointer;color:#2b3a67;background:#fff;box-shadow:0 5px 0 #bcd7ee}button:active{transform:translateY(3px);box-shadow:0 2px 0 #bcd7ee}
+.go{background:#ffb703;box-shadow:0 5px 0 #c98a00;color:#4a3000}.rec{background:#ff5d5d;color:#fff;box-shadow:0 5px 0 #b83a3a;font-size:26px;padding:16px 34px}.rec.on{animation:pulse .9s infinite}@keyframes pulse{50%{transform:scale(1.07)}}
+.row{display:flex;gap:10px;flex-wrap:wrap;justify-content:center}.bar{width:100%;height:12px;border-radius:99px;background:#fff;overflow:hidden}.bar i{display:block;height:100%;width:0;background:#ffb703;transition:width .3s}
+.meter{width:100%;height:10px;border-radius:99px;background:#dbe9f6;overflow:hidden}.meter i{display:block;height:100%;width:0;background:#4cc36b}
+.hide{display:none!important}.list{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.chip{padding:5px 10px;font-size:14px;border-radius:99px;background:#fff;box-shadow:0 2px 0 #bcd7ee;font-weight:700}.chip.done{background:#c9f7c4}
+.tips{text-align:left;font-size:15px;line-height:1.6;margin:0;padding-left:20px}.err{color:#c0392b;font-weight:700}</style></head><body><div id="app">
+<h1>🎙️ ថតសំឡេង English Friends</h1>
+<div class="card" id="intro"><p><b>ត្រូវការ៖</b> មនុស្សដែលនិយាយអង់គ្លេសបានច្បាស់ ស្តាប់ស្រួល ទាំង ៣៦ ពាក្យ ដោយសំឡេងមនុស្សតែម្នាក់ (ល្អជាងបើរួមគ្នាមួយសំឡេង)។</p>
+<ul class="tips"><li>ថតក្នុងបន្ទប់ស្ងាត់ ដាក់ទូរស័ព្ទឆ្ងាយមាត់ប្រហែល ២០ សង់ទីម៉ែត្រ</li><li>និយាយ <b>ម្តងប៉ុណ្ណោះ</b> ច្បាស់ៗ ញញឹមៗ ដូចគ្រូបង្រៀនក្មេង</li><li>ចុងពាក្យឲ្យឮច្បាស់ (Dog, Cat)</li><li>ថតរួចស្តាប់ បើមិនពេញចិត្តថតម្តងទៀត</li></ul>
+<p style="margin-top:10px"><span id="cnt">0</span>/36 ពាក្យបានថតរួច</p><div class="bar"><i id="bar"></i></div></div>
+<div class="row" id="introBtns"><button class="go" id="start">ចាប់ផ្តើមថត</button><button id="exp">📤 ផ្ញើឯកសារ</button></div>
+<div class="list" id="chips"></div>
+<div class="card hide" id="rc"><div class="pic" id="pic"></div><div class="word" id="word"></div><div class="km" id="km"></div></div>
+<div class="meter hide" id="meter"><i id="lvl"></i></div>
+<div class="row hide" id="ctl"><button class="rec" id="rb">🎙️ ថត</button></div>
+<div class="row hide" id="after"><button id="play">▶ ស្តាប់</button><button id="redo">🔁 ថតម្តងទៀត</button><button class="go" id="keep">✅ ល្អ ➜</button></div>
+<p class="err" id="err"></p><div class="row hide" id="navBtns"><button id="back">⬅ មុន</button><button id="skip">រំលង ➡</button><button id="home">📋 បញ្ជី</button></div></div>
+<script>
+var W=[["Dog", "ឆ្កែ", "🐶"], ["Cat", "ឆ្មា", "🐱"], ["Cow", "គោ", "🐮"], ["Pig", "ជ្រូក", "🐷"], ["Duck", "ទា", "🦆"], ["Fish", "ត្រី", "🐟"], ["Apple", "ប៉ោម", "🍎"], ["Banana", "ចេក", "🍌"], ["Mango", "ស្វាយ", "🥭"], ["Orange", "ក្រូច", "🍊"], ["Grapes", "ទំពាំងបាយជូរ", "🍇"], ["Lemon", "ក្រូចឆ្មា", "🍋"], ["Red", "ក្រហម", "🔴"], ["Blue", "ខៀវ", "🔵"], ["Green", "បៃតង", "🟢"], ["Yellow", "លឿង", "🟡"], ["Pink", "ផ្កាឈូក", "🩷"], ["Black", "ខ្មៅ", "⚫"], ["One", "មួយ", "1"], ["Two", "ពីរ", "2"], ["Three", "បី", "3"], ["Four", "បួន", "4"], ["Five", "ប្រាំ", "5"], ["Six", "ប្រាំមួយ", "6"], ["Mom", "ម្តាយ", "👩"], ["Dad", "ឪពុក", "👨"], ["Baby", "ទារក", "👶"], ["Boy", "ក្មេងប្រុស", "👦"], ["Girl", "ក្មេងស្រី", "👧"], ["Grandma", "ជីដូន", "👵"], ["Eye", "ភ្នែក", "👁️"], ["Ear", "ត្រចៀក", "👂"], ["Nose", "ច្រមុះ", "👃"], ["Mouth", "មាត់", "👄"], ["Hand", "ដៃ", "✋"], ["Foot", "ជើង", "🦶"]],$=function(i){return document.getElementById(i)},DB=null,DONE={},IDX=0,CUR=null,MR=null,STREAM=null,AX=null,RAF=0,MIME="";
+function open(cb){var q=indexedDB.open("ef_voice",1);q.onupgradeneeded=function(){q.result.createObjectStore("rec")};q.onsuccess=function(){DB=q.result;cb()};q.onerror=function(){$("err").textContent="ទូរស័ព្ទមិនអនុញ្ញាតរក្សាទុក"}}
+function all(cb){var o={},rq=DB.transaction("rec").objectStore("rec").openCursor();rq.onsuccess=function(){var c=rq.result;if(c){o[c.key]=c.value;c.continue()}else cb(o)}}
+function put(k,v,cb){var tx=DB.transaction("rec","readwrite");tx.objectStore("rec").put(v,k);tx.oncomplete=cb}
+function card(w){return /^\d$/.test(w[2])?'<span class="n">'+w[2]+'</span>':w[2]}
+function refresh(cb){all(function(o){DONE=o;var n=Object.keys(o).length;$("cnt").textContent=n;$("bar").style.width=Math.round(n/36*100)+"%";
+ $("chips").innerHTML=W.map(function(w,i){return'<span class="chip'+(o[w[0]]?' done':'')+'" data-i="'+i+'" style="cursor:pointer">'+(o[w[0]]?'✓ ':'')+w[0]+'</span>'}).join("");if(cb)cb()})}
+function show(i){IDX=Math.max(0,Math.min(35,i));var w=W[IDX];["intro","introBtns","chips"].forEach(function(x){$(x).classList.add("hide")});["rc","meter","ctl","navBtns"].forEach(function(x){$(x).classList.remove("hide")});$("after").classList.add("hide");
+ $("pic").innerHTML=card(w);$("word").textContent=w[0];$("km").textContent=w[1]+" · "+(IDX+1)+"/36";$("rb").textContent="🎙️ ថត";$("rb").classList.remove("on");CUR=null;$("err").textContent="";
+ if(DONE[w[0]]){$("after").classList.remove("hide");$("keep").textContent="➜ បន្ទាប់";CUR={saved:true}}}
+function home(){["rc","meter","ctl","after","navBtns"].forEach(function(x){$(x).classList.add("hide")});["intro","introBtns","chips"].forEach(function(x){$(x).classList.remove("hide")});refresh()}
+function pickMime(){var c=["audio/mp4","audio/webm;codecs=opus","audio/webm","audio/ogg;codecs=opus"];for(var i=0;i<c.length;i++){if(window.MediaRecorder&&MediaRecorder.isTypeSupported&&MediaRecorder.isTypeSupported(c[i]))return c[i]}return""}
+function meter(){if(!AX)return;var d=new Uint8Array(AX.fftSize);AX.getByteTimeDomainData(d);var m=0;for(var i=0;i<d.length;i++)m=Math.max(m,Math.abs(d[i]-128));$("lvl").style.width=Math.min(100,m*1.6)+"%";RAF=requestAnimationFrame(meter)}
+function stopRec(){if(MR&&MR.state==="recording")MR.stop()}
+function startRec(){$("err").textContent="";navigator.mediaDevices.getUserMedia({audio:{echoCancellation:true,noiseSuppression:true,channelCount:1}}).then(function(st){STREAM=st;MIME=pickMime();var ch=[];MR=new MediaRecorder(st,MIME?{mimeType:MIME}:undefined);
+ try{var A=window.AudioContext||window.webkitAudioContext,c=new A(),src=c.createMediaStreamSource(st);AX=c.createAnalyser();AX.fftSize=512;src.connect(AX);meter()}catch(e){}
+ MR.ondataavailable=function(e){if(e.data&&e.data.size)ch.push(e.data)};
+ MR.onstop=function(){cancelAnimationFrame(RAF);$("lvl").style.width="0";st.getTracks().forEach(function(t){t.stop()});AX=null;var b=new Blob(ch,{type:MR.mimeType||MIME||"audio/webm"});
+  b.arrayBuffer().then(function(ab){CUR={blob:b,data:ab,mime:b.type};$("rb").textContent="🎙️ ថតថ្មី";$("rb").classList.remove("on");$("after").classList.remove("hide");$("keep").textContent="✅ ល្អ ➜";play()})};
+ MR.start();$("rb").textContent="⏹ ឈប់";$("rb").classList.add("on");setTimeout(stopRec,4000)}).catch(function(){$("err").textContent="សូមអនុញ្ញាតឲ្យប្រើមីក្រូហ្វូន (Allow microphone)"})}
+function play(){if(!CUR)return;if(CUR.blob){var a=new Audio(URL.createObjectURL(CUR.blob));a.play().catch(function(){})}else{var v=DONE[W[IDX][0]];if(v){var a2=new Audio(URL.createObjectURL(new Blob([v.data],{type:v.mime})));a2.play().catch(function(){})}}}
+$("rb").onclick=function(){if(MR&&MR.state==="recording")stopRec();else startRec()};
+$("play").onclick=play;$("redo").onclick=function(){CUR=null;$("after").classList.add("hide");startRec()};
+$("keep").onclick=function(){if(CUR&&CUR.data){put(W[IDX][0],{data:CUR.data,mime:CUR.mime,t:Date.now()},function(){refresh(function(){next()})})}else next()};
+function next(){if(IDX>=35){home();return}show(IDX+1)}
+$("skip").onclick=function(){next()};$("back").onclick=function(){show(IDX-1)};$("home").onclick=home;
+$("start").onclick=function(){var i=0;for(;i<36;i++)if(!DONE[W[i][0]])break;show(i>=36?0:i)};
+$("chips").onclick=function(e){var c=e.target.closest(".chip");if(c)show(+c.getAttribute("data-i"))};
+function b64(ab){var s="",u=new Uint8Array(ab);for(var i=0;i<u.length;i+=8192)s+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(s)}
+$("exp").onclick=function(){all(function(o){var n=Object.keys(o).length;if(!n){$("err").textContent="មិនទាន់មានសំឡេងថតទេ";return}var out={app:"english-friends-voice",words:{}};Object.keys(o).forEach(function(k){out.words[k]={mime:o[k].mime,data:b64(o[k].data)}});
+ var blob=new Blob([JSON.stringify(out)],{type:"application/json"}),f=new File([blob],"english-friends-voice.json",{type:"application/json"});
+ if(navigator.canShare&&navigator.canShare({files:[f]})){navigator.share({files:[f],title:"English Friends voice"}).catch(function(){dl(blob)})}else dl(blob);$("err").textContent="បានរក្សាទុកឯកសារ ("+n+" ពាក្យ)"})};
+function dl(b){var a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="english-friends-voice.json";document.body.appendChild(a);a.click();a.remove()}
+window.REC={W:W,all:all};
+open(function(){refresh()});
+</script></body></html>
