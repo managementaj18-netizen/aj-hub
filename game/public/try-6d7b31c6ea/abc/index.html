@@ -151,7 +151,7 @@ var CUR=null;
 function idb(cb){try{var q=indexedDB.open("ef_voice",1);q.onupgradeneeded=function(){q.result.createObjectStore("rec")};q.onsuccess=function(){cb(q.result)};q.onerror=function(){cb(null)}}catch(e){cb(null)}}
 function loadLocal(){idb(function(db){if(!db)return;try{var rq=db.transaction("rec").objectStore("rec").openCursor();rq.onsuccess=function(){var c=rq.result;if(c){AB[c.key]=c.value.data;LOCAL[c.key]=1;delete BUF[c.key];c.continue()}}}catch(e){}})}
 loadLocal();
-function playBuf(buf,at,gain){var a=ac();if(!a)return 0;var s=a.createBufferSource(),g=a.createGain();s.buffer=buf;g.gain.value=gain||1.6;s.connect(g);g.connect(a.destination);s.start(a.currentTime+(at||0));return buf.duration}
+function playBuf(buf,at,gain){var a=ac();if(!a)return 0;var s=a.createBufferSource(),g=a.createGain();s.buffer=buf;g.gain.value=gain||1;s.connect(g);g.connect(a.destination);s.start(a.currentTime+(at||0));return buf.duration}
 function dec(a,ab,ok,bad){try{var p=a.decodeAudioData(ab.slice(0),ok,bad);if(p&&p.catch)p.catch(function(){})}catch(e){bad()}}
 function getBuf(w,cb){if(BUF[w])return cb(BUF[w]);if(!AB[w])return cb(null);var a=ac();if(!a)return cb(null);var done=function(b){BUF[w]=b;cb(b)};
  dec(a,AB[w],done,function(){if(AB2[w]&&AB2[w]!==AB[w])dec(a,AB2[w],done,function(){cb(null)});else cb(null)})}
