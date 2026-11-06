@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
+<title>A&J Kampot Boutique</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcode-generator/1.4.4/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{--navy:#14254a;--navy2:#1f3a73;--ink:#1b1f2a;--mute:#6b7280;--line:#e6e8ee;--bg:#f6f7fa;--ok:#15803d;--bad:#b91c1c}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:Inter,"Kantumruy Pro",system-ui,sans-serif;font-size:15px}
+body.km{font-family:"Kantumruy Pro",Inter,system-ui,sans-serif}
+header{background:#fff;border-bottom:1px solid var(--line);padding:12px 16px;display:flex;align-items:center;gap:10px;position:sticky;top:0;z-index:5}
+header img{height:34px}
+header .t{flex:1;line-height:1.15}
+header .t b{display:block;font-size:15px;color:var(--navy)}
+header .t span{font-size:12px;color:var(--mute)}
+.lang{border:1px solid var(--line);background:#fff;border-radius:20px;padding:6px 10px;font-size:13px;font-weight:600;color:var(--navy);cursor:pointer}
+main{padding:16px;padding-bottom:90px;max-width:560px;margin:0 auto}
+.page{display:none}.page.on{display:block}
+h2{font-size:19px;margin:4px 0 4px;color:var(--navy)}
+.sub{color:var(--mute);font-size:13px;margin:0 0 14px}
+.hero{background:linear-gradient(135deg,var(--navy),var(--navy2));color:#fff;border-radius:16px;padding:18px;margin-bottom:14px}
+.hero b{font-size:18px;display:block;margin-bottom:4px}
+.hero p{margin:0;font-size:13px;opacity:.85}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.tile{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;cursor:pointer;text-align:left;font:inherit;color:inherit}
+.tile .i{font-size:26px}
+.tile b{display:block;margin-top:6px;font-size:14px;color:var(--navy)}
+.tile span{font-size:12px;color:var(--mute)}
+.card{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-bottom:12px}
+.pics{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.pics::-webkit-scrollbar{display:none}
+.pics img{width:100%;flex:0 0 100%;height:200px;object-fit:cover;scroll-snap-align:start;background:#e5e7eb}
+.cb{padding:12px 14px}
+.cb .row{display:flex;justify-content:space-between;align-items:baseline}
+.cb h3{margin:0;font-size:16px}
+.price{font-weight:700;color:var(--navy);font-size:18px}
+.price s{color:var(--mute);font-weight:400;font-size:13px;margin-right:4px}
+.meta{font-size:13px;color:var(--mute);margin:4px 0 10px}
+.btn{display:block;width:100%;border:0;border-radius:12px;padding:13px;font:inherit;font-weight:600;font-size:15px;cursor:pointer;text-align:center;text-decoration:none}
+.btn.p{background:var(--navy);color:#fff}
+.btn.s{background:#fff;color:var(--navy);border:1.5px solid var(--navy)}
+.btn+.btn{margin-top:8px}
+.btn:disabled{opacity:.5}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+label{display:block;font-size:13px;font-weight:600;margin:12px 0 5px}
+input,select,textarea{width:100%;border:1px solid #d5d9e2;border-radius:10px;padding:11px;font:inherit;background:#fff;color:var(--ink)}
+textarea{min-height:70px;resize:vertical}
+.note{background:#fff7e6;border:1px solid #f5d38a;border-radius:10px;padding:10px 12px;font-size:13px;margin:10px 0}
+.items{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.item{background:#fff;border:1.5px solid var(--line);border-radius:12px;padding:10px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:13px;user-select:none}
+.item.on{border-color:var(--navy);background:#eef2fb}
+.item .e{font-size:20px}
+.photos{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.photos .ph{width:76px;height:76px;border-radius:10px;overflow:hidden;position:relative;border:1px solid var(--line)}
+.photos .ph img{width:100%;height:100%;object-fit:cover}
+.photos .ph b{position:absolute;top:2px;right:2px;background:#000a;color:#fff;border-radius:50%;width:20px;height:20px;font-size:12px;display:grid;place-items:center;cursor:pointer}
+.addph{width:76px;height:76px;border:1.5px dashed #aab;border-radius:10px;display:grid;place-items:center;font-size:28px;color:var(--navy);cursor:pointer;background:#fff}
+.list{background:#fff;border:1px solid var(--line);border-radius:14px}
+.list .li{display:flex;gap:12px;padding:12px 14px;border-bottom:1px solid var(--line);align-items:center;text-decoration:none;color:inherit}
+.list .li:last-child{border:0}
+.list .li .e{font-size:22px;width:28px;text-align:center}
+.list .li b{display:block;font-size:14px}
+.list .li span{font-size:12px;color:var(--mute)}
+nav{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:1px solid var(--line);display:flex;padding:6px 4px calc(6px + env(safe-area-inset-bottom));z-index:6}
+nav button{flex:1;border:0;background:none;font:inherit;font-size:11px;color:var(--mute);padding:4px 0;cursor:pointer}
+nav button .e{display:block;font-size:20px;filter:grayscale(1);opacity:.6}
+nav button.on{color:var(--navy);font-weight:600}
+nav button.on .e{filter:none;opacity:1}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:14px;display:none;z-index:9;max-width:90%;text-align:center}
+.done{text-align:center;padding:30px 10px}
+.done .e{font-size:54px}
+.req{color:var(--bad)}
+.en{display:block;font-size:.8em;font-weight:500;opacity:.72;line-height:1.25}
+.btn .en{opacity:.8}
+nav .en{font-size:9px}
+.item .en{font-size:11px}
+h2 .en{font-size:13px;font-weight:600}
+.stay{background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px 12px 12px;margin-bottom:12px}
+.stay .three{display:grid;grid-template-columns:1fr 1fr 90px;gap:8px}
+.stay label{margin-top:8px}
+.tot{font-size:13px;color:var(--mute);margin:-4px 0 10px}
+.tot b{color:var(--ink)}
+.modal{position:fixed;inset:0;background:#0008;z-index:20;display:none;align-items:flex-end;justify-content:center}
+.modal.on{display:flex}
+.sheet{background:#fff;width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto}
+.sheet h3{margin:0 0 8px;color:var(--navy)}
+.sum{background:var(--bg);border-radius:10px;padding:10px 12px;font-size:14px}
+.sum div{display:flex;justify-content:space-between;padding:3px 0}
+.code{border:1.5px dashed var(--navy);border-radius:12px;padding:10px 12px;margin:12px 0;display:flex;align-items:center;justify-content:space-between}
+.code b{font-size:20px;letter-spacing:1px;font-family:ui-monospace,monospace}
+.code button{background:var(--navy);color:#fff;border:0;border-radius:8px;padding:8px 12px;font:inherit;font-weight:600;cursor:pointer}
+ol.steps{padding-left:18px;font-size:13px;margin:8px 0 14px}
+.qrbox{text-align:center;background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;margin:10px 0}
+.qrbox .bank{font-weight:700;color:#0b4a8b}
+.qrbox #qr img,.qrbox #qr svg{width:220px;height:220px}
+.qrbox .amt{font-size:20px;font-weight:700;color:var(--navy);margin-top:6px}
+</style>
+</head>
+<body>
+<header>
+  <img src="https://0d57110f.aj-booking.pages.dev/logo-navy.png" alt="A&J">
+  <div class="t"><b>A&J Kampot Boutique</b><span data-t="tagline"></span></div>
+  <button class="lang" id="langBtn">ខ្មែរ</button>
+</header>
+
+<main>
+<!-- HOME -->
+<section class="page on" id="p-home">
+  <div class="hero"><b id="hello"></b><p data-t="heroP"></p></div>
+  <div class="grid">
+    <button class="tile" data-go="rooms"><div class="i">🛏️</div><b data-t="tRooms"></b><span data-t="tRoomsS"></span></button>
+    <button class="tile" data-go="checkin"><div class="i">📝</div><b data-t="tCheck"></b><span data-t="tCheckS"></span></button>
+    <button class="tile" data-go="request"><div class="i">🧺</div><b data-t="tReq"></b><span data-t="tReqS"></span></button>
+    <button class="tile" data-go="info"><div class="i">💬</div><b data-t="tInfo"></b><span data-t="tInfoS"></span></button>
+  </div>
+</section>
+
+<!-- ROOMS -->
+<section class="page" id="p-rooms">
+  <h2 data-t="tRooms"></h2>
+  <p class="sub" data-t="roomsSub"></p>
+  <div class="stay">
+    <div class="three">
+      <div><label data-t="fCin"></label><input type="date" id="cin"></div>
+      <div><label data-t="fCout"></label><input type="date" id="cout"></div>
+      <div><label data-t="fGuests"></label><input type="number" id="gst" min="1" max="8" value="2"></div>
+    </div>
+  </div>
+  <div id="roomList"></div>
+</section>
+
+<!-- CHECK-IN -->
+<section class="page" id="p-checkin">
+  <h2 data-t="tCheck"></h2>
+  <p class="sub" data-t="checkSub"></p>
+  <div class="note" data-t="docRule"></div>
+  <div class="note" data-t="mateRule"></div>
+  <form id="fCheck">
+    <label><span data-t="fName"></span> <span class="req">*</span></label>
+    <input name="name" required>
+    <div class="two">
+      <div><label><span data-t="fNat"></span> <span class="req">*</span></label><input name="nationality" required></div>
+      <div><label><span data-t="fPass"></span> <span class="req">*</span></label><input name="passport" required></div>
+    </div>
+    <div class="two">
+      <div><label><span data-t="fPhone"></span> <span class="req">*</span></label><input name="phone" type="tel" required></div>
+      <div><label data-t="fSource"></label>
+        <select name="source"><option>Direct / Telegram</option><option>WhatsApp</option><option>Facebook Messenger</option><option>Booking.com</option><option>Agoda</option><option>Expedia</option><option>Trip.com</option><option data-t="other">Other</option></select></div>
+    </div>
+    <div class="two">
+      <div><label><span data-t="fArr"></span> <span class="req">*</span></label><input name="arrival" type="date" required></div>
+      <div><label data-t="fTime"></label><input name="time" type="time"></div>
+    </div>
+    <div class="two">
+      <div><label data-t="fNights"></label><input name="nights" type="number" min="1" value="1"></div>
+      <div><label data-t="fGuests"></label><input name="guests" type="number" min="1" value="2"></div>
+    </div>
+    <label data-t="fTrans"></label>
+    <select name="transport"><option data-t="trCar">Car</option><option data-t="trMoto">Motorbike</option><option data-t="trTuk">Tuk-tuk</option><option data-t="trBus">Bus / Van</option><option data-t="trTaxi">Taxi</option><option data-t="other">Other</option></select>
+    <label data-t="fOthers"></label>
+    <textarea name="others" data-tp="fOthersP"></textarea>
+    <label><span data-t="fDocs"></span> <span class="req">*</span></label>
+    <div class="photos" id="phCheck"></div>
+    <label data-t="fNote"></label>
+    <textarea name="note"></textarea>
+    <br><button class="btn p" type="submit" data-t="send"></button>
+  </form>
+</section>
+
+<!-- REQUEST -->
+<section class="page" id="p-request">
+  <h2 data-t="tReq"></h2>
+  <p class="sub" data-t="reqSub"></p>
+  <form id="fReq">
+    <div class="two">
+      <div><label><span data-t="fRoom"></span> <span class="req">*</span></label><input name="room" inputmode="numeric" required placeholder="203"></div>
+      <div><label data-t="fName"></label><input name="name"></div>
+    </div>
+    <label data-t="borrow"></label>
+    <div class="items" id="itBorrow"></div>
+    <label data-t="buy"></label>
+    <div class="items" id="itBuy"></div>
+    <label data-t="problem"></label>
+    <div class="items" id="itProb"></div>
+    <label data-t="fNote"></label>
+    <textarea name="note" data-tp="reqNoteP"></textarea>
+    <label data-t="fPhotoOpt"></label>
+    <div class="photos" id="phReq"></div>
+    <br><button class="btn p" type="submit" data-t="send"></button>
+  </form>
+</section>
+
+<!-- INFO / CONTACT -->
+<section class="page" id="p-info">
+  <h2 data-t="tInfo"></h2>
+  <p class="sub" data-t="infoSub"></p>
+  <div class="list">
+    <a class="li" href="https://t.me/+85587882020" target="_blank"><div class="e">✈️</div><div><b>Telegram</b><span>+855 87 882 020</span></div></a>
+    <a class="li" href="https://wa.me/85587882020" target="_blank"><div class="e">🟢</div><div><b>WhatsApp</b><span>+855 87 882 020</span></div></a>
+    <a class="li" href="https://m.me/148357296114503" target="_blank"><div class="e">💙</div><div><b>Messenger</b><span>A&J Kampot Boutique</span></div></a>
+    <a class="li" href="tel:+85587882020"><div class="e">📞</div><div><b data-t="call"></b><span data-t="call24"></span></div></a>
+  </div>
+  <br>
+  <div class="list">
+    <a class="li" href="https://www.google.com/maps/search/?api=1&query=A%26J+Kampot+Boutique%2C+Street+%23724%2C+Krang+Village%2C+Krang+Ampil%2C+Kampot%2C+Cambodia" target="_blank"><div class="e">📍</div><div><b data-t="map"></b><span data-t="mapS"></span></div></a>
+    <div class="li"><div class="e">🕑</div><div><b data-t="ciTitle"></b><span data-t="ciS"></span></div></div>
+    <div class="li"><div class="e">🏊</div><div><b data-t="pool"></b><span>7:30 – 22:00</span></div></div>
+    <div class="li"><div class="e">☕</div><div><b data-t="cafe"></b><span data-t="cafeS"></span></div></div>
+    <div class="li"><div class="e">🚪</div><div><b data-t="gate"></b><span data-t="gateS"></span></div></div>
+    <div class="li"><div class="e">🛵</div><div><b data-t="moto"></b><span data-t="motoS"></span></div></div>
+    <div class="li"><div class="e">🚭</div><div><b data-t="smoke"></b><span data-t="smokeS"></span></div></div>
+  </div>
+</section>
+
+<!-- STAFF BOOKING -->
+<section class="page" id="p-staffbook">
+  <h2 data-t="askStaff"></h2>
+  <p class="sub" data-t="sbSub"></p>
+  <form id="fBook">
+    <label data-t="fRoomType"></label>
+    <select name="room" id="sbRoom"></select>
+    <div class="two">
+      <div><label><span data-t="fCin"></span> <span class="req">*</span></label><input type="date" name="cin" id="sbCin" required></div>
+      <div><label><span data-t="fCout"></span> <span class="req">*</span></label><input type="date" name="cout" id="sbCout" required></div>
+    </div>
+    <div class="two">
+      <div><label data-t="fGuests"></label><input type="number" name="guests" id="sbGst" min="1" value="2"></div>
+      <div><label data-t="fTime"></label><input type="time" name="time"></div>
+    </div>
+    <div class="sum" id="sbSum"></div>
+    <label><span data-t="fName"></span> <span class="req">*</span></label>
+    <input name="name" required>
+    <div class="two">
+      <div><label data-t="fNat"></label><input name="country"></div>
+      <div><label><span data-t="fPhone"></span> <span class="req">*</span></label><input name="phone" type="tel" required></div>
+    </div>
+    <label>Email</label><input name="email" type="email">
+    <label data-t="fNote"></label><textarea name="note"></textarea>
+    <div class="qrbox">
+      <div class="bank">ACLEDA · KHQR</div>
+      <div class="sub" style="margin:4px 0 8px" data-t="qrHint"></div>
+      <div id="qr"></div>
+      <div style="font-size:13px;font-weight:600">A & J Kampot Boutique</div>
+      <div class="amt" id="sbDep"></div>
+    </div>
+    <label><span data-t="fReceipt"></span> <span class="req">*</span></label>
+    <div class="photos" id="phBook"></div>
+    <div class="note" data-t="mateRule"></div>
+    <div class="note" data-t="sbHours"></div>
+    <button class="btn p" type="submit" data-t="send"></button>
+  </form>
+</section>
+
+<!-- DONE -->
+<section class="page" id="p-done">
+  <div class="done"><div class="e">✅</div><h2 data-t="thanks"></h2><p class="sub" id="doneMsg"></p><br><button class="btn s" data-go="home" data-t="back"></button></div>
+</section>
+</main>
+
+<nav>
+  <button data-go="home" class="on"><span class="e">🏠</span><span data-t="nHome"></span></button>
+  <button data-go="rooms"><span class="e">🛏️</span><span data-t="nRooms"></span></button>
+  <button data-go="checkin"><span class="e">📝</span><span data-t="nCheck"></span></button>
+  <button data-go="request"><span class="e">🧺</span><span data-t="nReq"></span></button>
+  <button data-go="info"><span class="e">💬</span><span data-t="nInfo"></span></button>
+</nav>
+<div class="toast" id="toast"></div>
+<div class="modal" id="bookModal"><div class="sheet">
+  <h3 id="bmTitle"></h3>
+  <div class="sum" id="bmSum"></div>
+  <div class="code"><div><div style="font-size:11px;color:var(--mute)" data-t="yourCode"></div><b id="bmCode"></b></div><button type="button" id="bmCopy" data-t="copy"></button></div>
+  <ol class="steps"><li data-t="st1"></li><li data-t="st2"></li><li id="bmSt3"></li></ol>
+  <button class="btn p" id="bmGo" data-t="goBook"></button>
+  <button class="btn s" id="bmStaff" data-t="askStaff"></button>
+  <button class="btn" style="background:none;color:var(--mute)" id="bmClose" data-t="close"></button>
+</div></div>
+
+<script>
+const API = '/api/send';
+const NOBEDS = 'https://nobeds.app/DirectForm/Step/b95b08ae-cb76-428d-8401-1394cd8dad44';
+const KHQR = '00020101021129410009khqr@aclb0114070004703108250206ACLEDA392000118551751447601014520420005802KH53038405921A & J Kampot Boutique6010Phnom Penh621402100885882020630487FD';
+const TG_CHAT = 'https://t.me/+85587882020';
+const IMG = 'https://nobeds.app/uploads/';
+
+const ROOMS = [
+ {id:'SR', rid:'2541246', max:2, en:'Superior Room', km:'បន្ទប់ Superior', was:40, price:24, enM:'1 bed (1.6 m) · up to 2 guests', kmM:'គ្រែ 1 (1.6 ម) · ភ្ញៀវ 2 នាក់',
+  pics:['2541246_rentals_6928b091e8b4449a990a56473a234f59','2541246_rentals_cc534b33a7c242ea95d9ac6354067483','2541246_rentals_4d6f2bb903634ee384aa06bcc5f8fd7b','2541246_rentals_82ede7953e784fe29b96e2133c855446','2541246_rentals_9845002f317a4a64bd9b93c57a15eba4']},
+ {id:'SRB', rid:'2541247', max:2, en:'Superior Room with Balcony', km:'បន្ទប់ Superior មានវេរ៉ង់ដា', was:65, price:30, enM:'1 bed (1.8 m) · private balcony · up to 2 guests', kmM:'គ្រែ 1 (1.8 ម) · វេរ៉ង់ដាផ្ទាល់ · ភ្ញៀវ 2 នាក់',
+  pics:['2541247_rentals_3949190ecc1945dea3e7f7822aa36c66','2541247_rentals_4bf0b6ca26ca46d9a08332f062e5c1cc','2541247_rentals_6062b6ef342c4bbc8a21c136c1199e06','2541247_rentals_656349ec1b6440a4af0248e8ad06195e','2541247_rentals_48b07ba5c78e411898a58d9a3f7f7ccf']},
+ {id:'TA', rid:'2541250', max:2, en:'Twin Room A', km:'បន្ទប់គ្រែពីរ A', was:65, price:32.5, enM:'2 beds (1.2 m) · up to 2 guests', kmM:'គ្រែ 2 (1.2 ម) · ភ្ញៀវ 2 នាក់',
+  pics:['2541250_rentals_607689f355674f27b450af6110daa59e','2541250_rentals_0b17ca3ccedd4b2b9e8804b78a765f5e','2541250_rentals_a6a9e6b1cabb48cd9b5cdacdf995978b','2541250_rentals_211130ef5764462c84b607eb4aea510a','2541250_rentals_d6fad137391e4e2d91de49475d696594','2541250_rentals_adde851fa7c54cb789b05de50736ae00']},
+ {id:'TB', rid:'2541251', max:3, en:'Twin Room B', km:'បន្ទប់គ្រែពីរ B', was:75, price:42, enM:'2 beds (1.8 m + 1.2 m) · up to 3 guests', kmM:'គ្រែ 2 (1.8 ម + 1.2 ម) · ភ្ញៀវ 3 នាក់',
+  pics:['2541251_rentals_07826b94aa3d4285bedfc151710ceae1','2541251_rentals_37ad6afd6fdd4892978c853f0f574384','2541251_rentals_55f27ae5d8404c47b5f21e25bc75bd01','2541251_rentals_1a86cf95c7114ae7adca9b999d497d65','2541251_rentals_12b928a913ea462e97ec244aec06c1a3','2541251_rentals_32f0070948de4475bf43cb30f9799bff']},
+ {id:'FS', rid:'2541252', max:4, en:'Family Suite', km:'បន្ទប់គ្រួសារ (Family Suite)', was:150, price:94.5, enM:'2 beds (1.6 m) · 2 bathrooms · up to 4 guests', kmM:'គ្រែ 2 (1.6 ម) · បន្ទប់ទឹក 2 · ភ្ញៀវ 4 នាក់',
+  pics:['2541252_rentals_97df1d5a6e43469c94a3e328f06338ed','2541252_rentals_3b7c210b06214d75a5d35a8e7c3fa07f','2541252_rentals_76d2d9f9c01d426a8a97e1c2fa7fc835','2541252_rentals_027507df10b04ebbbb0e25edb83f135c','2541252_rentals_6c68ce77bf6a4f6d89b538b5143c8638','2541252_rentals_051b8b9635354d888ee4f56e338abc59','2541252_rentals_d8dd2df693bb4a2eb6d4ca0e45283600','2541252_rentals_8980811125094f59ba8fefb98248b805']}
+];
+
+const BORROW = [['🧻','Towel','កន្សែង'],['☂️','Umbrella','ឆ័ត្រ'],['🔌','Phone charger','ខ្សែសាកទូរសព្ទ'],['💨','Hair dryer','ម៉ាស៊ីនផ្លុំសក់'],['👔','Iron','ឆ្នាំងអ៊ុត'],['🛏️','Extra pillow','ខ្នើយបន្ថែម'],['🧣','Extra blanket','ភួយបន្ថែម'],['🧼','Toiletries','សាប៊ូ / ច្រាសធ្មេញ']];
+const BUY = [['💧','Drinking water','ទឹកសុទ្ធ'],['🥤','Cold drinks','ភេសជ្ជៈត្រជាក់'],['🧺','Laundry service','សេវាបោកអ៊ុត'],['🛵','Rent a motorbike','ជួលម៉ូតូ']];
+const PROB = [['❄️','A/C not cold','ម៉ាស៊ីនត្រជាក់មិនត្រជាក់'],['🚿','Water / leak','ទឹក / លេចទឹក'],['🧻','No toilet paper','អស់ក្រដាសអនាម័យ'],['📶','Wi‑Fi problem','Wi‑Fi មិនដើរ'],['💡','Light / power','ភ្លើង / អគ្គិសនី'],['🧹','Clean my room','សម្អាតបន្ទប់']];
+
+const T = {
+ en:{tagline:'Kampot · Cambodia',hi:'Welcome',heroP:'Book, check in early, ask for anything — all in one place.',
+  tRooms:'Rooms & booking',tRoomsS:'Photos & direct price',tCheck:'Check in early',tCheckS:'Send your details before arrival',tReq:'Room requests',tReqS:'Borrow items · drinks · fix a problem',tInfo:'Contact & info',tInfoS:'Chat with us · map · hours',
+  roomsSub:'Direct price — cheaper than booking sites. Swipe the photos.',fCin:'Check-in',fCout:'Check-out',nights:'nights',night:'night',total:'Total',depositL:'Deposit (50%)',yourCode:'YOUR DISCOUNT CODE',copy:'Copy',copied:'Code copied',st1:'Your room is already selected — tap Next.',st2:'Fill in your name, country, phone and email.',st3:'Paste the code in “Promo code”, check the total shows {T}, then tap Submit.',goBook:'Copy code & open booking website',close:'Close',sbSub:'Same price. Pay a 50% deposit by QR, upload the receipt — our team books it for you and confirms.',fRoomType:'Room',qrHint:'Scan with ACLEDA, ABA or any KHQR bank app and pay the deposit:',fReceipt:'Payment receipt (screenshot)',sbHours:'Our team books rooms 6:00 AM – 12:00 midnight (Cambodia time). Need it held right now at night? use ① “Book instantly on our website”.',needReceipt:'Please upload your payment receipt.',badDates:'Please choose valid dates.',doneBook:'Thank you! We received your booking request and receipt. Our team will confirm with you soon.',perNight:'/ night',bookNow:'① Book instantly on our website',askStaff:'② Book here — our team arranges it',deposit:'50% deposit holds your room. Same price both ways.',
+  checkSub:'Fill this before you arrive so check-in takes 1 minute. Our staff will finish the rest at reception.',
+  docRule:'🛂 Foreign guests: passport + visa. Cambodian guests: national ID card. Without these documents we cannot check you in.',
+  fName:'Full name (as in passport)',fNat:'Nationality',fPass:'Passport / ID No.',fPhone:'Phone / Telegram / WhatsApp',fSource:'Booked via',fArr:'Arrival date',fTime:'Arrival time',fNights:'Nights',fGuests:'Guests',fTrans:'Coming by',fOthers:'Other guests (name · nationality · passport No.)',fOthersP:'One guest per line',fDocs:'Photos of passport / visa / ID (you and everyone sharing the room)',mateRule:'👥 Sharing the room with a partner or friend? Please bring their passport / ID too — every guest staying in the room must show an ID at check-in.',fNote:'Note',fRoom:'Room No.',fPhotoOpt:'Photo (optional)',
+  trCar:'Car',trMoto:'Motorbike',trTuk:'Tuk-tuk',trBus:'Bus / Van',trTaxi:'Taxi',other:'Other',
+  reqSub:'Tap what you need — our 24‑hour reception gets it right away.',borrow:'Borrow',buy:'Buy / services',problem:'Report a problem',reqNoteP:'Anything else?',
+  send:'Send',sending:'Sending…',thanks:'Sent — thank you!',back:'Back to home',
+  doneCheck:'We received your details. See you soon at A&J Kampot Boutique!',doneReq:'Reception received your request and will come to your room shortly.',
+  needDoc:'Please add at least one photo of your passport / ID.',needItem:'Please choose at least one item or write a note.',fail:'Could not send. Opening Telegram chat instead…',
+  infoSub:'Reception is open 24 hours. Message us any time.',call:'Call reception',call24:'24 hours · +855 87 882 020',map:'Map',mapS:'Kampot town, near the Durian roundabout',ciTitle:'Check-in 14:00 · Check-out 12:00',ciS:'Early arrival? Leave your luggage with us.',pool:'Swimming pool',cafe:'Café corner',cafeS:'8:00 – 17:00 · you may bring outside food',gate:'Front gate closes 1:00 AM',gateS:'Message reception and we open it 24h',moto:'Motorbike rental & laundry',motoS:'Ask at reception or in Room requests',smoke:'No smoking inside',smokeS:'Balcony rooms or outside downstairs',
+  nHome:'Home',nRooms:'Rooms',nCheck:'Check-in',nReq:'Requests',nInfo:'Contact'},
+ km:{tagline:'កំពត · កម្ពុជា',hi:'សូមស្វាគមន៍',heroP:'កក់បន្ទប់ Check-in ជាមុន និងស្នើសុំអ្វីក៏បាន — នៅកន្លែងតែមួយ។',
+  tRooms:'បន្ទប់ និងការកក់',tRoomsS:'រូបភាព និងតម្លៃផ្ទាល់',tCheck:'Check-in ជាមុន',tCheckS:'ផ្ញើព័ត៌មានមុនពេលមកដល់',tReq:'សំណើក្នុងបន្ទប់',tReqS:'ខ្ចីរបស់ · ភេសជ្ជៈ · រាយការណ៍បញ្ហា',tInfo:'ទំនាក់ទំនង និងព័ត៌មាន',tInfoS:'ឆាតជាមួយយើង · ផែនទី · ម៉ោង',
+  roomsSub:'តម្លៃផ្ទាល់ — ថោកជាងវេបសាយកក់ផ្សេងៗ។ អូសមើលរូបភាព។',fCin:'ថ្ងៃចូល',fCout:'ថ្ងៃចេញ',nights:'យប់',night:'យប់',total:'សរុប',depositL:'ប្រាក់កក់ (50%)',yourCode:'លេខកូដបញ្ចុះតម្លៃ',copy:'ចម្លង',copied:'បានចម្លងកូដ',st1:'បន្ទប់ត្រូវបានរើសរួចហើយ — ចុច Next។',st2:'បំពេញឈ្មោះ ប្រទេស ទូរសព្ទ និងអ៊ីមែល។',st3:'បិទភ្ជាប់កូដក្នុង “Promo code” ពិនិត្យថាតម្លៃសរុបគឺ {T} រួចចុច Submit។',goBook:'ចម្លងកូដ ហើយបើកវេបសាយកក់',close:'បិទ',sbSub:'តម្លៃដូចគ្នា។ បង់ប្រាក់កក់ 50% តាម QR ហើយ upload វិក្កយបត្រ — បុគ្គលិកនឹងកក់ជូន និងបញ្ជាក់ទៅអ្នក។',fRoomType:'បន្ទប់',qrHint:'ស្កេនដោយ ACLEDA, ABA ឬកម្មវិធីធនាគារ KHQR ណាមួយ ហើយបង់ប្រាក់កក់៖',fReceipt:'វិក្កយបត្របង់ប្រាក់ (រូបថតអេក្រង់)',sbHours:'បុគ្គលិកកក់បន្ទប់ម៉ោង 6:00 ព្រឹក – 12:00 យប់ (ម៉ោងកម្ពុជា)។ បើត្រូវការរក្សាបន្ទប់ភ្លាមនៅពេលយប់ សូមចុច ① “កក់ភ្លាមៗតាមវេបសាយ”។',needReceipt:'សូម upload វិក្កយបត្របង់ប្រាក់។',badDates:'សូមរើសថ្ងៃឱ្យត្រឹមត្រូវ។',doneBook:'អរគុណ! យើងបានទទួលសំណើកក់ និងវិក្កយបត្ររបស់អ្នក។ បុគ្គលិកនឹងបញ្ជាក់ទៅអ្នកឆាប់ៗ។',perNight:'/ យប់',bookNow:'① កក់ភ្លាមៗតាមវេបសាយ',askStaff:'② កក់នៅទីនេះ — បុគ្គលិករៀបចំជូន',deposit:'បង់ប្រាក់កក់ 50% ដើម្បីរក្សាបន្ទប់។ តម្លៃដូចគ្នាទាំងពីរ។',
+  checkSub:'បំពេញមុនពេលមកដល់ ដើម្បីឱ្យ Check-in ត្រឹមតែ 1 នាទី។ បុគ្គលិកនឹងបំពេញបន្ថែមនៅកន្លែងទទួលភ្ញៀវ។',
+  docRule:'🛂 ភ្ញៀវបរទេស៖ លិខិតឆ្លងដែន + ទិដ្ឋាការ។ ភ្ញៀវខ្មែរ៖ អត្តសញ្ញាណប័ណ្ណ។ បើគ្មានឯកសារទាំងនេះ មិនអាច Check-in បានទេ។',
+  fName:'ឈ្មោះពេញ (ដូចក្នុងលិខិតឆ្លងដែន)',fNat:'សញ្ជាតិ',fPass:'លេខលិខិតឆ្លងដែន / អត្តសញ្ញាណប័ណ្ណ',fPhone:'ទូរសព្ទ / Telegram / WhatsApp',fSource:'កក់តាម',fArr:'ថ្ងៃមកដល់',fTime:'ម៉ោងមកដល់',fNights:'ចំនួនយប់',fGuests:'ចំនួនភ្ញៀវ',fTrans:'មកដោយ',fOthers:'ភ្ញៀវផ្សេងទៀត (ឈ្មោះ · សញ្ជាតិ · លេខលិខិត)',fOthersP:'ភ្ញៀវម្នាក់ មួយបន្ទាត់',fDocs:'រូបលិខិតឆ្លងដែន / ទិដ្ឋាការ / អត្តសញ្ញាណប័ណ្ណ (របស់អ្នក និងដៃគូដែលស្នាក់បន្ទប់ជាមួយ)',mateRule:'👥 បើមានដៃគូ ឬមិត្តភក្តិស្នាក់នៅបន្ទប់ជាមួយ សូមត្រៀមអត្តសញ្ញាណប័ណ្ណ ឬលិខិតឆ្លងដែនរបស់ដៃគូមកជាមួយផង — ភ្ញៀវគ្រប់រូបដែលស្នាក់នៅក្នុងបន្ទប់ ត្រូវបង្ហាញអត្តសញ្ញាណពេល Check-in។',fNote:'កំណត់ចំណាំ',fRoom:'លេខបន្ទប់',fPhotoOpt:'រូបភាព (មិនចាំបាច់)',
+  trCar:'ឡាន',trMoto:'ម៉ូតូ',trTuk:'តុកតុក',trBus:'ឡានក្រុង / វ៉ាន់',trTaxi:'តាក់ស៊ី',other:'ផ្សេងៗ',
+  reqSub:'ចុចរើសអ្វីដែលត្រូវការ — កន្លែងទទួលភ្ញៀវ 24 ម៉ោង ទទួលបានភ្លាមៗ។',borrow:'ខ្ចី',buy:'ទិញ / សេវា',problem:'រាយការណ៍បញ្ហា',reqNoteP:'មានអ្វីទៀតទេ?',
+  send:'ផ្ញើ',sending:'កំពុងផ្ញើ…',thanks:'បានផ្ញើរួច — អរគុណ!',back:'ត្រឡប់ទៅទំព័រដើម',
+  doneCheck:'យើងបានទទួលព័ត៌មានរបស់អ្នកហើយ។ ជួបគ្នាឆាប់ៗនៅ A&J Kampot Boutique!',doneReq:'កន្លែងទទួលភ្ញៀវបានទទួលសំណើ ហើយនឹងមកបន្ទប់អ្នកឆាប់ៗ។',
+  needDoc:'សូមបញ្ចូលរូបលិខិតឆ្លងដែន / អត្តសញ្ញាណប័ណ្ណ យ៉ាងហោចណាស់ 1។',needItem:'សូមរើសយ៉ាងហោចណាស់ 1 ឬសរសេរកំណត់ចំណាំ។',fail:'ផ្ញើមិនបាន។ កំពុងបើកឆាត Telegram ជំនួស…',
+  infoSub:'កន្លែងទទួលភ្ញៀវបើក 24 ម៉ោង។ ផ្ញើសារមកបានគ្រប់ពេល។',call:'ទូរសព្ទទៅកន្លែងទទួលភ្ញៀវ',call24:'24 ម៉ោង · +855 87 882 020',map:'ផែនទី',mapS:'ក្នុងក្រុងកំពត ជិតរង្វង់មូលធុរេន',ciTitle:'Check-in 14:00 · Check-out 12:00',ciS:'មកដល់មុន? អាចផ្ញើឥវ៉ាន់ជាមួយយើងបាន។',pool:'អាងហែលទឹក',cafe:'ហាងកាហ្វេ',cafeS:'8:00 – 17:00 · អាចយកម្ហូបពីខាងក្រៅមកញ៉ាំបាន',gate:'ទ្វារធំបិទម៉ោង 1:00 យប់',gateS:'ផ្ញើសារមក យើងបើកឱ្យបាន 24 ម៉ោង',moto:'ជួលម៉ូតូ និងបោកអ៊ុត',motoS:'សួរនៅកន្លែងទទួលភ្ញៀវ ឬក្នុងសំណើក្នុងបន្ទប់',smoke:'ហាមជក់បារីខាងក្នុង',smokeS:'បន្ទប់មានវេរ៉ង់ដា ឬខាងក្រៅជាន់ក្រោម',
+  nHome:'ដើម',nRooms:'បន្ទប់',nCheck:'Check-in',nReq:'សំណើ',nInfo:'ទំនាក់ទំនង'}
+};
+
+const tg = window.Telegram && Telegram.WebApp;
+const tgUser = tg && tg.initDataUnsafe && tg.initDataUnsafe.user;
+let lang = 'en';
+try { lang = localStorage.getItem('aj_lang') || ((tgUser && tgUser.language_code==='km') || (navigator.language||'').startsWith('km') ? 'km' : 'en'); } catch(e){}
+const qs = s => document.querySelector(s), qsa = s => [...document.querySelectorAll(s)];
+const t = k => (T[lang][k] ?? T.en[k] ?? k);
+const esc = x => String(x).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const dual = (km, en) => lang==='km' && en && en!==km ? `${esc(km)}<span class="en">${esc(en)}</span>` : esc(lang==='km'?km:en);
+const tb = k => dual(T.km[k] ?? T.en[k] ?? k, T.en[k] ?? k);   // bilingual HTML
+const tx = k => (lang==='km' && T.en[k] && T.en[k]!==T.km[k]) ? `${t(k)} / ${T.en[k]}` : t(k); // bilingual plain text
+
+if (tg) { try { tg.ready(); tg.expand(); tg.setHeaderColor && tg.setHeaderColor('#ffffff'); } catch(e){} }
+
+function applyLang(){
+  document.body.classList.toggle('km', lang==='km');
+  document.documentElement.lang = lang;
+  qs('#langBtn').textContent = lang==='km' ? 'English' : 'ខ្មែរ';
+  qsa('[data-t]').forEach(e => { if (e.tagName==='OPTION') e.textContent = tx(e.dataset.t); else e.innerHTML = tb(e.dataset.t); });
+  qsa('[data-tp]').forEach(e => { e.placeholder = t(e.dataset.tp); });
+  const n = tgUser ? (tgUser.first_name||'') : '';
+  qs('#hello').textContent = tx('hi') + (n ? ', ' + n : '') + ' 👋';
+  renderRooms(); renderItems(); if (qs('#sbRoom').options.length) { fillRoomSelect(); sbCalc(); }
+}
+qs('#langBtn').onclick = () => { lang = lang==='km'?'en':'km'; try{localStorage.setItem('aj_lang',lang)}catch(e){} applyLang(); };
+
+function go(p){
+  qsa('.page').forEach(e => e.classList.toggle('on', e.id==='p-'+p));
+  qsa('nav button').forEach(b => b.classList.toggle('on', b.dataset.go===p));
+  window.scrollTo(0,0);
+  if (tg && tg.BackButton) { p==='home' ? tg.BackButton.hide() : tg.BackButton.show(); }
+}
+document.addEventListener('click', e => { const g = e.target.closest('[data-go]'); if (g) go(g.dataset.go); });
+if (tg && tg.BackButton) tg.BackButton.onClick(() => go('home'));
+
+function openLink(url){
+  if (tg && tg.openLink && !url.startsWith('https://t.me')) { tg.openLink(url); return; }
+  if (tg && tg.openTelegramLink && url.startsWith('https://t.me')) { tg.openTelegramLink(url); return; }
+  window.open(url, '_blank');
+}
+document.addEventListener('click', e => {
+  const a = e.target.closest('a[target=_blank]');
+  if (a && tg) { e.preventDefault(); openLink(a.href); }
+});
+
+// ---- dates ----
+const iso = d => new Date(d.getTime() - d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+const addDays = (s,n) => { const d = new Date(s+'T00:00:00'); d.setDate(d.getDate()+n); return iso(d); };
+const nightsOf = (a,b) => Math.round((new Date(b+'T00:00:00') - new Date(a+'T00:00:00'))/86400000);
+const money = n => '$' + (Math.round(n*100)/100).toFixed(2).replace(/\.00$/,'');
+const today = iso(new Date());
+qs('#cin').value = today; qs('#cout').value = addDays(today,1);
+qs('#cin').min = today; qs('#cout').min = addDays(today,1);
+function stay(){
+  let a = qs('#cin').value || today, b = qs('#cout').value;
+  if (!b || nightsOf(a,b) < 1) { b = addDays(a,1); qs('#cout').value = b; }
+  qs('#cout').min = addDays(a,1);
+  return { a, b, n: nightsOf(a,b), g: Math.max(1, +qs('#gst').value || 1) };
+}
+['#cin','#cout','#gst'].forEach(id => qs(id).addEventListener('change', renderRooms));
+
+function renderRooms(){
+  const st = stay();
+  qs('#roomList').innerHTML = ROOMS.map(r => `
+   <div class="card">
+    <div class="pics">${r.pics.map(p=>`<img loading="lazy" src="${IMG+p}.jpg" alt="">`).join('')}</div>
+    <div class="cb">
+     <div class="row"><h3>${dual(r.km, r.en)}</h3><div class="price"><s>$${r.was}</s>$${r.price}<small style="font-size:12px;font-weight:500;color:var(--mute)"> ${t('perNight')}</small></div></div>
+     <div class="meta">${dual(r.kmM, r.enM)} · ${r.pics.length} 📷</div>
+     <div class="tot">${tx('total')} ${st.n} ${st.n>1?t('nights'):t('night')}: <b>${money(r.price*st.n)}</b> · ${tx('depositL')}: <b>${money(r.price*st.n/2)}</b></div>
+     <button class="btn p" data-book="${r.id}">${tb('bookNow')}</button>
+     <button class="btn s" data-staff="${r.id}">${tb('askStaff')}</button>
+    </div>
+   </div>`).join('') + `<p class="sub">${tb('deposit')}</p>`;
+}
+
+// ---- Book now (instant, Nobeds) ----
+let cur = null;
+function nobedsUrl(r, st){ return `${NOBEDS}?arrdate=${st.a}&depdate=${st.b}&guests=${Math.min(st.g, r.max)}&roomselect=${r.rid}`; }
+function openBookModal(id){
+  cur = ROOMS.find(r => r.id===id); const st = stay();
+  qs('#bmTitle').innerHTML = dual(cur.km, cur.en);
+  qs('#bmSum').innerHTML = `<div><span>${t('fCin')} → ${t('fCout')}</span><b>${st.a} → ${st.b}</b></div><div><span>${t('fGuests')}</span><b>${st.g}</b></div><div><span>${t('total')} (${st.n} ${st.n>1?t('nights'):t('night')})</span><b>${money(cur.price*st.n)}</b></div>`;
+  qs('#bmCode').textContent = 'PROMO_' + cur.id;
+  qs('#bmSt3').innerHTML = tb('st3').replace(/\{T\}/g, money(cur.price*st.n));
+  qs('#bookModal').classList.add('on');
+}
+async function copyCode(){
+  const c = qs('#bmCode').textContent;
+  try { await navigator.clipboard.writeText(c); }
+  catch(e){ const ta=document.createElement('textarea'); ta.value=c; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy')}catch(_){} ta.remove(); }
+  toast(tx('copied') + ': ' + c);
+}
+qs('#bmCopy').onclick = copyCode;
+qs('#bmGo').onclick = async () => { await copyCode(); openLink(nobedsUrl(cur, stay())); };
+qs('#bmClose').onclick = () => qs('#bookModal').classList.remove('on');
+qs('#bmStaff').onclick = () => { qs('#bookModal').classList.remove('on'); openStaff(cur.id); };
+qs('#bookModal').addEventListener('click', e => { if (e.target.id==='bookModal') qs('#bookModal').classList.remove('on'); });
+
+// ---- Ask our team (in-app form + KHQR + receipt) ----
+function fillRoomSelect(sel){
+  const v = qs('#sbRoom').value;
+  qs('#sbRoom').innerHTML = ROOMS.map(r => `<option value="${r.id}">${lang==='km'?r.km+' / '+r.en:r.en} — $${r.price}${t('perNight')}</option>`).join('');
+  qs('#sbRoom').value = sel || v || 'SR';
+}
+function sbCalc(){
+  const r = ROOMS.find(x => x.id===qs('#sbRoom').value) || ROOMS[0];
+  let a = qs('#sbCin').value, b = qs('#sbCout').value;
+  if (a && (!b || nightsOf(a,b) < 1)) { b = addDays(a,1); qs('#sbCout').value = b; }
+  const n = a && b ? nightsOf(a,b) : 0;
+  qs('#sbSum').innerHTML = `<div><span>${n} ${n>1?t('nights'):t('night')} × $${r.price}</span><b>${money(r.price*n)}</b></div><div><span>${tx('depositL')}</span><b>${money(r.price*n/2)}</b></div>`;
+  qs('#sbDep').textContent = n ? money(r.price*n/2) : '';
+  return { r, a, b, n };
+}
+['#sbRoom','#sbCin','#sbCout'].forEach(id => qs(id).addEventListener('change', sbCalc));
+function openStaff(id){
+  const st = stay();
+  fillRoomSelect(id);
+  qs('#sbCin').value = st.a; qs('#sbCout').value = st.b; qs('#sbGst').value = st.g;
+  qs('#sbCin').min = today;
+  sbCalc(); go('staffbook');
+}
+function drawQR(){
+  try { const q = qrcode(0,'M'); q.addData(KHQR); q.make(); qs('#qr').innerHTML = q.createSvgTag({cellSize:4, margin:2, scalable:true}); }
+  catch(e){ qs('#qr').textContent = 'KHQR'; }
+}
+document.addEventListener('click', e => {
+  const bk = e.target.closest('[data-book]'), sf = e.target.closest('[data-staff]');
+  if (bk) openBookModal(bk.dataset.book);
+  if (sf) openStaff(sf.dataset.staff);
+});
+
+function renderItems(){
+  const mk = (el, arr) => { const keep = new Set(qsa('#'+el+' .item.on').map(x=>x.dataset.v));
+    qs('#'+el).innerHTML = arr.map(a => `<div class="item${keep.has(a[1])?' on':''}" data-v="${a[1]}"><span class="e">${a[0]}</span><span>${dual(a[2], a[1])}</span></div>`).join(''); };
+  mk('itBorrow', BORROW); mk('itBuy', BUY); mk('itProb', PROB);
+}
+document.addEventListener('click', e => { const it = e.target.closest('.item'); if (it) it.classList.toggle('on'); });
+
+// ---- photos (compressed in browser) ----
+const photoSets = { phCheck: [], phReq: [], phBook: [] };
+function initPhotos(id, max){
+  const box = qs('#'+id);
+  const input = document.createElement('input'); input.type='file'; input.accept='image/*'; input.multiple=true; input.style.display='none';
+  document.body.appendChild(input);
+  const draw = () => {
+    box.innerHTML = photoSets[id].map((p,i)=>`<div class="ph"><img src="${p.url}"><b data-del="${id}:${i}">✕</b></div>`).join('') +
+      (photoSets[id].length < max ? `<div class="addph" data-add="${id}">＋</div>` : '');
+  };
+  box.addEventListener('click', e => {
+    if (e.target.dataset.add) input.click();
+    if (e.target.dataset.del) { photoSets[id].splice(+e.target.dataset.del.split(':')[1],1); draw(); }
+  });
+  input.onchange = async () => {
+    for (const f of [...input.files].slice(0, max - photoSets[id].length)) {
+      try { const blob = await shrink(f); photoSets[id].push({blob, url: URL.createObjectURL(blob)}); } catch(e){}
+    }
+    input.value=''; draw();
+  };
+  draw();
+}
+function shrink(file){
+  return new Promise((res, rej) => {
+    const img = new Image(); img.onload = () => {
+      const m = 1600, s = Math.min(1, m/Math.max(img.width, img.height));
+      const c = document.createElement('canvas'); c.width = Math.round(img.width*s); c.height = Math.round(img.height*s);
+      c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+      c.toBlob(b => b ? res(b) : rej(), 'image/jpeg', 0.82);
+    }; img.onerror = rej; img.src = URL.createObjectURL(file);
+  });
+}
+initPhotos('phCheck', 8); initPhotos('phReq', 3);
+
+function toast(m){ const el=qs('#toast'); el.textContent=m; el.style.display='block'; clearTimeout(toast.t); toast.t=setTimeout(()=>el.style.display='none',3500); }
+
+async function send(kind, text, photos, btn, doneKey, data){
+  btn.disabled = true; const old = btn.innerHTML; btn.textContent = tx('sending');
+  try {
+    const fd = new FormData();
+    fd.append('kind', kind); fd.append('text', text);
+    if (data) fd.append('data', JSON.stringify(data));
+    if (tg && tg.initData) fd.append('initData', tg.initData);
+    photos.forEach((p,i) => fd.append('photo'+i, p.blob, 'photo'+i+'.jpg'));
+    const r = await fetch(API, { method:'POST', body: fd });
+    const j = await r.json().catch(()=>({}));
+    if (!r.ok || !j.ok) throw new Error(j.error || r.status);
+    qs('#doneMsg').innerHTML = tb(doneKey); go('done');
+    if (tg && tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+    return true;
+  } catch(err) {
+    toast(tx('fail'));
+    setTimeout(()=> openLink(TG_CHAT), 1200);
+    return false;
+  } finally { btn.disabled = false; btn.innerHTML = old; }
+}
+const who = () => tgUser ? `\nTelegram: ${tgUser.first_name||''} ${tgUser.last_name||''}${tgUser.username?' @'+tgUser.username:''} (id ${tgUser.id})` : '';
+
+qs('#fCheck').onsubmit = async e => {
+  e.preventDefault();
+  if (!photoSets.phCheck.length) { toast(tx('needDoc')); return; }
+  const d = Object.fromEntries(new FormData(e.target));
+  const txt = `📝 EARLY CHECK-IN\n` +
+   `Name: ${d.name}\nNationality: ${d.nationality}\nPassport/ID: ${d.passport}\nPhone: ${d.phone}\nBooked via: ${d.source}\n` +
+   `Arrival: ${d.arrival} ${d.time||''}\nNights: ${d.nights} · Guests: ${d.guests}\nComing by: ${d.transport}` +
+   (d.others ? `\nOther guests:\n${d.others}` : '') + (d.note ? `\nNote: ${d.note}` : '') + who();
+  const data = Object.assign({}, d, tgUser ? { tg: { id: tgUser.id, name: ((tgUser.first_name||'')+' '+(tgUser.last_name||'')).trim(), username: tgUser.username||'' } } : {});
+  if (await send('checkin', txt, photoSets.phCheck, e.target.querySelector('button[type=submit]'), 'doneCheck', data)) {
+    e.target.reset(); photoSets.phCheck.length = 0; initPhotos('phCheck', 8);
+  }
+};
+qs('#fReq').onsubmit = async e => {
+  e.preventDefault();
+  const d = Object.fromEntries(new FormData(e.target));
+  const pick = id => qsa('#'+id+' .item.on').map(x=>x.dataset.v);
+  const b = pick('itBorrow'), y = pick('itBuy'), p = pick('itProb');
+  if (!b.length && !y.length && !p.length && !d.note) { toast(tx('needItem')); return; }
+  const txt = `🧺 ROOM ${d.room} REQUEST` + (d.name ? ` — ${d.name}` : '') +
+   (b.length ? `\nBorrow: ${b.join(', ')}` : '') + (y.length ? `\nBuy/Service: ${y.join(', ')}` : '') +
+   (p.length ? `\n⚠️ Problem: ${p.join(', ')}` : '') + (d.note ? `\nNote: ${d.note}` : '') + who();
+  if (await send('request', txt, photoSets.phReq, e.target.querySelector('button[type=submit]'), 'doneReq')) {
+    e.target.reset(); qsa('.item.on').forEach(x=>x.classList.remove('on')); photoSets.phReq.length = 0; initPhotos('phReq', 3);
+  }
+};
+
+initPhotos('phBook', 2);
+qs('#fBook').onsubmit = async e => {
+  e.preventDefault();
+  const c = sbCalc();
+  if (!c.n || c.n < 1) { toast(tx('badDates')); return; }
+  if (!photoSets.phBook.length) { toast(tx('needReceipt')); return; }
+  const d = Object.fromEntries(new FormData(e.target));
+  const txt = `🛏️ BOOKING REQUEST (book for guest)\nRoom: ${c.r.en}\nDates: ${c.a} → ${c.b} (${c.n} night${c.n>1?'s':''})\nGuests: ${d.guests}` + (d.time?`\nArrival time: ${d.time}`:'') +
+   `\nTotal: ${money(c.r.price*c.n)} · Deposit 50%: ${money(c.r.price*c.n/2)} (receipt attached)\nName: ${d.name}\nCountry: ${d.country||'-'}\nPhone: ${d.phone}\nEmail: ${d.email||'-'}` + (d.note?`\nNote: ${d.note}`:'') + who();
+  if (await send('booking', txt, photoSets.phBook, e.target.querySelector('button[type=submit]'), 'doneBook')) {
+    e.target.reset(); photoSets.phBook.length = 0; initPhotos('phBook', 2);
+  }
+};
+
+// Remember room number for in-house guests
+try { const rm = localStorage.getItem('aj_room'); if (rm) qs('#fReq [name=room]').value = rm;
+  qs('#fReq [name=room]').addEventListener('change', e => localStorage.setItem('aj_room', e.target.value)); } catch(e){}
+// Deep links: ?page=request&room=203  (for QR codes in each room)
+const q = new URLSearchParams(location.search);
+const sp = (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param) || q.get('page');
+if (q.get('room')) qs('#fReq [name=room]').value = q.get('room');
+if (tg && tg.initDataUnsafe && tg.initDataUnsafe.start_param && /^room\d+$/.test(sp)) { qs('#fReq [name=room]').value = sp.slice(4); }
+const startPage = sp && /^room\d+$/.test(sp) ? 'request' : sp;
+
+drawQR();
+applyLang();
+if (startPage && qs('#p-'+startPage)) go(startPage);
+</script>
+</body>
+</html>
