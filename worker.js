@@ -340,12 +340,12 @@ async function notifyStaff(env, text) {
 }
 async function askClaude(env, messages) {
   const now = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ');
-  const r = await fetch('https://api.anthropic.com/v1/messages', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': String(env.AI_KEY || env.ANTHROPIC_API_KEY || '').replace(/[^\x21-\x7e]/g, ''), 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model: env.AI_MODEL || 'claude-haiku-5-5', max_tokens: 400, system: SYSTEM + `\n\nCurrent date/time in Cambodia: ${now}.`, messages })
-  });
+  const key = String(env.AI_KEY || env.ANTHROPIC_API_KEY || '').replace(/[^\x21-\x7e]/g, '');
+  const body = JSON.stringify({ model: env.AI_MODEL || 'claude-haiku-5-5', max_tokens: 400, system: SYSTEM + `\n\nCurrent date/time in Cambodia: ${now}.`, messages });
+  const call = (auth) => fetch('https://api.anthropic.com/v1/messages', { method: 'POST', headers: Object.assign({ 'content-type': 'application/json', 'anthropic-version': '2023-06-01' }, auth), body });
+  let r = await call({ 'x-api-key': key });
+  if (r.status === 401) r = await call({ 'authorization': 'Bearer ' + key });
   const j = await r.json();
-  if (!r.ok) throw new Error((j.error && j.error.message) || r.status);
+  if (!r.ok) throw new Error(r.status + ' ' + ((j.error && j.error.message) || ''));
   return (j.content || []).filter(c => c.type === 'text').map(c => c.text).join('\n').trim();
 }
