@@ -342,7 +342,7 @@ async function askClaude(env, messages) {
   const now = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ');
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
+    headers: { 'content-type': 'application/json', 'x-api-key': String(env.ANTHROPIC_API_KEY || '').replace(/[^\x21-\x7e]/g, ''), 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({ model: env.AI_MODEL || 'claude-haiku-5-5', max_tokens: 400, system: SYSTEM + `\n\nCurrent date/time in Cambodia: ${now}.`, messages })
   });
   const j = await r.json();
