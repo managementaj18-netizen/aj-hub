@@ -244,7 +244,7 @@ async function tgSetup(env, origin) {
     url: origin + '/tg/webhook', secret_token: await webhookSecret(env),
     allowed_updates: ['message', 'business_connection', 'business_message'], drop_pending_updates: true
   });
-  return json({ ok: !!r.ok, telegram: r.description || '', ai: !!env.ANTHROPIC_API_KEY });
+  return json({ ok: !!r.ok, telegram: r.description || '', ai: !!(env.AI_KEY || env.ANTHROPIC_API_KEY) });
 }
 
 async function handleTg(request, env, ctx) {
@@ -301,7 +301,7 @@ async function onUpdate(env, u) {
     return;
   }
 
-  if (!env.ANTHROPIC_API_KEY) {
+  if (!(env.AI_KEY || env.ANTHROPIC_API_KEY)) {
     await send('Thank you for your message! Our team will reply shortly. 🙏', { reply_markup: appButtons(biz) });
     await notifyStaff(env, `💬 ${who}: ${text.slice(0, 500)}\n(AI not set up yet — please reply)`);
     return;
@@ -342,7 +342,7 @@ async function askClaude(env, messages) {
   const now = new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 16).replace('T', ' ');
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-api-key': String(env.ANTHROPIC_API_KEY || '').replace(/[^\x21-\x7e]/g, ''), 'anthropic-version': '2023-06-01' },
+    headers: { 'content-type': 'application/json', 'x-api-key': String(env.AI_KEY || env.ANTHROPIC_API_KEY || '').replace(/[^\x21-\x7e]/g, ''), 'anthropic-version': '2023-06-01' },
     body: JSON.stringify({ model: env.AI_MODEL || 'claude-haiku-5-5', max_tokens: 400, system: SYSTEM + `\n\nCurrent date/time in Cambodia: ${now}.`, messages })
   });
   const j = await r.json();
