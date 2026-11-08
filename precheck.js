@@ -10,6 +10,8 @@
   var API = "https://aj-guest-app.management-aj-18.workers.dev/api/pc/";
   var LS = "aj_pckey";
   var TAG = "display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;margin:0 4px 3px 0;";
+  var manual = false, flashAt = 0;
+  function hhmm(t) { var d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
   var LIST = [], showUsed = false, loading = false, lastLoad = 0;
 
   try {
@@ -51,7 +53,8 @@
   function draw(msg) {
     var c = card(); if (!c) return;
     var head = '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><b style="font-size:16px;color:#14254a">📥 ភ្ញៀវ Check-in ជាមុន · Pre-checked-in guests</b>' +
-      '<span style="flex:1"></span><button type="button" class="btn alt sm" id="pcReload">🔄</button></div>';
+      '<span style="flex:1"></span>' + (lastLoad ? '<span id="pcStamp" style="font-size:11px;padding:2px 8px;border-radius:999px;' + (Date.now() - flashAt < 2500 ? 'background:#dcfce7;color:#15803d;font-weight:700' : 'color:#64748b') + '">' + (Date.now() - flashAt < 2500 ? '✓ បានធ្វើបច្ចុប្បន្នភាព · ' : '🕒 ') + hhmm(lastLoad) + '</span>' : '') +
+      '<button type="button" class="btn alt sm" id="pcReload" title="ធ្វើបច្ចុប្បន្នភាព · Refresh">' + (loading ? '⏳' : '🔄') + '</button></div>';
     if (!key()) {
       c.innerHTML = head + '<div class="muted" style="margin:6px 0">Tablet នេះមិនទាន់ភ្ជាប់ជាមួយ Guest App · This tablet is not connected yet.</div>' +
         '<button type="button" class="btn" id="pcSetup">📨 ផ្ញើ link ភ្ជាប់ទៅក្រុម Telegram · Send setup link</button>';
@@ -77,7 +80,7 @@
     c.innerHTML = head + '<div class="muted" style="font-size:12px;margin:4px 0 2px">ចុចឈ្មោះភ្ញៀវ → ព័ត៌មាន និងរូប ID ចូល form → ភ្ញៀវគ្រាន់តែស៊ីញ៉េ។ ដៃគូ: ចុច 📷 Scan ដាក់លេខបន្ទប់។</div>' +
       body + '<label class="muted" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;white-space:nowrap;width:auto"><input type="checkbox" id="pcUsed" style="width:16px;height:16px;min-width:16px;margin:0;padding:0;flex:none"' + (showUsed ? " checked" : "") + '> បង្ហាញដែលប្រើរួច · Show used</label>' +
       '<div id="pcMsg" style="display:none;margin-top:8px;padding:8px 10px;border-radius:10px;background:#e7f6ec;color:#15803d;font-weight:600"></div>';
-    $("pcReload").onclick = function () { load(true); };
+    $("pcReload").onclick = function () { manual = true; load(true); };
     $("pcUsed").onchange = function () { showUsed = this.checked; draw(); };
     [].slice.call(c.querySelectorAll("[data-pc]")).forEach(function (b) { b.onclick = function () { use(b.getAttribute("data-pc"), b); }; });
   }
@@ -85,15 +88,15 @@
   function load(force) {
     if (loading || !key()) { draw(); return; }
     if (!force && Date.now() - lastLoad < 30000) { draw(); return; }
-    loading = true;
+    loading = true; draw();
     fetch(API + "list?key=" + encodeURIComponent(key()), { credentials: "omit", cache: "no-store" })
       .then(function (r) { return r.json(); })
       .then(function (j) {
         if (!j.ok) { if (j.error === "Bad key") { try { localStorage.removeItem(LS); } catch (e) {} } LIST = []; draw("⚠️ " + (j.error || "error")); return; }
-        LIST = j.list || []; lastLoad = Date.now(); draw();
+        LIST = j.list || []; lastLoad = Date.now(); if (manual) { flashAt = Date.now(); setTimeout(function () { draw(); }, 2600); } manual = false; loading = false; draw();
       })
       .catch(function () { draw("⚠️ មិនអាចភ្ជាប់បាន · Offline"); })
-      .then(function () { loading = false; });
+      .then(function () { if (loading) { loading = false; manual = false; draw(); } });
   }
 
   function use(id, btn) {
