@@ -9,7 +9,7 @@ ok(/Fruit Catch/.test(await p.locator('#tTitle').innerText())&&await p.locator('
 ok(await p.locator('body').innerText().then(t=>!/English Friends/.test(t)),'Fruit Catch does not mention or link to other games');
 await p.fill('#nm0','Sok');await p.locator('#nm0').blur();await p.click('#go');await p.waitForTimeout(150);
 await p.evaluate(()=>{FC.G.score=150;FC.G.t=40;FC.G.lives=0;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});await p.waitForTimeout(700);
-ok(/#1 today/.test(await p.locator('#tRank').innerText()),'the leaderboard works on the Fruit Catch address: '+await p.locator('#tRank').innerText());
+ok(!/#\d/.test(await p.locator('#tRank').innerText()),'no ranking shown to players on the Fruit Catch address');
 await p.evaluate(()=>{window.__s=[];Object.defineProperty(navigator,'share',{configurable:true,value:d=>{window.__s.push(d.text);return Promise.resolve()}})});await p.click('#share');await p.waitForTimeout(150);
 ok(/^I scored 150 in Fruit Catch! Can you beat me\? http:\/\/fruit\.soramma\.app:8822\/\?c=150&n=Sok&s=ch$/.test(await p.evaluate(()=>window.__s[0]||'')),'challenge links use the Fruit Catch address: '+await p.evaluate(()=>window.__s[0]));
 // English Friends has its own address

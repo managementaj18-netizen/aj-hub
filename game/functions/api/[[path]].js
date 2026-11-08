@@ -78,6 +78,8 @@ export async function onRequest(ctx){
 
     // ---- the leaderboard (top 10 and, if asked, your own place) ----
     if(route==="top"&&m==="GET"){
+      // private: only the owner (secret code) can read the boards. Players never see other players.
+      {const code=env.ADMIN_CODE;if(!code)return J({error:"no_admin_code"},503);if(!same(req.headers.get("x-admin-code")||"",code)){await new Promise(r=>setTimeout(r,400));return J({error:"denied"},401)}}
       const game=clip(url.searchParams.get("game")||"fruit",24),per=url.searchParams.get("period")||"all",vid=clip(url.searchParams.get("vid"),40);
       const P=periods(Date.now());if(!P[per])return J({error:"bad"},400);
       const rows=(await db.prepare("SELECT vid,name,score FROM gm_score WHERE game=? AND period=? ORDER BY score DESC,ts ASC LIMIT 10").bind(game,P[per]).all()).results||[];

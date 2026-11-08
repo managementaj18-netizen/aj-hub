@@ -35,8 +35,8 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 - To ship a real human voice to everyone: record the 36 words with `abc/record.html`, tap export, send `english-friends-voice.json`; convert with ffmpeg into `abc/audio/<word>.mp3`.
 - Tests: `node tests/abc_rec_test.js`.
 
-## Home page, names and leaderboard (Fruit Catch)
-- Home page: your name, best score, Play, 🏆 Leaderboard (today / this week / all time, top 10 + your place), 🤝 Challenge a friend (shares your best score as a link).
+## Home page, names and privacy (Fruit Catch)
+- Home page: your name, best score, Play, Shop, 🤝 Challenge a friend (shares your best score as a link). There is NO public leaderboard: players never see other players. Scores are still saved on the server so only the owner can see them on the owner page. A name is only seen by friends who open a challenge link you shared. `/api/top` needs the owner code.
 - Scores are sent to `/api/score` after a game if the player typed a name (nickname only). A score must be possible for the time played (max about 15 points per second) and one phone may send 60 per day. Anyone can still forge a request, so this is a friendly board, not a verified contest: do not give money prizes without checking the top scores by hand.
 - Remove a name: `curl -X POST https://play.soramma.app/api/score-delete -H 'x-admin-code: <ADMIN_CODE>' -d '{"name":"BadName"}'`.
 - Cambodia time (UTC+7) decides the day; the week starts on Monday.
