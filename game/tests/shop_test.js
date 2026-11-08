@@ -22,16 +22,16 @@ await p.click('#shopB');await p.waitForSelector('#tree');ok(await p.locator('#up
 await p.screenshot({path:'/tmp/sc/fc_shop.png'});
 await p.locator('#upg button[data-k="l"]').click();ok(await p.evaluate(()=>FC.UP().l)===0&&/enough/.test(await p.locator('#toast').innerText()),'buying without enough coins is refused: "Not enough coins"');
 let q=await mk({fc_coins:'5000'});await q.goto('http://localhost:8824/fruit/');await q.waitForSelector('#go');await q.click('#shopB');
-await q.locator('#upg button[data-k="l"]').click();ok(await q.evaluate(()=>FC.UP().l===1&&FC.COINS()===4900),'level 1 extra life costs 100 coins');
-await q.locator('#upg button[data-k="l"]').click();ok(await q.evaluate(()=>FC.UP().l===2&&FC.COINS()===4650),'level 2 costs 250 coins');
-await q.locator('#upg button[data-k="l"]').click();ok(await q.evaluate(()=>FC.UP().l===3&&FC.COINS()===4150),'level 3 costs 500 coins');
-ok(await q.locator('#upg .up').first().locator('button[disabled]').count()===1,'after level 3 the button shows Max level');
+const pr=await q.locator('#upg button[data-k]').allInnerTexts();ok(/80/.test(pr[0])&&/150/.test(pr[1])&&/220/.test(pr[2]),'first-time prices: heart 80, basket 150, magnet 220 (all different)');
+await q.locator('#upg button[data-k="l"]').click();ok(await q.evaluate(()=>FC.UP().l===1&&FC.COINS()===4920),'extra lives cost 80 the first time');
+ok(await q.locator('#upg .up').first().locator('button[disabled]').count()===1,'once bought, the heart can not be bought twice in the same game');
 await q.locator('#upg button[data-k="b"]').click();await q.locator('#upg button[data-k="m"]').click();
+ok(await q.evaluate(()=>FC.COINS()===4920-150-220),'basket 150 and magnet 220');
 await q.screenshot({path:'/tmp/sc/fc_shop2.png'});
 // 4) the upgrades work in the game
 await q.click('#shopBack');await q.click('#go');await q.waitForTimeout(150);
-ok(await q.evaluate(()=>FC.G.lives===6&&FC.G.maxLives===6),'3 extra-life levels: the game starts with 6 lives (3 + 3)');
-ok(await q.locator('#li').innerText().then(t=>(t.match(/❤️/g)||[]).length===6),'6 hearts are shown');
+ok(await q.evaluate(()=>FC.G.lives===5&&FC.G.maxLives===5),'the heart gives 2 extra lives: 5 lives');
+ok(await q.locator('#li').innerText().then(t=>(t.match(/❤️/g)||[]).length===5),'5 hearts are shown');
 ok(await q.evaluate(()=>FC.G.pw)>112*1.1,'a bigger basket catches in a wider area ('+Math.round(await q.evaluate(()=>FC.G.pw))+' px instead of 112)');
 ok(await q.evaluate(()=>FC.UP().l===0&&FC.UP().b===0&&FC.UP().m===0&&JSON.parse(localStorage.getItem('fc_up')).l===0),'bought upgrades are used up when the game starts (nothing is kept for the next game)');
 // magnet: a fruit beside the basket drifts into it
@@ -69,7 +69,7 @@ ok((await kinds(7)).includes('🐍')&&!(await kinds(7)).includes('🐉'),'level 
 ok((await kinds(10)).includes('🐉'),'level 10+ adds dragons');
 const cc=async(lv)=>z.evaluate(l=>{FC.G.level=l;FC.G.state='play';FC.G.items=[];const c0=FC.COINS();FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.COINS()-c0},lv);
 ok(await cc(1)===1&&await cc(4)===2&&await cc(7)===3&&await cc(10)===4,'fruit pays 1 / 2 / 3 / 4 coins deeper in the forest');
-const dm=await z.evaluate(()=>{FC.G.level=10;FC.G.state='play';FC.G.lives=3;FC.G.maxLives=3;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.e='🐉';it.d=2;it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.G.lives});ok(dm===1,'a dragon takes 2 lives');
+const dm=await z.evaluate(()=>{FC.G.level=10;FC.G.state='play';FC.G.lives=3;FC.G.maxLives=3;FC.G.spawn=1e9;FC.G.tx=FC.G.px;FC.G.ty=FC.G.py;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.e='🐉';it.d=2;it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.G.lives});ok(dm===1,'a dragon takes 2 lives');
 await z.evaluate(()=>{FC.G.level=9;FC.G.state='play';FC.G.score=99;FC.G.lives=3;FC.G.items=[];FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});
 ok(await z.evaluate(()=>document.getElementById('wrap').className)==='z3','the scenery gets darker (dark jungle) at level 10');
 await q.evaluate(()=>FC.start());await q.waitForTimeout(100);
