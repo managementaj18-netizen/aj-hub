@@ -69,7 +69,7 @@ ok((await kinds(7)).includes('🐍')&&!(await kinds(7)).includes('🐉'),'level 
 ok((await kinds(10)).includes('🐉'),'level 10+ adds dragons');
 const cc=async(lv)=>z.evaluate(l=>{FC.G.level=l;FC.G.state='play';FC.G.items=[];const c0=FC.COINS();FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.COINS()-c0},lv);
 ok(await cc(1)===1&&await cc(4)===2&&await cc(7)===3&&await cc(10)===4,'fruit pays 1 / 2 / 3 / 4 coins deeper in the forest');
-const dm=await z.evaluate(()=>{FC.G.level=10;FC.G.state='play';FC.G.lives=3;FC.G.maxLives=3;FC.G.spawn=1e9;FC.G.tx=FC.G.px;FC.G.ty=FC.G.py;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.e='🐉';it.d=2;it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.G.lives});ok(dm===1,'a dragon takes 2 lives');
+const dm=await z.evaluate(()=>{FC.G.level=10;FC.G.state='play';FC.G.lives=3;FC.G.maxLives=3;FC.G.spawn=1e9;FC.G.tx=FC.G.px;FC.G.ty=FC.G.py;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.e='🐉';it.d=2;it.w=0;it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.G.lives});ok(dm===1,'a dragon takes 2 lives (lives left '+dm+')');
 await z.evaluate(()=>{FC.G.level=9;FC.G.state='play';FC.G.score=99;FC.G.lives=3;FC.G.items=[];FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});
 ok(await z.evaluate(()=>document.getElementById('wrap').className)==='z3','the scenery gets darker (dark jungle) at level 10');
 await q.evaluate(()=>FC.start());await q.waitForTimeout(100);

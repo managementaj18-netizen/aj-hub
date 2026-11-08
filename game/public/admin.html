@@ -47,7 +47,7 @@ function stats(){var o=window.__owner;
   var names={direct:"ផ្ទាល់",facebook:"Facebook",instagram:"Instagram",telegram:"Telegram",google:"Google",tiktok:"TikTok",ch:"លីងប្រកួត",hub:"បញ្ជី",fb:"Facebook (លីង)",ig:"Instagram (លីង)",tg:"Telegram (លីង)",other:"ផ្សេងៗ"};
   $("src").innerHTML=d.sources.length?bars(d.sources.map(function(x){return{k:names[x.src]||x.src,c:x.c}}),"c"):'<div class="muted">មិនទាន់មានទិន្នន័យ</div>';
   board()})}
-function board(){fetch("/api/top?game=fruit&period=all").then(function(r){return r.json()}).then(function(j){var L=$("lb");L.innerHTML="";if(!j.top||!j.top.length){L.innerHTML='<div class="muted">មិនទាន់មាននរណាម្នាក់ក្នុងតារាង</div>';return}
+function board(){fetch("/api/top?game=fruit&period=all",{headers:hdr()}).then(function(r){return r.json()}).then(function(j){var L=$("lb");L.innerHTML="";if(!j.top||!j.top.length){L.innerHTML='<div class="muted">មិនទាន់មាននរណាម្នាក់ក្នុងតារាង</div>';return}
   j.top.forEach(function(x,i){var d=document.createElement("div");d.className="lb";var a=document.createElement("b"),b=document.createElement("span"),c=document.createElement("i"),k=document.createElement("button");a.textContent="#"+(i+1);b.textContent=x.name;c.textContent=x.score;k.textContent="✕ លុប";
    k.onclick=function(){if(!confirm("លុបឈ្មោះ \""+x.name+"\" ចេញពីតារាង?"))return;fetch("/api/score-delete",{method:"POST",headers:{"x-admin-code":CODE,"content-type":"application/json"},body:JSON.stringify({name:x.name})}).then(board)};
    d.appendChild(a);d.appendChild(b);d.appendChild(c);d.appendChild(k);L.appendChild(d)})}).catch(function(){})}
