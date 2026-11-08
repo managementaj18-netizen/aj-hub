@@ -21,10 +21,10 @@ await p.reload();await p.waitForSelector('#go');ok(await p.evaluate(()=>FC.COINS
 await p.click('#shopB');await p.waitForSelector('#tree');ok(await p.locator('#upg .up').count()===3,'the shop has 3 upgrades: extra lives, bigger basket, magnet');
 await p.screenshot({path:'/tmp/sc/fc_shop.png'});
 await p.locator('#upg button[data-k="l"]').click();ok(await p.evaluate(()=>FC.UP().l)===0&&/enough/.test(await p.locator('#toast').innerText()),'buying without enough coins is refused: "Not enough coins"');
-let q=await mk({fc_coins:'1000'});await q.goto('http://localhost:8824/fruit/');await q.waitForSelector('#go');await q.click('#shopB');
-await q.locator('#upg button[data-k="l"]').click();ok(await q.evaluate(()=>FC.UP().l===1&&FC.COINS()===950),'level 1 extra life costs 50 coins');
-await q.locator('#upg button[data-k="l"]').click();ok(await q.evaluate(()=>FC.UP().l===2&&FC.COINS()===800),'level 2 costs 150 coins');
-await q.locator('#upg button[data-k="l"]').click();ok(await q.evaluate(()=>FC.UP().l===3&&FC.COINS()===400),'level 3 costs 400 coins');
+let q=await mk({fc_coins:'5000'});await q.goto('http://localhost:8824/fruit/');await q.waitForSelector('#go');await q.click('#shopB');
+await q.locator('#upg button[data-k="l"]').click();ok(await q.evaluate(()=>FC.UP().l===1&&FC.COINS()===4900),'level 1 extra life costs 100 coins');
+await q.locator('#upg button[data-k="l"]').click();ok(await q.evaluate(()=>FC.UP().l===2&&FC.COINS()===4650),'level 2 costs 250 coins');
+await q.locator('#upg button[data-k="l"]').click();ok(await q.evaluate(()=>FC.UP().l===3&&FC.COINS()===4150),'level 3 costs 500 coins');
 ok(await q.locator('#upg .up').first().locator('button[disabled]').count()===1,'after level 3 the button shows Max level');
 await q.locator('#upg button[data-k="b"]').click();await q.locator('#upg button[data-k="m"]').click();
 await q.screenshot({path:'/tmp/sc/fc_shop2.png'});
