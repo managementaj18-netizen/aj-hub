@@ -9,6 +9,7 @@
   "use strict";
   var API = "https://aj-guest-app.management-aj-18.workers.dev/api/pc/";
   var LS = "aj_pckey";
+  var TAG = "display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;margin:0 4px 3px 0;";
   var LIST = [], showUsed = false, loading = false, lastLoad = 0;
 
   try {
@@ -67,12 +68,14 @@
     var body = rows.length ? rows.map(function (x) {
       var soon = x.arrival && x.arrival <= addDays(t, 1);
       return '<div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid #dde3ef' + (x.used ? ';opacity:.55' : '') + '">' +
-        '<div style="flex:1;min-width:0"><b>' + esc(x.name || "—") + '</b> <span class="muted">· ' + esc(x.nat || "") + '</span>' +
+        '<div style="flex:1;min-width:0">' + (!x.used && x.at && Date.now() - x.at < 864e5 ? '<span style="' + TAG + 'background:#fde68a;color:#7c2d12">🆕 ថ្មី</span>' : '') +
+        (x.booking ? '<span style="' + TAG + 'background:#dbeafe;color:#1e3a8a">🛏️ កក់ · ' + esc(x.booking) + '</span>' : '<span style="' + TAG + 'background:#dcfce7;color:#14532d">🪪 Check-in មុន</span>') +
+        '<br><b>' + esc(x.name || "—") + '</b> <span class="muted">· ' + esc(x.nat || "") + '</span>' +
         '<div class="muted" style="font-size:12px">' + (soon ? '🟢 ' : '') + 'មកដល់ · Arrive ' + esc(fmt(x.arrival)) + ' · 👥 ' + esc(x.guests || 1) + ' · 📷 ' + (x.n || 0) + (x.used ? ' · ✓ ប្រើរួច' : '') + '</div></div>' +
         '<button type="button" class="btn sm" data-pc="' + esc(x.id) + '">✍️ ជ្រើស · Use</button></div>';
     }).join("") : '<div class="muted" style="padding:6px 0">' + (msg || 'មិនមានភ្ញៀវ Check-in ជាមុនទេ · No pre-check-ins') + '</div>';
     c.innerHTML = head + '<div class="muted" style="font-size:12px;margin:4px 0 2px">ចុចឈ្មោះភ្ញៀវ → ព័ត៌មាន និងរូប ID ចូល form → ភ្ញៀវគ្រាន់តែស៊ីញ៉េ។ ដៃគូ: ចុច 📷 Scan ដាក់លេខបន្ទប់។</div>' +
-      body + '<label class="muted" style="font-size:12px;display:inline-flex;gap:6px;margin-top:6px"><input type="checkbox" id="pcUsed"' + (showUsed ? " checked" : "") + '> បង្ហាញដែលប្រើរួច · Show used</label>' +
+      body + '<label class="muted" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;white-space:nowrap;width:auto"><input type="checkbox" id="pcUsed" style="width:16px;height:16px;min-width:16px;margin:0;padding:0;flex:none"' + (showUsed ? " checked" : "") + '> បង្ហាញដែលប្រើរួច · Show used</label>' +
       '<div id="pcMsg" style="display:none;margin-top:8px;padding:8px 10px;border-radius:10px;background:#e7f6ec;color:#15803d;font-weight:600"></div>';
     $("pcReload").onclick = function () { load(true); };
     $("pcUsed").onchange = function () { showUsed = this.checked; draw(); };
