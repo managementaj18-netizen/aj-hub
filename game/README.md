@@ -55,7 +55,7 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 
 ## Fruit Catch: coins, upgrade shop, ready-made messages
 - Coins: +1 per fruit, +3 per golden pineapple, plus 1 per 20 points at the end of a game; kept on the phone only (`fc_coins`).
-- Upgrade shop (3 upgrades x 3 levels, prices 100 / 250 / 500 coins per level): extra starting lives (+1 per level), bigger basket (+12% per level), magnet (pulls nearby fruit, never bugs; radius 90 / 150 / 220 px). Continue after game over costs 80 / 120 / 200 coins (1st / 2nd / 3rd in the same game).
+- Upgrade shop (bought items last ONE game only; one purchase each; first-time prices heart 80 / basket 150 / magnet 220, rising on every re-buy (x1.5, x2.25) until the game is closed; heart +2 lives, basket +24%, magnet radius 150): extra starting lives (+1 per level), bigger basket (+12% per level), magnet (pulls nearby fruit, never bugs; radius 90 / 150 / 220 px). Continue after game over costs 80 / 120 / 200 coins (1st / 2nd / 3rd in the same game).
 - Fairness note: upgrades help players score more on the shared leaderboard; the server still rejects scores impossible for the time played. If this feels unfair, give upgrades their own board or switch them off for ranked play.
 - Messages: the challenge link can carry one of 4 ready-made messages (`m=0..3`), no free text, so there is nothing to moderate.
 - Design: sun, drifting clouds, mountains, hills, mango trees, flowers behind the game.
