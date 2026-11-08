@@ -13,7 +13,8 @@ for(const k of ['ok','ok','gold']){await p.evaluate(k=>{FC.addItem(k);const it=F
 ok(await p.evaluate(()=>FC.COINS())===5,'two fruit (+1 each) and a golden pineapple (+3) give 5 coins');ok(/🪙 5/.test(await p.locator('#coin').innerText()),'the top bar shows the coins');
 await p.screenshot({path:'/tmp/sc/fc_play.png'});
 await over(p,100);ok(await p.evaluate(()=>FC.COINS())===10,'a bonus of 1 coin per 20 points is paid at the end (100 points = +5) -> 10 coins');ok(/\+10/.test(await p.locator('#tCoin').innerText()),'the game-over screen says how many coins were earned: '+await p.locator('#tCoin').innerText());
-ok(await p.locator('#cont').isHidden(),'no Continue button while the player has fewer than 25 coins');
+ok(await p.locator('#cont').isVisible()&&/80/.test(await p.locator('#cont').innerText()),'Continue shows its price (80) even when the player has too few coins');
+await p.click('#cont');await p.waitForTimeout(100);ok(await p.evaluate(()=>FC.COINS())===10&&await p.evaluate(()=>FC.G.state==='over'),'tapping Continue with too few coins takes nothing and does not restart');
 // 2) coins stay on the phone
 await p.reload();await p.waitForSelector('#go');ok(await p.evaluate(()=>FC.COINS())===10,'coins are remembered after closing the game');
 // 3) shop: not enough coins, then buy
@@ -41,10 +42,14 @@ const bad=await q.evaluate(()=>{FC.G.items=[];FC.addItem('bad');const it=FC.G.it
 await q.evaluate(()=>{FC.G.items=[]});await over(q,60);await q.evaluate(()=>{});
 const lives0=await q.evaluate(()=>FC.G.lives);
 await q.evaluate(()=>{FC.G.lives=1;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});await q.waitForTimeout(200);
-ok(await q.locator('#cont').isVisible(),'Continue is offered when the player has enough coins');
+await q.evaluate(()=>{COINS=1000;FC.G.conts=0;FC.G.state='play';FC.G.lives=1;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});await q.waitForTimeout(200);
+const price=[80,120,200];
+for(let n=0;n<3;n++){
+ok(await q.locator('#cont').isVisible()&&(await q.locator('#cont').innerText()).includes(String(price[n])),'Continue #'+(n+1)+' is offered at '+price[n]+' coins');
 const c0=await q.evaluate(()=>FC.COINS());await q.click('#cont');await q.waitForTimeout(150);
-ok(await q.evaluate(()=>FC.G.state==='play'&&FC.G.lives===1)&&await q.evaluate(c=>FC.COINS()===c-25,c0),'Continue costs 25 coins and gives 1 life');
-await q.evaluate(()=>{FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});await q.waitForTimeout(200);ok(await q.locator('#cont').isHidden(),'only one Continue per game');
+ok(await q.evaluate(([c,p])=>FC.G.state==='play'&&FC.G.lives===1&&FC.COINS()===c-p,[c0,price[n]]),'Continue #'+(n+1)+' costs '+price[n]+' coins and gives 1 life');
+await q.evaluate(()=>{FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});await q.waitForTimeout(200);}
+ok(await q.locator('#cont').isHidden(),'after 3 continues no more Continue in the same game');
 // 6) ready-made messages travel in the challenge link
 await q.click('#pms .pm[data-i="2"]');ok(await q.evaluate(()=>FC.PM())===2,'a ready-made message can be chosen');
 await q.fill('#nm','Dara');await q.click('#share');await q.waitForTimeout(150);const sh=await q.evaluate(()=>window.__shared[0]||'');
