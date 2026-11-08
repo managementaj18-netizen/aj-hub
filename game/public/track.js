@@ -1,6 +1,6 @@
 /* Soramma Games — anonymous visit counter. Sends only a random id made in this phone (no name, no number, no IP). */
 (function(){
-var FB="";/* put the Facebook Page link here, e.g. https://www.facebook.com/yourpage */
+var FB="https://www.facebook.com/share/1JSphYg6k3/";/* Facebook Page of Soramma */
 function ld(k){try{return localStorage.getItem(k)}catch(e){return null}}function sv(k,v){try{localStorage.setItem(k,v)}catch(e){}}
 var vid=ld("gm_vid");if(!vid){vid="";for(var i=0;i<24;i++)vid+="abcdefghijklmnopqrstuvwxyz0123456789".charAt(Math.floor(Math.random()*36));sv("gm_vid",vid)}
 function source(){var q=(location.search.match(/[?&]s=([\w-]+)/)||[])[1];if(q)return q.toLowerCase();
