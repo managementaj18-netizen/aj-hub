@@ -152,12 +152,17 @@ window.wkBack=()=>{ const g=groupsOf().find(x=>x.k===GROUP); if(LIST&&g&&g.lists
 const unseenCount=n=>fbOf(n).filter(x=>String(x.at)>seenAt(n)).length;
 const fbList=n=>fbOf(n).slice(0,3).map(x=>`<div style="margin-top:6px"><b>${esc(dayName(x.d))} ${esc(fmtD(x.d))}${x.s?' · '+esc(x.s):''}</b>${x.m?`<div style="white-space:pre-wrap">${esc(x.m)}</div>`:''}${x.bad&&x.bad.length?`<div>❌ ការងារដែលមេឃើញថាមិនត្រឹមត្រូវ៖</div><ul>${x.bad.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}</div>`).join('');
 const markSeen=n=>{ const fb=fbOf(n); if(fb.length){ const s=jget(LS_SEEN,{}); s[n]=fb[0].at; jset(LS_SEEN,s); } };
+/* a task line starting with 🔧 is a maintenance task: shown inside a collapsible box below the shift's normal tasks */
+const isMnt=x=>/^\s*🔧/.test(String(x&&x.t||''));
+const mntTxt=t=>String(t).replace(/^\s*🔧\s*(Maintenance\s*[:：]\s*)?/i,'');
+const wkRows=(A,p)=>A.map((x,i)=>`<div class="wk-row" id="wr_${x.id}"><div class="wk-t">${p}${i+1}. ${esc(p?mntTxt(x.t):x.t)}</div><div class="wk-b">${['y','n','na'].map(v=>`<button type="button" data-v="${v}" onclick="wkSet('${x.id}','${v}')">${ANS_LBL[v]}</button>`).join('')}</div><input class="wk-note hide" id="wn_${x.id}" placeholder="មូលហេតុ / ចំណាំ (ចាំបាច់)" oninput="wkNote('${x.id}',this.value)"></div>`).join('');
 function drawForm(box){
   const li=listById(LIST); if(!li){ LIST=null; return drawMain(); } const T=li.tasks;
   box.innerHTML=`<h2 style="margin-top:6px">${esc(titleOf(li))}</h2>
   <div class="fg"><label>ឈ្មោះរបស់អ្នក *<input id="wk_name" autocomplete="off" value="${esc(jget(LS_LAST,''))}" placeholder="វាយឈ្មោះពេញរបស់អ្នក"></label><label>ថ្ងៃទី<input type="date" id="wk_d" value="${esc(DATE)}"></label></div>
   ${li.room?`<div class="fg"><label>លេខបន្ទប់ *<input id="wk_room" inputmode="text" placeholder="ឧ. 201"></label><label>ស្ថានភាពបន្ទប់បន្ទាប់ពីឆែក *<select id="wk_rs"><option value="">— ជ្រើស —</option>${ROOM_STATUS.map(x=>`<option>${esc(x)}</option>`).join('')}</select></label></div><h3>⚠️ បញ្ហាដែលរកឃើញ (បើមាន)</h3><div class="row" style="gap:8px">${ROOM_ISSUES.map((x,i)=>`<label class="wk-iss"><input type="checkbox" value="${i}" style="width:auto;margin:0"> ${esc(x)}</label>`).join('')}</div><h3>បញ្ជីពិនិត្យបន្ទប់</h3>`:''}
-  ${T.length?T.map((x,i)=>`<div class="wk-row" id="wr_${x.id}"><div class="wk-t">${i+1}. ${esc(x.t)}</div><div class="wk-b">${['y','n','na'].map(v=>`<button type="button" data-v="${v}" onclick="wkSet('${x.id}','${v}')">${ANS_LBL[v]}</button>`).join('')}</div><input class="wk-note hide" id="wn_${x.id}" placeholder="មូលហេតុ / ចំណាំ (ចាំបាច់)" oninput="wkNote('${x.id}',this.value)"></div>`).join(''):`<div class="alert warn">មេមិនទាន់កំណត់ការងារក្នុងបញ្ជីនេះទេ។</div>`}
+  ${T.length?wkRows(T.filter(x=>!isMnt(x)),''):`<div class="alert warn">មេមិនទាន់កំណត់ការងារក្នុងបញ្ជីនេះទេ។</div>`}
+  ${T.some(isMnt)?`<details class="wk-mnt" id="wk_mnt" style="margin:12px 0;border:2px solid #c9a227;border-radius:12px;padding:8px 10px;background:#fffbea"><summary style="font-weight:700;font-size:17px;cursor:pointer;padding:6px 0">🔧 Maintenance — ចុចទីនេះ ដើម្បីមើលការងារ (${T.filter(isMnt).length})</summary><div class="note" style="margin:6px 0">ការងារ Maintenance ធ្វើរួមជាមួយការងារវេនខាងលើ។ ត្រូវឆ្លើយគ្រប់ចំណុច — ថ្ងៃដែលមិនមែនជាថ្ងៃកំណត់ ចុច “— មិនពាក់ព័ន្ធ”។</div>${wkRows(T.filter(isMnt),'M')}</details>`:''}
   <label>ចំណាំបន្ថែម (បើមាន)<textarea id="wk_notes" rows="3" placeholder="បញ្ហា ឬអ្វីដែលមេគួរដឹង"></textarea></label>
   ${li.leave?`<label>ម៉ោងចេញពីការងារ<input type="time" id="wk_leave"></label>`:''}
   ${li.room?'':`<div class="note">${esc(DUTY_NOTE)}</div><label class="check" style="display:flex;gap:8px;align-items:center;margin-top:10px"><input type="checkbox" id="wk_agree" style="width:auto;margin:0"><span>ខ្ញុំបានអាន និងយល់ព្រមទទួលស្គាល់លក្ខខណ្ឌខាងលើ *</span></label>`}
@@ -178,7 +183,7 @@ window.wkSubmit=async()=>{
   if(li.room&&!room){ $('wk_room').focus(); return alert('សូមវាយលេខបន្ទប់'); } if(li.room&&!rs) return alert('សូមជ្រើសស្ថានភាពបន្ទប់');
   const issues=li.room?[...document.querySelectorAll('.wk-iss input:checked')].map(i=>ROOM_ISSUES[+i.value]):[];
   let first=null; T.forEach(x=>{ const a=ANS[x.id]; const bad=!a||!a.v||(a.v==='n'&&!String(a.n||'').trim()); $('wr_'+x.id).classList.toggle('miss',bad); if(bad&&!first) first=x.id; });
-  if(first){ $('wr_'+first).scrollIntoView({behavior:'smooth',block:'center'}); return alert('សូមឆ្លើយគ្រប់ការងារ (បើ ✖ មិនបាន សូមសរសេរមូលហេតុ)'); }
+  if(first){ const fr=$('wr_'+first), dt=fr.closest('details'); if(dt) dt.open=true; fr.scrollIntoView({behavior:'smooth',block:'center'}); return alert('សូមឆ្លើយគ្រប់ការងារ (បើ ✖ មិនបាន សូមសរសេរមូលហេតុ)'); }
   if(!li.room&&!$('wk_agree').checked) return alert('សូមធីកយល់ព្រម');
   if(!sigs['wk_sig']||!sigs['wk_sig'].dirty) return alert('សូមស៊ីញ៉េ / Please sign');
   const dup=logGet().find(x=>x.staff===n&&x.date===date&&x.list===LIST&&(x.room||'')===room);
@@ -257,7 +262,7 @@ function drawCfg(){
     <label>🔑 លេខកូដចូលវេននេះ (ក្រុមតែមួយប្រើកូដតែមួយ · ទុកទទេ = បើកសម្រាប់ទាំងអស់)<input value="${esc(l.code||'')}" placeholder="ឧ. AJ-O1" oninput="wkCode(${i},this.value)" style="max-width:240px;text-transform:uppercase"></label>
     <label style="display:flex;gap:6px;align-items:center;margin:4px 0;font-size:14px"><input type="checkbox" style="width:auto;margin:0" ${l.room?'checked':''} onchange="wkL(${i},'room',this.checked)">🚪 ជាការឆែកបន្ទប់ (បុគ្គលិកទាំងអស់ឃើញដោយផ្ទាល់ · មានលេខបន្ទប់ + ស្ថានភាព + បញ្ហា)</label>
     <label style="display:flex;gap:6px;align-items:center;margin:4px 0;font-size:14px"><input type="checkbox" style="width:auto;margin:0" ${l.leave?'checked':''} onchange="wkL(${i},'leave',this.checked)">🕒 មានប្រអប់ «ម៉ោងចេញពីការងារ»</label>
-    <label style="margin-top:8px">ការងារ (មួយជួរមួយ)<textarea oninput="wkL(${i},'tasks',this.value)" placeholder="ឧ. សម្អាតបន្ទប់ទទួលភ្ញៀវ">${esc(l.tasks)}</textarea></label></div>`).join('')+
+    <label style="margin-top:8px">ការងារ (មួយជួរមួយ · ដាក់ 🔧 នៅខាងមុខ = ចូលប្រអប់ Maintenance)<textarea oninput="wkL(${i},'tasks',this.value)" placeholder="ឧ. សម្អាតបន្ទប់ទទួលភ្ញៀវ">${esc(l.tasks)}</textarea></label></div>`).join('')+
   `<div class="row" style="align-items:center;flex-wrap:wrap"><button class="btn alt" onclick="wkLAdd()">➕ បន្ថែមបញ្ជីថ្មី</button><button class="btn big" id="wkCfgSave" onclick="wkCfgSave()">💾 រក្សាទុក</button><span id="wkCfgMsg" class="muted"></span></div>`;
 }
 window.wkDirty=()=>{ const m=$('wkCfgMsg'); if(m){ m.textContent='⚠️ មិនទាន់រក្សាទុក'; m.style.color='var(--bad)'; } };
