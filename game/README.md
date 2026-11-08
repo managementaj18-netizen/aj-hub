@@ -52,3 +52,11 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 - One private page for the owner (secret `ADMIN_CODE`): every game and app in one list with status (released / held back / not set up), an Open button each, visitor and play numbers per game, per-day and per-source charts, and the Fruit Catch leaderboard with a ✕ button to remove a name.
 - The list of apps/games (including the private test addresses) lives in `game/functions/api/[[path]].js` (`OWNER`) and is only sent to someone who knows the code; the public page file contains no private addresses. Update `OWNER` when a game is released or an app is added.
 - Tests: `node game/tests/owner_e2e.js`. Note: the test servers must serve folder addresses (`/fruit/`).
+
+## Fruit Catch: coins, upgrade shop, ready-made messages
+- Coins: +1 per fruit, +3 per golden pineapple, plus 1 per 20 points at the end of a game; kept on the phone only (`fc_coins`).
+- Upgrade shop (3 upgrades x 3 levels, prices 50 / 150 / 400 coins each level): extra starting lives (+1 per level), bigger basket (+12% per level), magnet (pulls nearby fruit, never bugs; radius 90 / 150 / 220 px). Continue after game over costs 25 coins, once per game.
+- Fairness note: upgrades help players score more on the shared leaderboard; the server still rejects scores impossible for the time played. If this feels unfair, give upgrades their own board or switch them off for ranked play.
+- Messages: the challenge link can carry one of 4 ready-made messages (`m=0..3`), no free text, so there is nothing to moderate.
+- Design: sun, drifting clouds, mountains, hills, mango trees, flowers behind the game.
+- Test: `node game/tests/shop_test.js`.
