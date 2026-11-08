@@ -75,7 +75,8 @@
         (x.booking ? '<span style="' + TAG + 'background:#dbeafe;color:#1e3a8a">🛏️ កក់ · ' + esc(x.booking) + '</span>' : '<span style="' + TAG + 'background:#dcfce7;color:#14532d">🪪 Check-in មុន</span>') +
         '<br><b>' + esc(x.name || "—") + '</b> <span class="muted">· ' + esc(x.nat || "") + '</span>' +
         '<div class="muted" style="font-size:12px">' + (soon ? '🟢 ' : '') + 'មកដល់ · Arrive ' + esc(fmt(x.arrival)) + ' · 👥 ' + esc(x.guests || 1) + ' · 📷 ' + (x.n || 0) + (x.used ? ' · ✓ ប្រើរួច' : '') + '</div></div>' +
-        '<button type="button" class="btn sm" data-pc="' + esc(x.id) + '">✍️ ជ្រើស · Use</button></div>';
+        '<button type="button" class="btn sm" data-pc="' + esc(x.id) + '">✍️ ជ្រើស · Use</button>' +
+        '<button type="button" class="btn alt sm" title="លុប · Delete" style="color:#b91c1c" data-pcdel="' + esc(x.id) + '" data-pcname="' + esc(x.name || "") + '">🗑️</button></div>';
     }).join("") : '<div class="muted" style="padding:6px 0">' + (msg || 'មិនមានភ្ញៀវ Check-in ជាមុនទេ · No pre-check-ins') + '</div>';
     c.innerHTML = head + '<div class="muted" style="font-size:12px;margin:4px 0 2px">ចុចឈ្មោះភ្ញៀវ → ព័ត៌មាន និងរូប ID ចូល form → ភ្ញៀវគ្រាន់តែស៊ីញ៉េ។ ដៃគូ: ចុច 📷 Scan ដាក់លេខបន្ទប់។</div>' +
       body + '<label class="muted" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;white-space:nowrap;width:auto"><input type="checkbox" id="pcUsed" style="width:16px;height:16px;min-width:16px;margin:0;padding:0;flex:none"' + (showUsed ? " checked" : "") + '> បង្ហាញដែលប្រើរួច · Show used</label>' +
@@ -83,6 +84,7 @@
     $("pcReload").onclick = function () { manual = true; load(true); };
     $("pcUsed").onchange = function () { showUsed = this.checked; draw(); };
     [].slice.call(c.querySelectorAll("[data-pc]")).forEach(function (b) { b.onclick = function () { use(b.getAttribute("data-pc"), b); }; });
+    [].slice.call(c.querySelectorAll("[data-pcdel]")).forEach(function (b) { b.onclick = function () { del(b.getAttribute("data-pcdel"), b.getAttribute("data-pcname"), b); }; });
   }
 
   function load(force) {
@@ -97,6 +99,18 @@
       })
       .catch(function () { draw("⚠️ មិនអាចភ្ជាប់បាន · Offline"); })
       .then(function () { if (loading) { loading = false; manual = false; draw(); } });
+  }
+
+  function del(id, name, btn) {
+    if (!confirm("លុប " + (name || "ភ្ញៀវនេះ") + " ចេញពីបញ្ជី?\nDelete " + (name || "this entry") + " from the list?")) return;
+    if (btn) { btn.disabled = true; btn.textContent = "…"; }
+    fetch(API + "del?key=" + encodeURIComponent(key()) + "&id=" + encodeURIComponent(id), { method: "POST", credentials: "omit" })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        if (!j.ok && j.error !== "not found") throw new Error(j.error || "error");
+        LIST = LIST.filter(function (x) { return x.id !== id; }); draw();
+      })
+      .catch(function (e) { if (btn) { btn.disabled = false; btn.textContent = "🗑️"; } alert("⚠️ មិនអាចលុបបាន · " + (e && e.message || "error")); });
   }
 
   function use(id, btn) {
