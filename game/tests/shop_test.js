@@ -33,6 +33,7 @@ await q.click('#shopBack');await q.click('#go');await q.waitForTimeout(150);
 ok(await q.evaluate(()=>FC.G.lives===6&&FC.G.maxLives===6),'3 extra-life levels: the game starts with 6 lives (3 + 3)');
 ok(await q.locator('#li').innerText().then(t=>(t.match(/❤️/g)||[]).length===6),'6 hearts are shown');
 ok(await q.evaluate(()=>FC.G.pw)>112*1.1,'a bigger basket catches in a wider area ('+Math.round(await q.evaluate(()=>FC.G.pw))+' px instead of 112)');
+ok(await q.evaluate(()=>FC.UP().l===0&&FC.UP().b===0&&FC.UP().m===0&&JSON.parse(localStorage.getItem('fc_up')).l===0),'bought upgrades are used up when the game starts (nothing is kept for the next game)');
 // magnet: a fruit beside the basket drifts into it
 const m=await q.evaluate(()=>{FC.G.spawn=1e9;FC.G.items=[];FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px+80;it.y=FC.G.py-120;it.vy=0;const x0=it.x;for(let i=0;i<20;i++)FC.step(0.02);return[x0,it.x,FC.G.px]});
 ok(m[1]<m[0]-30,'the magnet pulls a nearby fruit toward the basket (x '+Math.round(m[0])+' -> '+Math.round(m[1])+')');
@@ -71,5 +72,8 @@ ok(await cc(1)===1&&await cc(4)===2&&await cc(7)===3&&await cc(10)===4,'fruit pa
 const dm=await z.evaluate(()=>{FC.G.level=10;FC.G.state='play';FC.G.lives=3;FC.G.maxLives=3;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.e='🐉';it.d=2;it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.G.lives});ok(dm===1,'a dragon takes 2 lives');
 await z.evaluate(()=>{FC.G.level=9;FC.G.state='play';FC.G.score=99;FC.G.lives=3;FC.G.items=[];FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});
 ok(await z.evaluate(()=>document.getElementById('wrap').className)==='z3','the scenery gets darker (dark jungle) at level 10');
+await q.evaluate(()=>FC.start());await q.waitForTimeout(100);
+ok(await q.evaluate(()=>FC.G.maxLives===3&&FC.G.pw===112&&FC.G.up.m===0),'the next game starts with the normal 3 lives, normal basket and no magnet - buy again to get them back');
+await q.reload();await q.waitForSelector('#go');ok(await q.evaluate(()=>FC.UP().l===0),'after closing and reopening the game nothing is kept either');
 ok(errs.length===0,'no page errors '+errs.join());
 await b.close();srv.close()})();
