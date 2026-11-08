@@ -59,5 +59,17 @@ ok(/Rematch/.test(await f.locator('#tChal').innerText())&&/Dara/.test(await f.lo
 await f.screenshot({path:'/tmp/sc/fc_home.png'});
 let g=await mk();await g.goto('http://localhost:8824/fruit/?c=100&n=Bob&m=99');await g.waitForSelector('#go');ok(!/💬/.test(await g.locator('#tChal').innerText()),'an invalid message number is ignored (only the 4 ready-made messages exist; no free text)');
 let h=await mk();await h.goto('http://localhost:8824/fruit/?c=100&n=Bob&m=%3Cb%3E');await h.waitForSelector('#go');ok(!/💬/.test(await h.locator('#tChal').innerText())&&await h.locator('#tChal b').count()===0,'a non-number message is ignored too');
+// 7) deeper zones: nastier creatures, more coins, darker forest
+let z=await mk();await z.goto('http://localhost:8824/fruit/');await z.waitForSelector('#go');await z.click('#go');await z.waitForTimeout(150);
+const kinds=async(lv)=>z.evaluate(l=>{FC.G.level=l;const s=new Set();for(let i=0;i<300;i++){FC.G.items=[];FC.addItem('bad');s.add(FC.G.items[0].e)}return [...s].sort().join('')},lv);
+ok(await kinds(1)==='🐛','level 1-3 only has caterpillars');
+ok((await kinds(4)).includes('🕷')&&!(await kinds(4)).includes('🐍'),'level 4+ adds spiders, no snakes yet');
+ok((await kinds(7)).includes('🐍')&&!(await kinds(7)).includes('🐉'),'level 7+ adds snakes');
+ok((await kinds(10)).includes('🐉'),'level 10+ adds dragons');
+const cc=async(lv)=>z.evaluate(l=>{FC.G.level=l;FC.G.state='play';FC.G.items=[];const c0=FC.COINS();FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.COINS()-c0},lv);
+ok(await cc(1)===1&&await cc(4)===2&&await cc(7)===3&&await cc(10)===4,'fruit pays 1 / 2 / 3 / 4 coins deeper in the forest');
+const dm=await z.evaluate(()=>{FC.G.level=10;FC.G.state='play';FC.G.lives=3;FC.G.maxLives=3;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.e='🐉';it.d=2;it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.G.lives});ok(dm===1,'a dragon takes 2 lives');
+await z.evaluate(()=>{FC.G.level=9;FC.G.state='play';FC.G.score=99;FC.G.lives=3;FC.G.items=[];FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});
+ok(await z.evaluate(()=>document.getElementById('wrap').className)==='z3','the scenery gets darker (dark jungle) at level 10');
 ok(errs.length===0,'no page errors '+errs.join());
 await b.close();srv.close()})();
