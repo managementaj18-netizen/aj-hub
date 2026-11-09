@@ -8,9 +8,11 @@ function source(){var q=(location.search.match(/[?&]s=([\w-]+)/)||[])[1];if(q)re
  if(!r||r===location.hostname)return"direct";
  if(/facebook|fb\.com|fb\.me|l\.facebook/.test(r))return"facebook";if(/instagram/.test(r))return"instagram";if(/t\.me|telegram/.test(r))return"telegram";if(/google/.test(r))return"google";if(/tiktok/.test(r))return"tiktok";return"other"}
 var src=source();try{src=sessionStorage.getItem("gm_src")||src;sessionStorage.setItem("gm_src",src)}catch(e){}
+var API=window.SORAMMA_API||"";/* inside the phone app the files are on the phone, so data goes to the real address */
+if(API)src="app";
 function hit(ev,game){try{var body=JSON.stringify({ev:ev,game:game||"fruit",src:src,vid:vid});
- if(navigator.sendBeacon&&navigator.sendBeacon("/api/hit",new Blob([body],{type:"application/json"})))return;
- fetch("/api/hit",{method:"POST",body:body,headers:{"content-type":"application/json"},keepalive:true}).catch(function(){})}catch(e){}}
+ if(navigator.sendBeacon&&navigator.sendBeacon(API+"/api/hit",new Blob([body],{type:"application/json"})))return;
+ fetch(API+"/api/hit",{method:"POST",body:body,headers:{"content-type":"application/json"},keepalive:true}).catch(function(){})}catch(e){}}
 window.addEventListener("appinstalled",function(){hit("install",window.GT&&GT.game)});
 window.GT={hit:hit,vid:vid,FB:FB,game:"fruit",openFB:function(){hit("fb",GT.game);if(FB)window.open(FB,"_blank")}};
 })();

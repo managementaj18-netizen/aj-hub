@@ -1,0 +1,16 @@
+{
+  "name": "soramma-fruit-catch-ios",
+  "private": true,
+  "version": "1.0.0",
+  "description": "iPhone app shell for Soramma Fruit Catch (Capacitor). The game itself lives in ../public/fruit.",
+  "scripts": {
+    "web": "node scripts/make-www.js",
+    "sync": "npm run web && npx cap sync ios",
+    "open": "npx cap open ios"
+  },
+  "dependencies": {
+    "@capacitor/cli": "^8.0.0",
+    "@capacitor/core": "^8.0.0",
+    "@capacitor/ios": "^8.0.0"
+  }
+}

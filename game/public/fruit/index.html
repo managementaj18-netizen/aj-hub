@@ -100,7 +100,7 @@ var CH=null,NM=ld("fc_name","");
 function cleanName(x){return String(x||"").replace(/[^\p{L}\p{M}\p{N} ._-]/gu,"").trim().slice(0,14)}
 try{var QS=new URLSearchParams(location.search),CS=parseInt(QS.get("c"),10);if(CS>=0&&CS<=99999){CH={s:CS,n:cleanName(QS.get("n"))};var MM=parseInt(QS.get("m"),10);if(MM>=0&&MM<4)CH.m=MM}}catch(e){}
 function chalTexts(){if(!CH)return;if(!CH.n)CH.n=t("friend");$("tChal").textContent=t("chal",{n:CH.n,s:CH.s})+(CH.m!=null?"\n"+t("msgline",{n:CH.n,m:t("m"+CH.m)}):"");$("tChal").classList.remove("hide");$("goal").textContent="🎯 "+CH.s;$("goal").classList.remove("hide")}
-function api(p,o){return fetch(p,o).then(function(x){return x.json().then(function(j){return{s:x.status,j:j}})})}
+function api(p,o){return fetch((window.SORAMMA_API||"")+p,o).then(function(x){return x.json().then(function(j){return{s:x.status,j:j}})})}
 function myVid(){return window.GT&&GT.vid||""}
 function setName(v){NM=cleanName(v);sv("fc_name",NM);$("nm").value=NM;$("nm0").value=NM;submitScore()}
 var LAST=null;
@@ -251,7 +251,7 @@ $("cont").onclick=function(){var cp=CONTP[G.conts];if(cp==null||COINS<cp){toast(
 $("nm0").onchange=function(){setName(this.value)};$("nm").onchange=function(){setName(this.value)};
 $("homeP").onclick=function(){$("ovPause").classList.add("hide");$("ovStart").classList.remove("hide");G.state="menu";texts()};
 $("homeB").onclick=function(){$("ovEnd").classList.add("hide");$("ovStart").classList.remove("hide");G.state="menu";texts()};
-function shareLink(score){return location.origin+location.pathname+"?c="+score+(NM?"&n="+encodeURIComponent(NM):"")+(PM>=0?"&m="+PM:"")+"&s=ch"}
+function shareLink(score){return(window.SORAMMA_SHARE||location.origin+location.pathname)+"?c="+score+(NM?"&n="+encodeURIComponent(NM):"")+(PM>=0?"&m="+PM:"")+"&s=ch"}
 $("chb").onclick=function(){if(!(BEST>0))return;NM=cleanName($("nm0").value)||NM;sv("fc_name",NM);var link=shareLink(BEST),s=t("st",{n:BEST})+" "+link;try{GT.hit("share","fruit")}catch(e){}if(navigator.share)navigator.share({text:s}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(s)};
 $("share").onclick=function(){try{GT.hit("share","fruit")}catch(e){}NM=cleanName($("nm").value);sv("fc_name",NM);var link=shareLink(G.score);var s=t("st",{n:G.score})+" "+link;if(navigator.share)navigator.share({text:s}).catch(function(){});else if(navigator.clipboard)navigator.clipboard.writeText(s)};
 document.addEventListener("visibilitychange",function(){if(document.hidden&&G.state==="play")pause()});
