@@ -74,3 +74,6 @@ Level starts at score 5·n·(n-1): Lv2 10, Lv3 30, Lv4 60, Lv5 100, Lv6 150, Lv7
 - Speed: fruit starts at 180 px/s (Lv1) and grows +30 px/s per level up to Lv14; creatures also arrive faster (spawn gap 0.76 s at Lv1 down to 0.30 s).
 - Phones stuttered because a big animated SVG scenery was redrawn every frame. While you play the scenery no longer sways (`#wrap.playing`), the drawings are copied once to small canvases (`SPC`), and clouds/scene are separate layers.
 - Zones now change the whole mood: meadow = day; forest (Lv8) = evening with falling leaves; deep forest (Lv11) = quiet night with moon, stars and fireflies; dark jungle (Lv14) = storm with rain, lightning flashes and thunder. Code: `ambInit/ambStep/ambDraw/flashDraw/thunder` in `public/fruit/index.html`. Not measured on a real phone.
+
+## Music tempo (Fruit Catch)
+Tempo rises a little at every level: 96 beats/min at Lv1 to 176 at Lv14 (`bpm()`), then stays.

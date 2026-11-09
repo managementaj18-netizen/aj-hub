@@ -155,7 +155,7 @@ function beep(){sfx("tap")}
 var MU={step:0,next:0,id:null},HOOK=[72,76,79,0,76,72,74,0,77,74,79,0,76,74,72,0],BASS=[36,36,43,43,41,41,43,43];
 function mf(n){return 440*Math.pow(2,(n-69)/12)}
 function mnote(f,T,d,v,ty){var a=ctx();var o=a.createOscillator(),g=a.createGain();o.type=ty;o.frequency.value=f;g.gain.setValueAtTime(.0001,T);g.gain.linearRampToValueAtTime(v,T+.01);g.gain.exponentialRampToValueAtTime(.0001,T+d);o.connect(g);g.connect(beep.m);o.start(T);o.stop(T+d+.03)}
-function bpm(){return Math.min(172,100+8*(G.level-1))}
+function bpm(){return Math.round(96+80*(Math.min(G.level,14)-1)/13)}
 function mtick(){if(!MUS||!SND||G.state!=="play"||document.hidden){return}
  var a=ctx();if(!a)return;if(a.state==="suspended")a.resume();
  if(MU.next<a.currentTime-.2)MU.next=a.currentTime+.05;
