@@ -30,6 +30,7 @@ const ok=(c,m)=>{console.log(c?'PASS':'FAIL',m);if(!c)process.exitCode=1};
  const c=await player();await c.goto('http://localhost:8817/fruit/');await c.waitForSelector('#go');await c.click('#lb');await c.waitForSelector('#lbList li');
  const rowsTxt=await c.locator('#lbList li').allInnerTexts();
  ok(rowsTxt.length===2&&/🥇/.test(rowsTxt[0])&&/200/.test(rowsTxt[0])&&/🥈/.test(rowsTxt[1])&&/120/.test(rowsTxt[1]),'a new visitor sees 🥇 200 and 🥈 120 (rank and score): '+rowsTxt.join(' | ').replace(/\n/g,' '));
+ ok((await c.locator('#lbD .chip').count())>=2&&/Lv \d+/.test(await c.locator('#lbD').innerText()),'under the header: how many players reached each level ('+(await c.locator('#lbD').innerText()).replace(/\n/g,' ')+')');
  ok(rowsTxt.every(r=>/Lv \d+/.test(r))&&(await c.locator('#lbN').innerText()).includes('2 players'),'each row shows the level, the header says 2 players');
  ok(!(await c.locator('body').innerHTML()).includes('Dara')&&!/Sok/.test(rowsTxt.join(' ')),'other players names (Dara, Sok) are NOT shown to a visitor');
  ok(/\?/.test(await c.locator('#lbList li').first().innerHTML())&&await c.locator('#lbList li.me').count()===0,'others appear as "?" Player; none is marked as me');

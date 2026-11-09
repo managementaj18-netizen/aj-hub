@@ -12,6 +12,7 @@ r=await sub('phoneAAAA1111','Sok',50);ok(r.j.ranks.all.best===200,'a worse game 
 r=await sub('phoneCCCC3333','Neary',90);
 r=await call('GET','/api/top?game=fruit&period=all&vid=phoneAAAA1111');
 ok(r.s===200&&r.j.top.map(x=>x.score).join()==='300,200,90'&&r.j.total===3,'the public board shows scores and how many players (3), sorted');
+ok(r.j.dist&&r.j.dist[8]===1&&r.j.dist[6]===1&&r.j.dist[4]===1&&Object.keys(r.j.dist).length===3,'the board says how many players reached each level: 300 pts = Lv8, 200 = Lv6, 90 = Lv4 '+JSON.stringify(r.j.dist));
 ok(r.j.top.every(x=>!('name' in x))&&!JSON.stringify(r.j).includes('Dara')&&!JSON.stringify(r.j).includes('Sok'),'the public board contains NO names at all');
 ok(r.j.top.filter(x=>x.me).length===1&&r.j.top[1].me===true&&r.j.me.rank===2,'only my own row is marked and my place is returned');
 r=await call('GET','/api/top?game=fruit&period=all',null,{'x-admin-code':'wrong'});ok(r.s===200&&r.j.top.every(x=>!('name' in x)),'a wrong code still gets no names');

@@ -85,7 +85,9 @@ export async function onRequest(ctx){
       const P=periods(Date.now());if(!P[per])return J({error:"bad"},400);
       const rows=(await db.prepare("SELECT vid,name,score FROM gm_score WHERE game=? AND period=? ORDER BY score DESC,ts ASC LIMIT 10").bind(game,P[per]).all()).results||[];
       let me=null;if(vid.length>=8){const mine=await db.prepare("SELECT score FROM gm_score WHERE game=? AND vid=? AND period=?").bind(game,vid,P[per]).first();if(mine)me={score:mine.score,rank:await rankOf(db,game,P[per],mine.score)}}
-      return J({period:per,total:await totalOf(db,game,P[per]),top:rows.map(x=>isAdmin?{name:x.name,score:x.score,me:!!vid&&x.vid===vid}:{score:x.score,me:!!vid&&x.vid===vid}),me})}
+      const allSc=(await db.prepare("SELECT score FROM gm_score WHERE game=? AND period=? LIMIT 5000").bind(game,P[per]).all()).results||[],dist={};
+      for(const x of allSc){let n=1;while(n<14&&5*(n+1)*n<=x.score)n++;dist[n]=(dist[n]||0)+1}
+      return J({period:per,total:await totalOf(db,game,P[per]),dist,top:rows.map(x=>isAdmin?{name:x.name,score:x.score,me:!!vid&&x.vid===vid}:{score:x.score,me:!!vid&&x.vid===vid}),me})}
 
     // ---- the owner removes a player from the boards (needs the secret code) ----
     if(route==="score-delete"&&m==="POST"){
