@@ -69,3 +69,8 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 
 ## Levels and creatures (Fruit Catch)
 Level starts at score 5·n·(n-1): Lv2 10, Lv3 30, Lv4 60, Lv5 100, Lv6 150, Lv7 210, Lv8 280, Lv9 360, Lv10 450, Lv11 550, Lv12 660, Lv14 910 (580 points = Lv11). One new creature per step, but only the 3 newest kinds fall at the same time (newest 3x, middle 2x, oldest 1x; older ones disappear): Lv1 caterpillar, Lv2 ant (fast), Lv3 bee (small sway), Lv4 cricket (sideways jumps), Lv5 spider (fast), Lv8 scorpion, Lv9 bat (wide swing), Lv11 snake, Lv14 dragon (costs 2 lives). Zones: meadow, forest from Lv8 (coins x2), deep forest from Lv11 (x3), dark jungle from Lv14 (x4). Speed and spawn rate stop growing at Lv14. The table is `BADS` and `levelFor()` in `public/fruit/index.html`.
+
+## Smoothness and mood (Fruit Catch)
+- Speed: fruit starts at 180 px/s (Lv1) and grows +30 px/s per level up to Lv14; creatures also arrive faster (spawn gap 0.76 s at Lv1 down to 0.30 s).
+- Phones stuttered because a big animated SVG scenery was redrawn every frame. While you play the scenery no longer sways (`#wrap.playing`), the drawings are copied once to small canvases (`SPC`), and clouds/scene are separate layers.
+- Zones now change the whole mood: meadow = day; forest (Lv8) = evening with falling leaves; deep forest (Lv11) = quiet night with moon, stars and fireflies; dark jungle (Lv14) = storm with rain, lightning flashes and thunder. Code: `ambInit/ambStep/ambDraw/flashDraw/thunder` in `public/fruit/index.html`. Not measured on a real phone.

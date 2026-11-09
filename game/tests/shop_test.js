@@ -85,11 +85,22 @@ const beh=await z.evaluate(()=>{FC.G.level=14;FC.G.state='play';FC.G.spawn=1e9;c
 ok(beh.jumps>3,'the cricket jumps sideways in bursts ('+beh.jumps+' moving frames)');
 ok(beh.brange>60,'the bat swings wide from side to side ('+Math.round(beh.brange)+' px)');
 ok(beh.antStraight,'the ant falls straight down');
+// atmosphere: evening leaves, night fireflies, storm rain + lightning
+const atm=await z.evaluate(()=>{const out={};FC.G.state='play';for(const [l,n] of [[1,'day'],[8,'evening'],[11,'night'],[14,'storm']]){FC.G.level=l;FC.G.spawn=1e9;FC.G.items=[];FC.G.ps=null;FC.G.pz=-1;FC.step(0.02);out[n]={n:(FC.G.ps||[]).length,z:zone()}}
+ FC.G.level=14;FC.G.flash=0;FC.G.nextLt=0.01;FC.step(0.05);out.flash=FC.G.flash;return out});
+ok(atm.day.n===0&&atm.evening.n>0&&atm.night.n>0&&atm.storm.n>20,'meadow has no weather; evening has leaves, night has fireflies, the storm has rain ('+atm.evening.n+'/'+atm.night.n+'/'+atm.storm.n+')');
+ok(atm.flash>.5,'lightning flashes in the storm');
+await z.evaluate(()=>{FC.G.level=1;FC.G.zn=0;FC.G.state='play';FC.G.score=549;FC.G.level=10;FC.G.items=[];FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});
+ok(await z.evaluate(()=>{const c=document.getElementById('wrap').classList;return c.contains('z2')}),'reaching level 11 (550 points) turns the scene to night');
+ok(await z.evaluate(()=>Object.keys(SPC).length>=16),'every drawing is also kept as a ready-to-draw canvas copy (fast on phones)');
+ok(await z.evaluate(()=>new Promise(r=>setTimeout(()=>r(document.getElementById('wrap').classList.contains('playing')),200))),'while playing the scenery stops swaying (so the game stays smooth)');
+const sp=await z.evaluate(()=>{FC.G.level=3;const a=(function(){const v=[];for(let i=0;i<50;i++){FC.G.items=[];FC.addItem('ok');v.push(FC.G.items[0].vy)}return v.reduce((x,y)=>x+y)/v.length})();FC.G.level=8;const b=(function(){const v=[];for(let i=0;i<50;i++){FC.G.items=[];FC.addItem('ok');v.push(FC.G.items[0].vy)}return v.reduce((x,y)=>x+y)/v.length})();FC.G.level=1;const c=(function(){const v=[];for(let i=0;i<50;i++){FC.G.items=[];FC.addItem('ok');v.push(FC.G.items[0].vy)}return v.reduce((x,y)=>x+y)/v.length})();return[c,a,b]});
+ok(sp[0]>150&&sp[1]>sp[0]*1.2&&sp[2]>sp[1]*1.2,'fruit speeds up step by step: Lv1 '+Math.round(sp[0])+', Lv3 '+Math.round(sp[1])+', Lv8 '+Math.round(sp[2])+' px/s');
 const cc=async(lv)=>z.evaluate(l=>{FC.G.level=l;FC.G.state='play';FC.G.items=[];const c0=FC.COINS();FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.COINS()-c0},lv);
 ok(await cc(1)===1&&await cc(8)===2&&await cc(11)===3&&await cc(14)===4,'fruit pays 1 / 2 / 3 / 4 coins deeper in the forest');
 const dm=await z.evaluate(()=>{FC.G.level=14;FC.G.state='play';FC.G.lives=3;FC.G.maxLives=3;FC.G.spawn=1e9;FC.G.tx=FC.G.px;FC.G.ty=FC.G.py;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.e='🐉';it.d=2;it.w=0;it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.G.lives});ok(dm===1,'a dragon takes 2 lives (lives left '+dm+')');
 await z.evaluate(()=>{FC.G.level=7;FC.G.state='play';FC.G.score=279;FC.G.lives=3;FC.G.items=[];FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});
-ok(await z.evaluate(()=>document.getElementById('wrap').className)==='z1','the scenery changes to forest when level 8 is reached (280 points)');
+ok(await z.evaluate(()=>document.getElementById('wrap').classList.contains('z1')),'the scenery changes to forest when level 8 is reached (280 points)');
 await q.evaluate(()=>FC.start());await q.waitForTimeout(100);
 ok(await q.evaluate(()=>FC.G.maxLives===3&&FC.G.pw===112&&FC.G.up.m===0),'the next game starts with the normal 3 lives, normal basket and no magnet - buy again to get them back');
 await q.reload();await q.waitForSelector('#go');ok(await q.evaluate(()=>FC.UP().l===0),'after closing and reopening the game nothing is kept either');

@@ -130,6 +130,8 @@ window.ART=A;
 // emoji name -> artwork name (so the game keeps using the same item names)
 window.ARTMAP={"🥭":"mango","🍌":"banana","🍉":"watermelon","🥥":"coconut","🍊":"orange","🍍":"pineapple","🧺":"basket","🐛":"caterpillar","🐜":"ant","🐝":"bee","🦗":"cricket","🕷️":"spider","🦂":"scorpion","🦇":"bat","🐍":"snake","🐉":"dragon"};
 window.SPR={};
-Object.keys(A).forEach(function(k){var im=new Image();im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(A[k]);window.SPR[k]=im});
+window.SPC={};
+// Drawing an SVG image straight to the canvas every frame is slow on phones. So each drawing is copied ONCE into a small canvas, and the game draws that copy.
+Object.keys(A).forEach(function(k){var im=new Image();im.onload=function(){try{var S=k==="basket"?288:160,c=document.createElement("canvas");c.width=c.height=S;c.getContext("2d").drawImage(im,0,0,S,S);window.SPC[k]=c}catch(e){}};im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(A[k]);window.SPR[k]=im});
 window.artUrl=function(k){return"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(A[k])};
 })();
