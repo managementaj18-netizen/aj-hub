@@ -16,7 +16,7 @@ const srv=http.createServer((q,r)=>{let f=path.join(root,q.url.split('?')[0]);if
   await p.click('#go');await p.waitForTimeout(200);
   const scene=async(level,score,names)=>p.evaluate(([lv,sc,ns])=>{FC.G.spawn=1e9;FC.G.level=lv;FC.G.score=sc;FC.G.items=[];const W=window.innerWidth;ns.forEach((k,i)=>{FC.addItem(k.k);const it=FC.G.items.at(-1);if(k.e)it.e=k.e;it.x=W*(.15+.7*((i*37%100)/100));it.y=90+i*95;it.vy=0;it.w=0});FC.G.px=FC.G.tx=W/2;document.getElementById('wrap').className='z'+Math.min(3,Math.floor((lv-1)/3));if(window.hud)hud()},[level,score,names]);
   await scene(2,14,[{k:'ok'},{k:'gold'},{k:'ok'},{k:'bad'},{k:'ok'},{k:'ok'}]);await p.waitForTimeout(900);await p.screenshot({path:`${out}/${lang}-2-play.png`});
-  await scene(10,112,[{k:'ok'},{k:'bad',e:'🐉'},{k:'gold'},{k:'bad',e:'🐍'},{k:'ok'},{k:'bad',e:'🕷️'}]);await p.waitForTimeout(1800);await p.screenshot({path:`${out}/${lang}-3-jungle.png`});
+  await scene(14,950,[{k:'ok'},{k:'bad',e:'🐉'},{k:'gold'},{k:'bad',e:'🐍'},{k:'ok'},{k:'bad',e:'🦇'}]);await p.waitForTimeout(1800);await p.screenshot({path:`${out}/${lang}-3-jungle.png`});
   await c.close();
  }
  const c2=await b.newContext({viewport:{width:1024,height:500}});const g=await c2.newPage();
