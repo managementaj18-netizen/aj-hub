@@ -95,9 +95,20 @@
       for (var i = WAIT.length - 1; i >= 0; i--) if (WAIT[i] && WAIT[i]._gapp) WAIT.splice(i, 1);
       LIST.filter(function (x) { return x.booking && !x.used && x.arrival; }).forEach(function (x) {
         var tot = Number(x.total) || 0, dep = Number(x.deposit) || 0;
-        WAIT.push({ _gapp: 1, room: x.room || "Guest App", name: x.name || "", ci: x.arrival, co: x.co || addDays(x.arrival, 1),
-          phone: x.phone || "", guests: x.guests || "", nat: x.nat || "", src: "Guest App", ref: x.booking, roomtype: "",
-          deposit: dep || "", notes: "Guest App " + x.booking + " · " + (x.room || "") + (tot ? " · total $" + tot : "") + (dep ? " · deposit paid $" + dep + " (ACLEDA)" : "") + (tot && dep ? " · balance $" + (tot - dep) : "") });
+        var n = String(x.room || "").toLowerCase();
+        var gk = /balcony/.test(n) ? "superior_balcony" : /type\s*a|twin\s*a/.test(n) ? "twin_a" : /type\s*b|twin\s*b/.test(n) ? "twin_b" : /family/.test(n) ? "family" : /superior/.test(n) ? "superior" : "";
+        var co0 = x.co || addDays(x.arrival, 1), free = [], rt = "";
+        try {
+          var g = ROOM_GROUPS.filter(function (r) { return r[1] === gk; })[0];
+          if (g) {
+            rt = (typeof RT_BY_GROUP !== "undefined" && RT_BY_GROUP[gk]) || "";
+            var bks = (typeof BOARD !== "undefined" && BOARD.bookings) || [];
+            free = g[2].filter(function (rm) { return !bks.some(function (b) { return b && String(b.room) === rm && b.status !== "cancelled" && b.start < co0 && addDays(b.start, b.nights || 1) > x.arrival; }); });
+          }
+        } catch (e) {}
+        WAIT.push({ _gapp: 1, room: x.room || "Guest App", name: x.name || "", ci: x.arrival, co: co0,
+          phone: x.phone || "", guests: x.guests || "", nat: x.nat || "", src: "Guest App", ref: x.booking, roomtype: rt,
+          deposit: dep || "", notes: "Guest App " + x.booking + " · " + (x.room || "") + (tot ? " · total $" + tot : "") + (dep ? " · deposit paid $" + dep + " (ACLEDA)" : "") + (tot && dep ? " · balance $" + (tot - dep) : "") + (gk ? " · បន្ទប់ទំនេរ / free rooms: " + (free.length ? free.join(", ") : "—") : "") });
       });
       WAIT.sort(function (a, b) { return String(a.ci).localeCompare(String(b.ci)) || String(a.room).localeCompare(String(b.room), undefined, { numeric: true }); });
     } catch (e) {}
