@@ -96,6 +96,18 @@ ok(await z.evaluate(()=>Object.keys(SPC).length>=16),'every drawing is also kept
 ok(await z.evaluate(()=>new Promise(r=>setTimeout(()=>r(document.getElementById('wrap').classList.contains('playing')),200))),'while playing the scenery stops swaying (so the game stays smooth)');
 const sp=await z.evaluate(()=>{FC.G.level=3;const a=(function(){const v=[];for(let i=0;i<50;i++){FC.G.items=[];FC.addItem('ok');v.push(FC.G.items[0].vy)}return v.reduce((x,y)=>x+y)/v.length})();FC.G.level=8;const b=(function(){const v=[];for(let i=0;i<50;i++){FC.G.items=[];FC.addItem('ok');v.push(FC.G.items[0].vy)}return v.reduce((x,y)=>x+y)/v.length})();FC.G.level=1;const c=(function(){const v=[];for(let i=0;i<50;i++){FC.G.items=[];FC.addItem('ok');v.push(FC.G.items[0].vy)}return v.reduce((x,y)=>x+y)/v.length})();return[c,a,b]});
 ok(sp[0]>150&&sp[1]>sp[0]*1.2&&sp[2]>sp[1]*1.2,'fruit speeds up step by step: Lv1 '+Math.round(sp[0])+', Lv3 '+Math.round(sp[1])+', Lv8 '+Math.round(sp[2])+' px/s');
+// rhythm breaks: fruit shower and swarm
+const wv=await z.evaluate(()=>{const o={};FC.G.state='play';FC.G.spawn=1e9;FC.G.items=[];
+ FC.G.level=1;FC.G.wave=null;FC.G.nextWave=0;FC.step(0.02);o.noWaveLv1=!FC.G.wave;
+ FC.G.level=3;FC.G.wave=null;FC.G.nextWave=0;FC.step(0.02);o.showerLv3=FC.G.wave&&FC.G.wave.type;
+ FC.G.wave.t=0.01;FC.step(0.05);o.ended=!FC.G.wave&&FC.G.nextWave>=17;
+ FC.G.level=3;FC.G.wave={type:'shower',t:3};FC.G.items=[];FC.G.spawn=0;let bad=0,n=0;for(let i=0;i<60;i++){FC.G.spawn=0;FC.G.items=[];FC.step(0.001);if(FC.G.items[0]){n++;if(FC.G.items[0].k==='bad')bad++}}o.showerBad=bad;o.showerN=n;
+ FC.G.level=8;FC.G.wave={type:'swarm',t:3};let sb=0,sn=0;for(let i=0;i<120;i++){FC.G.spawn=0;FC.G.items=[];FC.step(0.001);if(FC.G.items[0]){sn++;if(FC.G.items[0].k==='bad')sb++}}o.swarmShare=sb/sn;
+ FC.G.wave=null;FC.G.nextWave=99;return o});
+ok(wv.noWaveLv1&&wv.showerLv3==='shower'&&wv.ended,'a wave starts every ~20-30 s from level 2 (shower), lasts a few seconds and then waits again');
+ok(wv.showerBad===0&&wv.showerN>50,'a fruit shower drops only fruit (no creatures)');
+ok(wv.swarmShare>.4,'a swarm drops many creatures ('+Math.round(wv.swarmShare*100)+'%)');
+ok(await z.evaluate(()=>{FC.G.level=1;const a=badP();FC.G.level=9;const b=badP();FC.G.level=14;const c=badP();return a<.16&&b>.2&&c>=.3}),'creatures are rare at the start and more common later');
 const cc=async(lv)=>z.evaluate(l=>{FC.G.level=l;FC.G.state='play';FC.G.items=[];const c0=FC.COINS();FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.COINS()-c0},lv);
 ok(await cc(1)===1&&await cc(8)===2&&await cc(11)===3&&await cc(14)===4,'fruit pays 1 / 2 / 3 / 4 coins deeper in the forest');
 const dm=await z.evaluate(()=>{FC.G.level=14;FC.G.state='play';FC.G.lives=3;FC.G.maxLives=3;FC.G.spawn=1e9;FC.G.tx=FC.G.px;FC.G.ty=FC.G.py;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.e='🐉';it.d=2;it.w=0;it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.G.lives});ok(dm===1,'a dragon takes 2 lives (lives left '+dm+')');

@@ -10,7 +10,7 @@ ok(/ចាប់ផ្លែឈើ/.test(await p.locator('#tTitle').innerText())
 await p.screenshot({path:'/tmp/sc/game_menu.png'});
 await p.click('#go');await p.waitForTimeout(100);ok(await p.evaluate(()=>FC.G.state)==='play','game starts');ok(await p.evaluate(()=>!!beep.a&&beep.a.state==='running'),'sound engine is unlocked by the first touch (needed on iPhone)');
 await p.waitForTimeout(1200);ok(await p.evaluate(()=>FC.MU.step)>4,'background music plays while the game runs (steps '+await p.evaluate(()=>FC.MU.step)+')');
-ok(await p.evaluate(()=>{const a=FC.G.level,v=[];for(let l=1;l<=14;l++){FC.G.level=l;v.push(FC.bpm())}FC.G.level=20;const b20=FC.bpm();FC.G.level=a;let up=true;for(let i=1;i<14;i++)if(!(v[i]>v[i-1]))up=false;return up&&v[0]===96&&v[13]===176&&b20===176}),'music gets a little faster at EVERY level from Lv1 (96) to Lv14 (176 beats/min), then stays');
+ok(await p.evaluate(()=>{const a=FC.G.level,v=[];for(let l=1;l<=14;l++){FC.G.level=l;v.push(FC.bpm())}FC.G.level=20;const b20=FC.bpm();FC.G.level=a;let up=true;for(let i=1;i<14;i++)if(!(v[i]>v[i-1]))up=false;return up&&v[0]===104&&v[13]===192&&b20===192}),'music gets a little faster at EVERY level from Lv1 (104) to Lv14 (192 beats/min), then stays');
 await p.click('#bm');{const s=await p.evaluate(()=>FC.MU.step);await p.waitForTimeout(600);ok(await p.evaluate(()=>FC.MU.step)===s,'music button turns the music off')}await p.click('#bm');
 // freeze the random spawns, then drive the game deterministically
 await p.evaluate(()=>{FC.G.spawn=1e9;FC.G.items=[];FC.G.rng=()=>0.5});

@@ -76,4 +76,7 @@ Level starts at score 5·n·(n-1): Lv2 10, Lv3 30, Lv4 60, Lv5 100, Lv6 150, Lv7
 - Zones now change the whole mood: meadow = day; forest (Lv8) = evening with falling leaves; deep forest (Lv11) = quiet night with moon, stars and fireflies; dark jungle (Lv14) = storm with rain, lightning flashes and thunder. Code: `ambInit/ambStep/ambDraw/flashDraw/thunder` in `public/fruit/index.html`. Not measured on a real phone.
 
 ## Music tempo (Fruit Catch)
-Tempo rises a little at every level: 96 beats/min at Lv1 to 176 at Lv14 (`bpm()`), then stays.
+Tempo rises a little at every level: 104 beats/min at Lv1 to 192 at Lv14 (`bpm()`), then stays.
+
+## Rhythm (Fruit Catch)
+Fruit speed = 150 + 36 per level px/s (to Lv14); spawn gap 0.73 s (Lv1) to 0.26 s. Creature share rises from 14% (Lv1) to 32% (Lv14) (`badP()`). Every 20-30 s a short wave: fruit shower (Lv2+, 4 s, only fruit, some golden) or swarm (Lv5+, 3.5 s, mostly creatures); code in `waveStep()`.
