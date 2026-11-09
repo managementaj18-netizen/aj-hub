@@ -63,3 +63,6 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 
 ## Android / Google Play (prepared, not published)
 `game/android/` holds the Google Play kit for Fruit Catch: step-by-step `README.md`, store texts `listing.md`, screenshots and feature graphic (`store/`), and `make-store-assets.js`. The privacy policy is the page `/privacy/`. Publishing needs the owner's Play developer account.
+
+## Own artwork (Fruit Catch)
+`public/fruit/art.js` draws every fruit, creature and the basket as SVG in one style (fruit = smiling face, creatures = angry eyes). The game turns them into images; if one fails to load it falls back to the emoji. Test: `tests/art_test.js`. To add a creature: add an `A.name=wrap(...)` drawing and an entry in `ARTMAP` (emoji → name).
