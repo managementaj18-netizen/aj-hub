@@ -52,7 +52,7 @@ canvas{flex:1;width:100%;display:block;position:relative;z-index:2}
 #wrap.playing .sw,#wrap.playing .sun .rays{animation:none}
 #wrap::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:1;opacity:0;transition:opacity 1.5s;background:radial-gradient(ellipse at center,transparent 45%,#000a 100%)}
 #wrap.z2::after{opacity:.5}#wrap.z3::after{opacity:1}
-#tRank{white-space:pre-line}
+#tRank{white-space:pre-line}#lbD{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:340px;margin:-4px 0 4px}.chip{background:#ffffff26;border-radius:99px;padding:3px 10px;font-size:13px;font-weight:700}.chip b{color:#ffd166}
 </style></head><body>
 <div id="wrap"><div class="cloud c1">☁️</div><div class="cloud c2">☁️</div><div class="cloud c3">☁️</div>
 <div id="stars"></div><div id="moon"></div><div class="sun"><svg viewBox="0 0 80 80"><g class="rays" stroke="#ffc83d" stroke-width="4" stroke-linecap="round"><line x1="40" y1="6" x2="40" y2="14" transform="rotate(0 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(30 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(60 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(90 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(120 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(150 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(180 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(210 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(240 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(270 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(300 40 40)"/><line x1="40" y1="6" x2="40" y2="14" transform="rotate(330 40 40)"/></g><circle cx="40" cy="40" r="19" fill="#ffd84d"/><circle cx="34" cy="35" r="6" fill="#fff6c2" opacity=".7"/></svg></div>
@@ -77,7 +77,7 @@ canvas{flex:1;width:100%;display:block;position:relative;z-index:2}
 <div class="ov" id="ovStart"><div id="logo" style="height:72px"></div><h1 id="tTitle"></h1><div class="chal hide" id="tChal"></div><p id="tHow"></p><div class="legend" id="tLeg"></div><input id="nm0" maxlength="14" autocomplete="off"><div>🏆 <b id="best">0</b> &nbsp;&nbsp; <span id="coinH">🪙 0</span></div><button class="big" id="go"></button><div class="row"><button class="big sec" id="shopB"></button><button class="big sec" id="lb"></button><button class="big sec" id="chb"></button></div><button class="sm" id="lang"></button><div style="font-size:14px;opacity:.9" id="soon"></div></div>
 <div class="ov hide" id="ovShop"><h1 id="tShop"></h1><div id="coinS" class="chal"></div><svg id="tree" viewBox="0 0 340 250" xmlns="http://www.w3.org/2000/svg"></svg><div id="upg"></div><button class="big" id="shopBack"></button></div>
 <div class="ov hide" id="ovPause"><h1 id="tPause"></h1><button class="big" id="resume"></button><button class="sm" id="homeP"></button></div>
-<div class="ov hide" id="ovLB"><h1 id="tLB"></h1><p id="lbN"></p><div class="tabs" id="lbTabs"><button data-p="day"></button><button data-p="week"></button><button data-p="all"></button></div><ul id="lbList"></ul><p id="lbMe"></p><button class="big" id="lbBack"></button></div>
+<div class="ov hide" id="ovLB"><h1 id="tLB"></h1><p id="lbN"></p><div id="lbD"></div><div class="tabs" id="lbTabs"><button data-p="day"></button><button data-p="week"></button><button data-p="all"></button></div><ul id="lbList"></ul><p id="lbMe"></p><button class="big" id="lbBack"></button></div>
 <div class="ov hide" id="ovEnd"><h1 id="tOver"></h1><div class="score" id="fs">0</div><p id="tBest"></p><div id="tCoin"></div><div class="chal hide" id="tRes"></div><p id="tRank"></p><input id="nm" maxlength="14" autocomplete="off"><button class="big sec" id="cont" style="display:none"></button><button class="big" id="again"></button><div class="row" id="pms"></div><div class="row"><button class="sm" id="share"></button><button class="sm" id="homeB"></button></div></div>
 </div>
 <div id="toast"></div>
@@ -104,9 +104,9 @@ function api(p,o){return fetch(p,o).then(function(x){return x.json().then(functi
 function myVid(){return window.GT&&GT.vid||""}
 function setName(v){NM=cleanName(v);sv("fc_name",NM);$("nm").value=NM;$("nm0").value=NM;submitScore()}
 var LAST=null;
-function showLB(per){var L=$("lbList");L.innerHTML="";$("lbMe").textContent="";$("lbN").textContent="";var tb=$("lbTabs").children;for(var i=0;i<3;i++)tb[i].classList.toggle("on",tb[i].getAttribute("data-p")===per);
+function showLB(per){var L=$("lbList");L.innerHTML="";$("lbMe").textContent="";$("lbN").textContent="";$("lbD").innerHTML="";var tb=$("lbTabs").children;for(var i=0;i<3;i++)tb[i].classList.toggle("on",tb[i].getAttribute("data-p")===per);
  api("/api/top?game=fruit&period="+per+"&vid="+encodeURIComponent(myVid())).then(function(r){if(r.s!==200){$("lbMe").textContent=t("off");return}
-  $("lbN").textContent=t("lbn",{n:r.j.total||0});if(!r.j.top.length){$("lbMe").textContent=t("empty");return}
+  $("lbN").textContent=t("lbn",{n:r.j.total||0});var dk=Object.keys(r.j.dist||{}).map(Number).sort(function(a,b){return a-b}),dh="";dk.forEach(function(k){dh+='<span class="chip">Lv '+k+(k>=14?"+":"")+" <b>"+r.j.dist[k]+"</b></span>"});$("lbD").innerHTML=dh;if(!r.j.top.length){$("lbMe").textContent=t("empty");return}
   r.j.top.forEach(function(x,i){var li=document.createElement("li");if(x.me)li.className="me";var md=["🥇","🥈","🥉"][i]||"#"+(i+1),who=x.me?"⭐ "+(NM||t("you0")):'<i style="display:inline-block;width:22px;height:22px;line-height:22px;border-radius:50%;background:#ffffff33;text-align:center;font-style:normal;margin-right:6px">?</i>'+t("player");
    li.innerHTML="<b>"+md+"</b><span>"+who+"</span><em>Lv "+levelFor(x.score)+" · "+x.score+"</em>";L.appendChild(li)});
   if(r.j.me&&r.j.me.rank>10)$("lbMe").textContent=t("you",{r:r.j.me.rank,s:r.j.me.score})+" · Lv "+levelFor(r.j.me.score)}).catch(function(){$("lbMe").textContent=t("off")})}
