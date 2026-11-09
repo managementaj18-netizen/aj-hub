@@ -10,7 +10,7 @@
   var API = "https://aj-guest-app.management-aj-18.workers.dev/api/pc/";
   var LS = "aj_pckey";
   var TAG = "display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;margin:0 4px 3px 0;";
-  var manual = false, flashAt = 0;
+  var manual = false, flashAt = 0, lastInj = "";
   function hhmm(t) { var d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
   var LIST = [], showUsed = false, loading = false, lastLoad = 0;
 
@@ -82,9 +82,30 @@
       body + '<label class="muted" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;white-space:nowrap;width:auto"><input type="checkbox" id="pcUsed" style="width:16px;height:16px;min-width:16px;margin:0;padding:0;flex:none"' + (showUsed ? " checked" : "") + '> បង្ហាញដែលប្រើរួច · Show used</label>' +
       '<div id="pcMsg" style="display:none;margin-top:8px;padding:8px 10px;border-radius:10px;background:#e7f6ec;color:#15803d;font-weight:600"></div>';
     $("pcReload").onclick = function () { manual = true; load(true); };
+    var sig = LIST.map(function (x) { return x.id + (x.used ? "u" : ""); }).join(","); if (sig !== lastInj) { lastInj = sig; try { if ($("waitList") && typeof renderWait === "function") renderWait(); } catch (e) {} }
     $("pcUsed").onchange = function () { showUsed = this.checked; draw(); };
     [].slice.call(c.querySelectorAll("[data-pc]")).forEach(function (b) { b.onclick = function () { use(b.getAttribute("data-pc"), b); }; });
     [].slice.call(c.querySelectorAll("[data-pcdel]")).forEach(function (b) { b.onclick = function () { del(b.getAttribute("data-pcdel"), b.getAttribute("data-pcname"), b); }; });
+  }
+
+  /* Guest App bookings also appear in "⏳ Waiting for check-in" (room type instead of a room number — staff choose the room) */
+  function injectWait() {
+    try {
+      if (typeof WAIT === "undefined" || !Array.isArray(WAIT)) return;
+      for (var i = WAIT.length - 1; i >= 0; i--) if (WAIT[i] && WAIT[i]._gapp) WAIT.splice(i, 1);
+      LIST.filter(function (x) { return x.booking && !x.used && x.arrival; }).forEach(function (x) {
+        var tot = Number(x.total) || 0, dep = Number(x.deposit) || 0;
+        WAIT.push({ _gapp: 1, room: x.room || "Guest App", name: x.name || "", ci: x.arrival, co: x.co || addDays(x.arrival, 1),
+          phone: x.phone || "", guests: x.guests || "", nat: x.nat || "", src: "Guest App", ref: x.booking, roomtype: "",
+          deposit: dep || "", notes: "Guest App " + x.booking + " · " + (x.room || "") + (tot ? " · total $" + tot : "") + (dep ? " · deposit paid $" + dep + " (ACLEDA)" : "") + (tot && dep ? " · balance $" + (tot - dep) : "") });
+      });
+      WAIT.sort(function (a, b) { return String(a.ci).localeCompare(String(b.ci)) || String(a.room).localeCompare(String(b.room), undefined, { numeric: true }); });
+    } catch (e) {}
+  }
+  if (typeof window.renderWait === "function" && !window.renderWait._pc) {
+    var origRW = window.renderWait;
+    window.renderWait = function () { injectWait(); return origRW.apply(this, arguments); };
+    window.renderWait._pc = 1;
   }
 
   function load(force) {
