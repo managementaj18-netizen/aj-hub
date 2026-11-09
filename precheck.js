@@ -118,6 +118,17 @@
     window.renderWait = function () { injectWait(); return origRW.apply(this, arguments); };
     window.renderWait._pc = 1;
   }
+  /* picking a Guest App booking: room type is set, the room number stays empty for staff to fill in */
+  if (typeof window.pickWait === "function" && !window.pickWait._pc) {
+    var origPW = window.pickWait;
+    window.pickWait = function (i) {
+      var w = (typeof WAIT !== "undefined" && i >= 0) ? WAIT[i] : null;
+      var r = origPW.apply(this, arguments);
+      try { if (w && w._gapp && $("f_room") && $("f_room").value === String(w.room)) $("f_room").value = ""; } catch (e) {}
+      return r;
+    };
+    window.pickWait._pc = 1;
+  }
 
   function load(force) {
     if (loading || !key()) { draw(); return; }
