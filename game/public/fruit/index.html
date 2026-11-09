@@ -129,7 +129,7 @@ var cv=$("c"),cx=cv.getContext("2d"),W=0,H=0,DPR=1;
 function fit(){DPR=Math.min(window.devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*DPR;cv.height=H*DPR;cx.setTransform(DPR,0,0,DPR,0,0)}
 window.addEventListener("resize",fit);
 var G={up:{l:0,b:0,m:0},state:"menu",score:0,lives:3,level:1,items:[],px:0,tx:0,py:0,ty:0,pw:112,t:0,spawn:0,fx:[],rng:Math.random};
-var GOOD=["🥭","🍌","🍉","🥥","🍊"],GOLD="🍍",BAD="🐛",BADS=[{e:"🐛",from:1,v:1,d:1},{e:"🐜",from:2,v:1.3,d:1},{e:"🐝",from:3,v:1.05,d:1,w:1,wa:26,wf:38},{e:"🦗",from:4,v:1,d:1,j:1},{e:"🕷️",from:5,v:1.25,d:1},{e:"🦂",from:8,v:1.1,d:1,w:1,wa:42,wf:64},{e:"🦇",from:9,v:1.15,d:1,w:1,wa:70,wf:36},{e:"🐍",from:11,v:1.1,d:1,w:1},{e:"🐉",from:14,v:1.15,d:2,w:1}];
+var GOOD=["🥭","🍌","🍉","🥥","🍊"],GOLD="🍍",BAD="🐛",BADS=[{e:"🐛",from:1,v:1,d:1},{e:"🐜",from:3,v:1.3,d:1},{e:"🐝",from:5,v:1.05,d:1,w:1,wa:26,wf:38},{e:"🕷️",from:7,v:1.25,d:1},{e:"🐍",from:11,v:1.1,d:1,w:1},{e:"🐉",from:14,v:1.15,d:2,w:1}];
 function levelFor(sc){var n=1;while(5*(n+1)*n<=sc)n++;return n}
 function newCreature(l){for(var i=0;i<BADS.length;i++)if(BADS[i].from===l)return BADS[i];return null}
 function zone(){var l=G.level;return l>=14?3:l>=11?2:l>=8?1:0}
@@ -170,7 +170,7 @@ function mstop(){clearInterval(MU.id);MU.id=null}
 function hush(){try{if(beep.a&&beep.a.state==="running")beep.a.suspend()}catch(e){}}
 function wake(){try{if(beep.a&&beep.a.state==="suspended")beep.a.resume()}catch(e){}}
 window.addEventListener("pagehide",hush);document.addEventListener("visibilitychange",function(){document.hidden?hush():wake()});
-function badP(){return Math.min(.32,.14+.014*(Math.min(G.level,14)-1))}
+function badP(){return Math.min(.4,.12+.02*(Math.min(G.level,14)-1))}
 function addItem(kind){var x=30+G.rng()*(W-60),k=kind||(G.rng()<badP()?"bad":G.rng()<.1?"gold":"ok");
  var bt=null;if(k==="bad"){var av=BADS.filter(function(b){return b.from<=G.level});av=av.slice(Math.max(0,av.length-3));var wts=av.length===3?[1,2,3]:av.length===2?[1,3]:[1],tot=0,i2;for(i2=0;i2<wts.length;i2++)tot+=wts[i2];var pk=G.rng()*tot;for(i2=0;i2<wts.length;i2++){pk-=wts[i2];if(pk<=0)break}bt=av[Math.min(i2,av.length-1)]}
  G.items.push({x:x,x0:x,y:-30,k:k,e:bt?bt.e:k==="gold"?GOLD:GOOD[Math.floor(G.rng()*GOOD.length)],vy:(150+Math.min(G.level,14)*36)*(.85+G.rng()*.3)*(bt?bt.v:1),r:26,rot:G.rng()*6,d:bt?bt.d:0,w:bt?bt.w:0,wa:bt&&bt.wa||55,wf:bt&&bt.wf||55,j:bt?bt.j:0})}

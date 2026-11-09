@@ -65,25 +65,25 @@ let z=await mk();await z.goto('http://localhost:8824/fruit/');await z.waitForSel
 const kinds=async(lv)=>z.evaluate(l=>{FC.G.level=l;const s=new Set();for(let i=0;i<300;i++){FC.G.items=[];FC.addItem('bad');s.add(FC.G.items[0].e)}return [...s].sort().join('')},lv);
 const has=(s,e)=>s.includes(e);
 const k1=await kinds(1),k2=await kinds(2),k5=await kinds(5),k8=await kinds(8),k11=await kinds(11),k14=await kinds(14);
-ok(k1==='🐛','level 1: only caterpillars');
+ok(k1==='🐛'&&k2==='🐛','levels 1-2: only the caterpillar');
 const kk3=await kinds(3);
-ok(has(k2,'🐜')&&has(k2,'🐛')&&!has(k2,'🐝'),'level 2: caterpillar + ant');
-ok(has(kk3,'🐝')&&has(kk3,'🐛')&&has(kk3,'🐜')&&!has(kk3,'🦗'),'level 3 adds the bee');
-ok(has(k5,'🐝')&&has(k5,'🦗')&&has(k5,'🕷')&&!has(k5,'🐛')&&!has(k5,'🐜')&&!has(k5,'🦂'),'level 5: only the 3 newest (bee, cricket, spider); the old caterpillar and ant are gone');
-ok([...k8].filter(c=>['🐛','🐜','🐝','🦗','🕷','🦂','🦇','🐍','🐉'].some(e=>e.startsWith(c))).length<=4&&has(k8,'🦂')&&!has(k8,'🐍')&&!has(k8,'🐝'),'level 8 (forest): scorpion joins, snake not yet, bee gone');
-ok(has(k11,'🐍')&&has(k11,'🦇')&&!has(k11,'🐉')&&!has(k11,'🕷'),'level 11: snake joins; spider gone; no dragon yet');
-ok(has(k14,'🐉')&&has(k14,'🐍')&&!has(k14,'🦂'),'level 14: the dragon joins the snake and bat; the scorpion is gone');
+ok(has(kk3,'🐜')&&has(kk3,'🐛'),'level 3 adds the ant');
+ok(has(k5,'🐝')&&has(k5,'🐜')&&has(k5,'🐛')&&!has(k5,'🕷'),'level 5 adds the bee (caterpillar + ant + bee)');
+ok(has(k8,'🕷')&&has(k8,'🐝')&&has(k8,'🐜')&&!has(k8,'🐛')&&!has(k8,'🐍'),'level 8 (forest): spider joined at level 7, the caterpillar is gone, no snake yet');
+ok(has(k11,'🐍')&&has(k11,'🕷')&&has(k11,'🐝')&&!has(k11,'🐉')&&!has(k11,'🐜'),'level 11: the snake joins (deep forest), no dragon yet');
+ok(has(k14,'🐉')&&has(k14,'🐍')&&has(k14,'🕷')&&!has(k14,'🐝'),'level 14: the dragon joins the snake and spider');
+ok(!has(await kinds(14),'🦗')&&!has(await kinds(14),'🦂')&&!has(await kinds(14),'🦇'),'only 6 kinds of creature exist in the game (no cricket, scorpion or bat)');
 const maxKinds=await z.evaluate(()=>{let m=0;for(const l of [1,2,3,4,5,6,7,8,9,10,11,12,13,14,18]){FC.G.level=l;const s=new Set();for(let i=0;i<400;i++){FC.G.items=[];FC.addItem('bad');s.add(FC.G.items[0].e)}m=Math.max(m,s.size)}return m});
 ok(maxKinds<=3,'never more than 3 kinds of creature at the same time (max seen: '+maxKinds+')');
 ok(await z.evaluate(()=>{const t={0:1,9:1,10:2,29:2,30:3,59:3,60:4,99:4,100:5,149:5,150:6,209:6,210:7,279:7,280:8,449:9,450:10,549:10,550:11,580:11,909:13,910:14};return Object.keys(t).every(s=>levelFor(+s)===t[s])}),'levels start at 10, 30, 60, 100, 150, 210, 280, 360, 450, 550 ... points; 580 points = level 11');
 const beh=await z.evaluate(()=>{FC.G.level=14;FC.G.state='play';FC.G.spawn=1e9;const mk=(e)=>{FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];const b=BADS.find(x=>x.e===e);Object.assign(it,{e:e,w:b.w||0,wa:b.wa||55,wf:b.wf||55,j:b.j||0,vy:150,y:-30,x:200,x0:200});return it};
- const run=(it,n)=>{const xs=[];for(let i=0;i<n;i++){it.y+=0;FC.G.px=-999;FC.step(0.05);xs.push(it.x)}return xs};
- const cr=mk('🦗'),xs=run(cr,60),jumps=xs.filter((x,i)=>i&&Math.abs(x-xs[i-1])>3).length;
- const bat=mk('🦇'),bx=run(bat,60),brange=Math.max(...bx)-Math.min(...bx);
+ const run=(it,n)=>{const xs=[];for(let i=0;i<n;i++){FC.G.px=-999;FC.step(0.05);xs.push(it.x)}return xs};
+ const bee=mk('🐝'),bx=run(bee,60),brange=Math.max(...bx)-Math.min(...bx);
+ const snake=mk('🐍'),sx=run(snake,60),srange=Math.max(...sx)-Math.min(...sx);
  const ant=mk('🐜'),ax=run(ant,10);
- FC.G.px=FC.G.tx=180;FC.G.items=[];return{jumps:jumps,brange:brange,antStraight:Math.max(...ax)-Math.min(...ax)<1}});
-ok(beh.jumps>3,'the cricket jumps sideways in bursts ('+beh.jumps+' moving frames)');
-ok(beh.brange>60,'the bat swings wide from side to side ('+Math.round(beh.brange)+' px)');
+ FC.G.px=FC.G.tx=180;FC.G.items=[];return{brange:brange,srange:srange,antStraight:Math.max(...ax)-Math.min(...ax)<1}});
+ok(beh.brange>15&&beh.brange<60,'the bee sways a little ('+Math.round(beh.brange)+' px)');
+ok(beh.srange>60,'the snake swings wide from side to side ('+Math.round(beh.srange)+' px)');
 ok(beh.antStraight,'the ant falls straight down');
 // atmosphere: evening leaves, night fireflies, storm rain + lightning
 const atm=await z.evaluate(()=>{const out={};FC.G.state='play';for(const [l,n] of [[1,'day'],[8,'evening'],[11,'night'],[14,'storm']]){FC.G.level=l;FC.G.spawn=1e9;FC.G.items=[];FC.G.ps=null;FC.G.pz=-1;FC.step(0.02);out[n]={n:(FC.G.ps||[]).length,z:zone()}}
@@ -107,7 +107,7 @@ const wv=await z.evaluate(()=>{const o={};FC.G.state='play';FC.G.spawn=1e9;FC.G.
 ok(wv.noWaveLv1&&wv.showerLv3==='shower'&&wv.ended,'a wave starts every ~20-30 s from level 2 (shower), lasts a few seconds and then waits again');
 ok(wv.showerBad===0&&wv.showerN>50,'a fruit shower drops only fruit (no creatures)');
 ok(wv.swarmShare>.4,'a swarm drops many creatures ('+Math.round(wv.swarmShare*100)+'%)');
-ok(await z.evaluate(()=>{FC.G.level=1;const a=badP();FC.G.level=9;const b=badP();FC.G.level=14;const c=badP();return a<.16&&b>.2&&c>=.3}),'creatures are rare at the start and more common later');
+ok(await z.evaluate(()=>{FC.G.level=1;const a=badP();FC.G.level=9;const b=badP();FC.G.level=14;const c=badP();return a<=.12&&b>.25&&c>=.37&&c>a*3}),'creatures are rare at the start (12%) and come out much more as you go deeper (38% at Lv14)');
 const cc=async(lv)=>z.evaluate(l=>{FC.G.level=l;FC.G.state='play';FC.G.items=[];const c0=FC.COINS();FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.COINS()-c0},lv);
 ok(await cc(1)===1&&await cc(8)===2&&await cc(11)===3&&await cc(14)===4,'fruit pays 1 / 2 / 3 / 4 coins deeper in the forest');
 const dm=await z.evaluate(()=>{FC.G.level=14;FC.G.state='play';FC.G.lives=3;FC.G.maxLives=3;FC.G.spawn=1e9;FC.G.tx=FC.G.px;FC.G.ty=FC.G.py;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.e='🐉';it.d=2;it.w=0;it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02);return FC.G.lives});ok(dm===1,'a dragon takes 2 lives (lives left '+dm+')');
