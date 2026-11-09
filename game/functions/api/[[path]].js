@@ -33,6 +33,7 @@ const dayKey=t=>"d:"+local(t).toISOString().slice(0,10);
 const weekKey=t=>{const d=local(t),m=new Date(Date.UTC(d.getUTCFullYear(),d.getUTCMonth(),d.getUTCDate()-((d.getUTCDay()+6)%7)));return"w:"+m.toISOString().slice(0,10)};
 const periods=t=>({day:dayKey(t),week:weekKey(t),all:"all"});
 const cleanName=x=>String(x==null?"":x).replace(/[^\p{L}\p{M}\p{N} ._-]/gu,"").replace(/\s+/g," ").trim().slice(0,14);
+async function totalOf(db,game,period){const r=await db.prepare("SELECT COUNT(*) c FROM gm_score WHERE game=? AND period=?").bind(game,period).first();return r?r.c:0}
 async function rankOf(db,game,period,score){const r=await db.prepare("SELECT COUNT(*) c FROM gm_score WHERE game=? AND period=? AND score>?").bind(game,period,score).first();return(r?r.c:0)+1}
 async function init(db){if(ready)return;await db.batch(SCHEMA.map(s=>db.prepare(s)));ready=true}
 function same(a,b){a=String(a);b=String(b);if(a.length!==b.length)return false;let r=0;for(let i=0;i<a.length;i++)r|=a.charCodeAt(i)^b.charCodeAt(i);return r===0}
@@ -63,7 +64,7 @@ export async function onRequest(ctx){
     if(route==="score"&&m==="POST"){
       let b={};try{b=JSON.parse((await req.text()).slice(0,2000))}catch(e){return J({error:"bad"},400)}
       const game=clip(b.game||"fruit",24),vid=clip(b.vid,40),name=cleanName(b.name),score=Math.floor(+b.score),secs=+b.t;
-      if(vid.length<8||!name||!(score>=1&&score<=99999)||!(secs>=0))return J({error:"bad"},400);
+      if(vid.length<8||!(score>=1&&score<=99999)||!(secs>=0))return J({error:"bad"},400);
       // a score has to be possible for the time played (about 15 points per second at most)
       if(score>15*secs+10)return J({error:"implausible"},422);
       const t=Date.now(),rk=vid+":s:"+dayKey(t),rr=await db.prepare("SELECT n FROM gm_rate WHERE k=?").bind(rk).first();
@@ -71,20 +72,20 @@ export async function onRequest(ctx){
       await db.prepare("INSERT INTO gm_rate(k,n,ts) VALUES(?,1,?) ON CONFLICT(k) DO UPDATE SET n=n+1,ts=?").bind(rk,t,t).run();
       const P=periods(t),ranks={};
       for(const k of Object.keys(P)){
-        await db.prepare("INSERT INTO gm_score(game,vid,period,name,score,ts) VALUES(?,?,?,?,?,?) ON CONFLICT(game,vid,period) DO UPDATE SET name=excluded.name,ts=CASE WHEN excluded.score>score THEN excluded.ts ELSE ts END,score=MAX(score,excluded.score)").bind(game,vid,P[k],name,score,t).run();
+        await db.prepare("INSERT INTO gm_score(game,vid,period,name,score,ts) VALUES(?,?,?,?,?,?) ON CONFLICT(game,vid,period) DO UPDATE SET name=CASE WHEN excluded.name<>'' THEN excluded.name ELSE name END,ts=CASE WHEN excluded.score>score THEN excluded.ts ELSE ts END,score=MAX(score,excluded.score)").bind(game,vid,P[k],name,score,t).run();
         const mine=await db.prepare("SELECT score FROM gm_score WHERE game=? AND vid=? AND period=?").bind(game,vid,P[k]).first();
-        ranks[k]={rank:await rankOf(db,game,P[k],mine.score),best:mine.score}}
+        ranks[k]={rank:await rankOf(db,game,P[k],mine.score),best:mine.score,total:await totalOf(db,game,P[k])}}
       return J({ok:true,ranks})}
 
     // ---- the leaderboard (top 10 and, if asked, your own place) ----
     if(route==="top"&&m==="GET"){
-      // private: only the owner (secret code) can read the boards. Players never see other players.
-      {const code=env.ADMIN_CODE;if(!code)return J({error:"no_admin_code"},503);if(!same(req.headers.get("x-admin-code")||"",code)){await new Promise(r=>setTimeout(r,400));return J({error:"denied"},401)}}
+      // public board shows NO names: only rank, score and how many players. The owner (secret code) also sees the names.
+      const isAdmin=!!env.ADMIN_CODE&&same(req.headers.get("x-admin-code")||"",env.ADMIN_CODE);
       const game=clip(url.searchParams.get("game")||"fruit",24),per=url.searchParams.get("period")||"all",vid=clip(url.searchParams.get("vid"),40);
       const P=periods(Date.now());if(!P[per])return J({error:"bad"},400);
       const rows=(await db.prepare("SELECT vid,name,score FROM gm_score WHERE game=? AND period=? ORDER BY score DESC,ts ASC LIMIT 10").bind(game,P[per]).all()).results||[];
       let me=null;if(vid.length>=8){const mine=await db.prepare("SELECT score FROM gm_score WHERE game=? AND vid=? AND period=?").bind(game,vid,P[per]).first();if(mine)me={score:mine.score,rank:await rankOf(db,game,P[per],mine.score)}}
-      return J({period:per,top:rows.map(x=>({name:x.name,score:x.score,me:!!vid&&x.vid===vid})),me})}
+      return J({period:per,total:await totalOf(db,game,P[per]),top:rows.map(x=>isAdmin?{name:x.name,score:x.score,me:!!vid&&x.vid===vid}:{score:x.score,me:!!vid&&x.vid===vid}),me})}
 
     // ---- the owner removes a player from the boards (needs the secret code) ----
     if(route==="score-delete"&&m==="POST"){
