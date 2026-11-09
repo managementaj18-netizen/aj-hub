@@ -60,3 +60,6 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 - Messages: the challenge link can carry one of 4 ready-made messages (`m=0..3`), no free text, so there is nothing to moderate.
 - Design: sun, drifting clouds, mountains, hills, mango trees, flowers behind the game.
 - Test: `node game/tests/shop_test.js`.
+
+## Android / Google Play (prepared, not published)
+`game/android/` holds the Google Play kit for Fruit Catch: step-by-step `README.md`, store texts `listing.md`, screenshots and feature graphic (`store/`), and `make-store-assets.js`. The privacy policy is the page `/privacy/`. Publishing needs the owner's Play developer account.
