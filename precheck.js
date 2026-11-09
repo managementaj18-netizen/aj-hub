@@ -10,7 +10,7 @@
   var API = "https://aj-guest-app.management-aj-18.workers.dev/api/pc/";
   var LS = "aj_pckey";
   var TAG = "display:inline-block;font-size:11px;font-weight:700;padding:1px 8px;border-radius:999px;margin:0 4px 3px 0;";
-  var manual = false, flashAt = 0;
+  var manual = false, flashAt = 0, lastInj = "";
   function hhmm(t) { var d = new Date(t); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
   var LIST = [], showUsed = false, loading = false, lastLoad = 0;
 
@@ -82,9 +82,52 @@
       body + '<label class="muted" style="font-size:12px;display:inline-flex;align-items:center;gap:6px;margin-top:8px;cursor:pointer;white-space:nowrap;width:auto"><input type="checkbox" id="pcUsed" style="width:16px;height:16px;min-width:16px;margin:0;padding:0;flex:none"' + (showUsed ? " checked" : "") + '> បង្ហាញដែលប្រើរួច · Show used</label>' +
       '<div id="pcMsg" style="display:none;margin-top:8px;padding:8px 10px;border-radius:10px;background:#e7f6ec;color:#15803d;font-weight:600"></div>';
     $("pcReload").onclick = function () { manual = true; load(true); };
+    var sig = LIST.map(function (x) { return x.id + (x.used ? "u" : ""); }).join(","); if (sig !== lastInj) { lastInj = sig; try { if ($("waitList") && typeof renderWait === "function") renderWait(); } catch (e) {} }
     $("pcUsed").onchange = function () { showUsed = this.checked; draw(); };
     [].slice.call(c.querySelectorAll("[data-pc]")).forEach(function (b) { b.onclick = function () { use(b.getAttribute("data-pc"), b); }; });
     [].slice.call(c.querySelectorAll("[data-pcdel]")).forEach(function (b) { b.onclick = function () { del(b.getAttribute("data-pcdel"), b.getAttribute("data-pcname"), b); }; });
+  }
+
+  /* Guest App bookings also appear in "⏳ Waiting for check-in" (room type instead of a room number — staff choose the room) */
+  function injectWait() {
+    try {
+      if (typeof WAIT === "undefined" || !Array.isArray(WAIT)) return;
+      for (var i = WAIT.length - 1; i >= 0; i--) if (WAIT[i] && WAIT[i]._gapp) WAIT.splice(i, 1);
+      LIST.filter(function (x) { return x.booking && !x.used && x.arrival; }).forEach(function (x) {
+        var tot = Number(x.total) || 0, dep = Number(x.deposit) || 0;
+        var n = String(x.room || "").toLowerCase();
+        var gk = /balcony/.test(n) ? "superior_balcony" : /type\s*a|twin\s*a/.test(n) ? "twin_a" : /type\s*b|twin\s*b/.test(n) ? "twin_b" : /family/.test(n) ? "family" : /superior/.test(n) ? "superior" : "";
+        var co0 = x.co || addDays(x.arrival, 1), free = [], rt = "";
+        try {
+          var g = ROOM_GROUPS.filter(function (r) { return r[1] === gk; })[0];
+          if (g) {
+            rt = (typeof RT_BY_GROUP !== "undefined" && RT_BY_GROUP[gk]) || "";
+            var bks = (typeof BOARD !== "undefined" && BOARD.bookings) || [];
+            free = g[2].filter(function (rm) { return !bks.some(function (b) { return b && String(b.room) === rm && b.status !== "cancelled" && b.start < co0 && addDays(b.start, b.nights || 1) > x.arrival; }); });
+          }
+        } catch (e) {}
+        WAIT.push({ _gapp: 1, room: x.room || "Guest App", name: x.name || "", ci: x.arrival, co: co0,
+          phone: x.phone || "", guests: x.guests || "", nat: x.nat || "", src: "Guest App", ref: x.booking, roomtype: rt,
+          deposit: dep || "", notes: "Guest App " + x.booking + " · " + (x.room || "") + (tot ? " · total $" + tot : "") + (dep ? " · deposit paid $" + dep + " (ACLEDA)" : "") + (tot && dep ? " · balance $" + (tot - dep) : "") + (gk ? " · បន្ទប់ទំនេរ / free rooms: " + (free.length ? free.join(", ") : "—") : "") });
+      });
+      WAIT.sort(function (a, b) { return String(a.ci).localeCompare(String(b.ci)) || String(a.room).localeCompare(String(b.room), undefined, { numeric: true }); });
+    } catch (e) {}
+  }
+  if (typeof window.renderWait === "function" && !window.renderWait._pc) {
+    var origRW = window.renderWait;
+    window.renderWait = function () { injectWait(); return origRW.apply(this, arguments); };
+    window.renderWait._pc = 1;
+  }
+  /* picking a Guest App booking: room type is set, the room number stays empty for staff to fill in */
+  if (typeof window.pickWait === "function" && !window.pickWait._pc) {
+    var origPW = window.pickWait;
+    window.pickWait = function (i) {
+      var w = (typeof WAIT !== "undefined" && i >= 0) ? WAIT[i] : null;
+      var r = origPW.apply(this, arguments);
+      try { if (w && w._gapp && $("f_room") && $("f_room").value === String(w.room)) $("f_room").value = ""; } catch (e) {}
+      return r;
+    };
+    window.pickWait._pc = 1;
   }
 
   function load(force) {
