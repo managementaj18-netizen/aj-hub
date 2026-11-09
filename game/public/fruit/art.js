@@ -79,12 +79,13 @@ A.spider=wrap('<g stroke="#2d1e4a" stroke-width="5" stroke-linecap="round" strok
  eyes(40,60,50,6.5)+
  '<path d="M42 66Q50 62 58 66" fill="#fff" stroke="#3b2a20" stroke-width="2.4"/><path d="M45 66l2 5 2-5M51 66l2 5 2-5" fill="#fff" stroke="#3b2a20" stroke-width="1.8"/>');
 
-A.snake=wrap('<path d="M22 88C-2 72 50 66 34 46C20 30 54 24 62 36" fill="none" stroke="#3b2a20" stroke-width="22" stroke-linecap="round"/>'+
- '<path d="M22 88C-2 72 50 66 34 46C20 30 54 24 62 36" fill="none" stroke="#4cba52" stroke-width="15.5" stroke-linecap="round"/>'+
- '<path d="M22 88C-2 72 50 66 34 46C20 30 54 24 62 36" fill="none" stroke="#a8e86a" stroke-width="4" stroke-linecap="round" stroke-dasharray="1 9"/>'+
+A.snake=wrap('<g transform="translate(4,-9)">'+
+ '<path d="M22 88C-2 72 50 66 34 46C20 30 54 24 62 36" fill="none" stroke="#3b2a20" stroke-width="30" stroke-linecap="round"/>'+
+ '<path d="M22 88C-2 72 50 66 34 46C20 30 54 24 62 36" fill="none" stroke="#4cba52" stroke-width="23" stroke-linecap="round"/>'+
+ '<path d="M22 88C-2 72 50 66 34 46C20 30 54 24 62 36" fill="none" stroke="#ffe066" stroke-width="6" stroke-linecap="round" stroke-dasharray="1 12"/>'+
  '<ellipse cx="72" cy="30" rx="19" ry="15" fill="#4cba52" '+O+'/>'+
  '<path d="M90 34L98 32M90 38L98 42" stroke="#e63946" stroke-width="3" stroke-linecap="round"/>'+
- eyes(66,80,26,5.2)+'<path d="M64 38Q73 43 82 37" fill="none" stroke="#3b2a20" stroke-width="2.6" stroke-linecap="round"/>');
+ eyes(66,80,26,5.2)+'<path d="M64 38Q73 43 82 37" fill="none" stroke="#3b2a20" stroke-width="2.6" stroke-linecap="round"/></g>');
 
 A.dragon=wrap('<path d="M18 74C0 70 4 48 22 54" fill="none" stroke="#3b2a20" stroke-width="14" stroke-linecap="round"/>'+
  '<path d="M18 74C0 70 4 48 22 54" fill="none" stroke="#e63946" stroke-width="8" stroke-linecap="round"/>'+
@@ -132,6 +133,8 @@ window.ARTMAP={"🥭":"mango","🍌":"banana","🍉":"watermelon","🥥":"coconu
 window.SPR={};
 window.SPC={};
 // Drawing an SVG image straight to the canvas every frame is slow on phones. So each drawing is copied ONCE into a small canvas, and the game draws that copy.
-Object.keys(A).forEach(function(k){var im=new Image();im.onload=function(){try{var S=k==="basket"?288:160,c=document.createElement("canvas");c.width=c.height=S;c.getContext("2d").drawImage(im,0,0,S,S);window.SPC[k]=c}catch(e){}};im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(A[k]);window.SPR[k]=im});
+var CRE={caterpillar:1,ant:1,bee:1,spider:1,snake:1,dragon:1,cricket:1,scorpion:1,bat:1};
+// creatures get a soft white glow around them so they stand out on every background (day, night, storm)
+Object.keys(A).forEach(function(k){var im=new Image();im.onload=function(){try{var S=k==="basket"?288:160,pad=CRE[k]?16:0,c=document.createElement("canvas");c.width=c.height=S+pad*2;var g=c.getContext("2d");if(pad){g.shadowColor="rgba(255,255,255,.95)";g.shadowBlur=14;g.drawImage(im,pad,pad,S,S);g.drawImage(im,pad,pad,S,S);g.shadowBlur=0}g.drawImage(im,pad,pad,S,S);c.lg=S;window.SPC[k]=c}catch(e){}};im.src="data:image/svg+xml;charset=utf-8,"+encodeURIComponent(A[k]);window.SPR[k]=im});
 window.artUrl=function(k){return"data:image/svg+xml;charset=utf-8,"+encodeURIComponent(A[k])};
 })();
