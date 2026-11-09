@@ -2,6 +2,7 @@
 <html lang="km"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,user-scalable=no">
 <meta name="theme-color" content="#7fd1ff">
+<link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">
 <title>English Friends</title>
 <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Kantumruy+Pro:wght@400;700&display=swap" rel="stylesheet">
 <style>
@@ -254,6 +255,7 @@ $("bm").onclick=function(){MUS=!MUS;sv("ef_mus",MUS);texts();if(MUS)mstart();els
 $("bs").onclick=function(){SND=!SND;sv("ef_snd",SND);texts();if(!SND){try{speechSynthesis.cancel()}catch(e){}}else sfx("tap")};
 $("lang").onclick=function(){LANG=LANG==="km"?"en":"km";sv("ef_lang",LANG);texts()};
 window.EF={LOCAL:LOCAL,loadLocal:loadLocal,PLAYED:PLAYED,AB:AB,BUF:BUF,nextVoice:nextVoice,VOICES:function(){return VOICES},G:G,WORLDS:WORLDS,SPOKEN:SPOKEN,MU:MU,openWorld:openWorld,startPlay:startPlay,menu:menu};
+if("serviceWorker" in navigator&&location.protocol.indexOf("http")===0)navigator.serviceWorker.register("sw.js").catch(function(){});
 try{GT.hit("visit","abc");if(GT.FB){var f=document.getElementById("foll");f.style.cursor="pointer";f.style.textDecoration="underline";f.onclick=GT.openFB}}catch(e){}
 texts();menu();
 </script></body></html>
