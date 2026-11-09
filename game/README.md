@@ -68,7 +68,7 @@ Tests: `node tests/gate_test.js` (what is public), `node tests/game_test.js`, `n
 `public/fruit/art.js` draws every fruit, creature and the basket as SVG in one style (fruit = smiling face, creatures = angry eyes). The game turns them into images; if one fails to load it falls back to the emoji. Test: `tests/art_test.js`. To add a creature: add an `A.name=wrap(...)` drawing and an entry in `ARTMAP` (emoji → name).
 
 ## Levels and creatures (Fruit Catch)
-Level starts at score 5·n·(n-1): Lv2 10, Lv3 30, Lv4 60, Lv5 100, Lv6 150, Lv7 210, Lv8 280, Lv9 360, Lv10 450, Lv11 550, Lv12 660, Lv14 910 (580 points = Lv11). One new creature per step, but only the 3 newest kinds fall at the same time (newest 3x, middle 2x, oldest 1x; older ones disappear): Lv1 caterpillar, Lv2 ant (fast), Lv3 bee (small sway), Lv4 cricket (sideways jumps), Lv5 spider (fast), Lv8 scorpion, Lv9 bat (wide swing), Lv11 snake, Lv14 dragon (costs 2 lives). Zones: meadow, forest from Lv8 (coins x2), deep forest from Lv11 (x3), dark jungle from Lv14 (x4). Speed and spawn rate stop growing at Lv14. The table is `BADS` and `levelFor()` in `public/fruit/index.html`.
+Level starts at score 5·n·(n-1): Lv2 10, Lv3 30, Lv4 60, Lv5 100, Lv6 150, Lv7 210, Lv8 280, Lv9 360, Lv10 450, Lv11 550, Lv12 660, Lv14 910 (580 points = Lv11). Only 6 kinds of creature exist, introduced slowly: Lv1 caterpillar, Lv3 ant (fast), Lv5 bee (small sway), Lv7 spider (fast), Lv11 snake (wide swing), Lv14 dragon (costs 2 lives). Only the 3 newest kinds fall at the same time (newest 3x, middle 2x, oldest 1x). Depth = more creatures: their share of what falls grows from 12% (Lv1) to 38% (Lv14) (`badP()`), plus swarm waves. Zones: meadow, forest from Lv8 (coins x2), deep forest from Lv11 (x3), dark jungle from Lv14 (x4). The table is `BADS` and `levelFor()` in `public/fruit/index.html`. (The drawings of cricket, scorpion and bat stay in `art.js` for future use.)
 
 ## Smoothness and mood (Fruit Catch)
 - Speed: fruit starts at 180 px/s (Lv1) and grows +30 px/s per level up to Lv14; creatures also arrive faster (spawn gap 0.76 s at Lv1 down to 0.30 s).
@@ -76,4 +76,7 @@ Level starts at score 5·n·(n-1): Lv2 10, Lv3 30, Lv4 60, Lv5 100, Lv6 150, Lv7
 - Zones now change the whole mood: meadow = day; forest (Lv8) = evening with falling leaves; deep forest (Lv11) = quiet night with moon, stars and fireflies; dark jungle (Lv14) = storm with rain, lightning flashes and thunder. Code: `ambInit/ambStep/ambDraw/flashDraw/thunder` in `public/fruit/index.html`. Not measured on a real phone.
 
 ## Music tempo (Fruit Catch)
-Tempo rises a little at every level: 96 beats/min at Lv1 to 176 at Lv14 (`bpm()`), then stays.
+Tempo rises a little at every level: 104 beats/min at Lv1 to 192 at Lv14 (`bpm()`), then stays.
+
+## Rhythm (Fruit Catch)
+Fruit speed = 150 + 36 per level px/s (to Lv14); spawn gap 0.73 s (Lv1) to 0.26 s. Creature share rises from 12% (Lv1) to 38% (Lv14) (`badP()`). Every 20-30 s a short wave: fruit shower (Lv2+, 4 s, only fruit, some golden) or swarm (Lv5+, 3.5 s, mostly creatures); code in `waveStep()`.
