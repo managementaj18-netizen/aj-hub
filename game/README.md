@@ -80,3 +80,6 @@ Tempo rises a little at every level: 104 beats/min at Lv1 to 192 at Lv14 (`bpm()
 
 ## Rhythm (Fruit Catch)
 Fruit speed = 150 + 36 per level px/s (to Lv14); spawn gap 0.73 s (Lv1) to 0.26 s. Creature share rises from 12% (Lv1) to 38% (Lv14) (`badP()`). Every 20-30 s a short wave: fruit shower (Lv2+, 4 s, only fruit, some golden) or swarm (Lv5+, 3.5 s, mostly creatures); code in `waveStep()`.
+
+## iPhone / App Store (prepared, not published)
+`game/ios-app/` holds the iPhone app (Capacitor project in `ios/`, game files packed by `npm run web`), the Mac step-by-step `README.md`, Apple store texts `listing-apple.md`, screenshots (`store/`) and `make-ios-shots.js`. The game reads `window.SORAMMA_API` / `window.SORAMMA_SHARE` (set only inside the app) so data and share links use https://play.soramma.app; the API answers CORS preflights for that. Test: `tests/ios_app_test.js`. Needs the owner's Mac and Apple Developer account; the project was generated on Linux and has not been opened in Xcode.

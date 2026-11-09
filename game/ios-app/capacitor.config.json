@@ -1,0 +1,11 @@
+{
+  "appId": "com.soramma.fruitcatch",
+  "appName": "Fruit Catch",
+  "webDir": "www",
+  "backgroundColor": "#143d2b",
+  "ios": {
+    "contentInset": "never",
+    "scrollEnabled": false,
+    "limitsNavigationsToAppBoundDomains": false
+  }
+}

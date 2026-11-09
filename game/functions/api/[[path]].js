@@ -23,7 +23,7 @@ const OWNER={
     {name:"Soramma landing",e:"🌐",url:"https://soramma.app",status:"live",note:"contact page"},
     {name:"Translate (Khmer-English)",e:"🗣️",url:"",status:"todo",note:"built, not set up on Cloudflare yet"}]};
 let ready=false;
-const J=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
+const J=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":"*"}});
 const EV=["visit","play","install","share","fb"];
 const clip=(s,n)=>String(s==null?"":s).replace(/[^\w.\-]/g,"").slice(0,n);
 const dayOf=t=>new Date(t).toISOString().slice(0,10);
@@ -41,6 +41,8 @@ function same(a,b){a=String(a);b=String(b);if(a.length!==b.length)return false;l
 export async function onRequest(ctx){
   const {request:req,env}=ctx,db=env.DB;
   const url=new URL(req.url),route=url.pathname.replace(/^\/api\/?/,"").split("/")[0]||"",m=req.method;
+  // the phone app (iPhone/Android) calls this service from its own files, so browsers ask first (preflight). Only the plain headers are allowed: the owner code header is never allowed from other sites.
+  if(m==="OPTIONS")return new Response(null,{status:204,headers:{"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,OPTIONS","access-control-allow-headers":"content-type","access-control-max-age":"86400"}});
   if(!db)return J({error:"no_db"},503);
   try{
     await init(db);
