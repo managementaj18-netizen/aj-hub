@@ -38,4 +38,5 @@ Facts to re-check before paying (they change): the list of supported countries, 
 ## What I could not check from here
 - I did not build the .aab or run it on an Android phone. Please test the installed app yourself (sound, touch, language, link to Facebook Page).
 - I did not read Google's own help pages; the testing rule and fees came from web articles. Confirm on the Play Console Help site.
-- English Friends and later games can use the same steps with another package ID and start URL.
+- English Friends has its own kit: `listing-english-friends.md`, `store/abc-*.png`, package ID `com.soramma.englishfriends`, start URL `https://play.soramma.app/abc/`. It is a children's app, so Google's Families Policy applies — read the note at the end of that file first. Same steps otherwise (one app = one package ID = one PWABuilder package = one assetlinks entry).
+- English Friends was not an installable app before (no manifest, icon or service worker); those were added with this kit and are tested, but not yet seen on a real phone.

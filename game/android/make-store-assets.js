@@ -24,4 +24,18 @@ const srv=http.createServer((q,r)=>{let f=path.join(root,q.url.split('?')[0]);if
  <div style="position:absolute;left:60px;top:120px"><div style="font-size:84px;font-weight:800;color:#14502f">Fruit Catch</div><div style="font-size:30px;color:#14502f;margin-top:16px;line-height:1.35">Catch the fruit.<br>Dodge the bugs.<br>Go deeper into the forest.</div></div>
  <div style="position:absolute;right:80px;top:30px;font-size:110px;line-height:1.1;letter-spacing:10px">🥭🍌<br>🍉🍍</div><div style="position:absolute;right:130px;bottom:-30px;font-size:170px">🧺</div></body>`);
  await g.screenshot({path:`${out}/feature-graphic.png`});
+ 
+ // ---- English Friends (package com.soramma.englishfriends) ----
+ {const c=await b.newContext({viewport:{width:360,height:640},deviceScaleFactor:3,isMobile:true,hasTouch:true});
+  const p=await c.newPage();await p.goto('http://localhost:8851/abc/');await p.waitForSelector('.w');await p.waitForTimeout(600);
+  await p.screenshot({path:`${out}/abc-1-menu.png`});
+  await p.tap('.w[data-i="0"]');await p.waitForTimeout(400);await p.screenshot({path:`${out}/abc-2-story.png`});
+  await p.tap('#stGo');await p.waitForTimeout(1800);await p.screenshot({path:`${out}/abc-3-pick.png`});
+ 
+  await c.close()}
+ {const c2=await b.newContext({viewport:{width:1024,height:500}});const g=await c2.newPage();
+  await g.setContent(`<body style="margin:0;width:1024px;height:500px;background:linear-gradient(135deg,#8fd8ff,#e9f8ff 55%,#8fdc6a);font-family:system-ui,sans-serif;position:relative;overflow:hidden">
+  <div style="position:absolute;left:60px;top:110px"><div style="font-size:70px;font-weight:800;color:#2b3a67">English Friends</div><div style="font-size:30px;color:#2b3a67;margin-top:16px;line-height:1.35">Hear it. Tap it. Spell it.<br>First English words with Momo.</div></div>
+  <div style="position:absolute;right:50px;top:80px;font-size:200px">🐵</div><div style="position:absolute;right:360px;bottom:30px;font-size:90px;letter-spacing:12px">🍎🐶🌞</div></body>`);
+  await g.screenshot({path:`${out}/abc-feature-graphic.png`});await c2.close()}
  await b.close();srv.close()});
