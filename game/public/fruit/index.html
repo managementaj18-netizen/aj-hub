@@ -164,7 +164,7 @@ function hush(){try{if(beep.a&&beep.a.state==="running")beep.a.suspend()}catch(e
 function wake(){try{if(beep.a&&beep.a.state==="suspended")beep.a.resume()}catch(e){}}
 window.addEventListener("pagehide",hush);document.addEventListener("visibilitychange",function(){document.hidden?hush():wake()});
 function addItem(kind){var x=30+G.rng()*(W-60),k=kind||(G.rng()<.2?"bad":G.rng()<.1?"gold":"ok");
- var bt=null;if(k==="bad"){var av=BADS.filter(function(b){return b.from<=G.level}),wt=0,i2;for(i2=0;i2<av.length;i2++)wt+=(i2===av.length-1?3:1);var pk=G.rng()*wt;for(i2=0;i2<av.length;i2++){pk-=(i2===av.length-1?3:1);if(pk<=0)break}bt=av[Math.min(i2,av.length-1)]}
+ var bt=null;if(k==="bad"){var av=BADS.filter(function(b){return b.from<=G.level});av=av.slice(Math.max(0,av.length-3));var wts=av.length===3?[1,2,3]:av.length===2?[1,3]:[1],tot=0,i2;for(i2=0;i2<wts.length;i2++)tot+=wts[i2];var pk=G.rng()*tot;for(i2=0;i2<wts.length;i2++){pk-=wts[i2];if(pk<=0)break}bt=av[Math.min(i2,av.length-1)]}
  G.items.push({x:x,x0:x,y:-30,k:k,e:bt?bt.e:k==="gold"?GOLD:GOOD[Math.floor(G.rng()*GOOD.length)],vy:(120+Math.min(G.level,14)*22)*(.85+G.rng()*.3)*(bt?bt.v:1),r:26,rot:G.rng()*6,d:bt?bt.d:0,w:bt?bt.w:0,wa:bt&&bt.wa||55,wf:bt&&bt.wf||55,j:bt?bt.j:0})}
 function floatText(x,y,s,c){G.fx.push({x:x,y:y,s:s,c:c,a:1})}
 function step(dt){
