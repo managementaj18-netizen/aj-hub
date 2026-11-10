@@ -7,10 +7,10 @@ const mk=async(init)=>{const c=await b.newContext({viewport:{width:430,height:86
 const over=async(p,score,secs=40)=>{await p.evaluate(([s,t])=>{FC.G.score=s;FC.G.t=t;FC.G.lives=1;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)},[score,secs]);await p.waitForTimeout(250)};
 // 1) coins are earned by catching fruit
 let p=await mk();await p.goto('http://localhost:8824/fruit/');await p.waitForSelector('#go');
-ok(/🪙 0/.test(await p.locator('#coinH').innerText()),'new player starts with 0 coins on the home page');
+ok(/^\s*0\s*$/.test(await p.locator('#coinH').innerText())&&(await p.locator('#coinH img').count())===1,'new player starts with 0 coins on the home page');
 await p.click('#go');await p.waitForTimeout(150);
 for(const k of ['ok','ok','gold']){await p.evaluate(k=>{FC.addItem(k);const it=FC.G.items[FC.G.items.length-1];it.x=FC.G.px;it.y=FC.G.py},k);await p.evaluate(()=>FC.step(0.02))}
-ok(await p.evaluate(()=>FC.COINS())===5,'two fruit (+1 each) and a golden pineapple (+3) give 5 coins');ok(/🪙 5/.test(await p.locator('#coin').innerText()),'the top bar shows the coins');
+ok(await p.evaluate(()=>FC.COINS())===5,'two fruit (+1 each) and a golden pineapple (+3) give 5 coins');ok(/^\s*5\s*$/.test(await p.locator('#coin').innerText())&&(await p.locator('#coin img').count())===1,'the top bar shows the coins');
 await p.screenshot({path:'/tmp/sc/fc_play.png'});
 await over(p,100);ok(await p.evaluate(()=>FC.COINS())===10,'a bonus of 1 coin per 20 points is paid at the end (100 points = +5) -> 10 coins');ok(/\+10/.test(await p.locator('#tCoin').innerText()),'the game-over screen says how many coins were earned: '+await p.locator('#tCoin').innerText());
 ok(await p.locator('#cont').isVisible()&&/80/.test(await p.locator('#cont').innerText()),'Continue shows its price (80) even when the player has too few coins');
@@ -31,7 +31,7 @@ await q.screenshot({path:'/tmp/sc/fc_shop2.png'});
 // 4) the upgrades work in the game
 await q.click('#shopBack');await q.click('#go');await q.waitForTimeout(150);
 ok(await q.evaluate(()=>FC.G.lives===5&&FC.G.maxLives===5),'the heart gives 2 extra lives: 5 lives');
-ok(await q.locator('#li').innerText().then(t=>(t.match(/❤️/g)||[]).length===5),'5 hearts are shown');
+ok((await q.locator('#li img').count())===5,'5 hearts are shown');
 ok(await q.evaluate(()=>FC.G.pw)===112,'the basket keeps its size (112 px); only the fruit catch zone grows');
 ok(await q.evaluate(()=>FC.UP().l===0&&FC.UP().b===0&&FC.UP().m===0&&JSON.parse(localStorage.getItem('fc_up')).l===0),'bought upgrades are used up when the game starts (nothing is kept for the next game)');
 // magnet: a fruit beside the basket drifts into it
