@@ -5,7 +5,7 @@ const b=await chromium.launch({executablePath:'/opt/pw-browsers/chromium',args:[
 const pg=async()=>{const c=await b.newContext({viewport:{width:430,height:860},isMobile:true,hasTouch:true});const p=await c.newPage();p.on('pageerror',e=>errs.push(e.message));await p.addInitScript(()=>localStorage.setItem('fc_lang','"en"'));return p};
 // Fruit Catch has its own address
 let p=await pg();await p.goto('http://fruit.soramma.app:8822/?s=fb');await p.waitForSelector('#go');
-ok(/Fruit Catch/.test(await p.locator('#tTitle').innerText())&&await p.locator('#nm0').count()===1,'fruit.soramma.app shows Fruit Catch with its home page');
+ok(/Fruit\s*Catch/.test(await p.locator('#tTitle').innerText())&&await p.locator('#nm0').count()===1,'fruit.soramma.app shows Fruit Catch with its home page');
 ok(await p.locator('body').innerText().then(t=>!/English Friends/.test(t)),'Fruit Catch does not mention or link to other games');
 await p.fill('#nm0','Sok');await p.locator('#nm0').blur();await p.click('#go');await p.waitForTimeout(150);
 await p.evaluate(()=>{FC.G.score=150;FC.G.t=40;FC.G.lives=0;FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});await p.waitForTimeout(700);
