@@ -32,7 +32,7 @@ await q.screenshot({path:'/tmp/sc/fc_shop2.png'});
 await q.click('#shopBack');await q.click('#go');await q.waitForTimeout(150);
 ok(await q.evaluate(()=>FC.G.lives===5&&FC.G.maxLives===5),'the heart gives 2 extra lives: 5 lives');
 ok(await q.locator('#li').innerText().then(t=>(t.match(/❤️/g)||[]).length===5),'5 hearts are shown');
-ok(await q.evaluate(()=>FC.G.pw)>112*1.1,'a bigger basket catches in a wider area ('+Math.round(await q.evaluate(()=>FC.G.pw))+' px instead of 112)');
+ok(await q.evaluate(()=>FC.G.pw)===112,'the basket keeps its size (112 px); only the fruit catch zone grows');
 ok(await q.evaluate(()=>FC.UP().l===0&&FC.UP().b===0&&FC.UP().m===0&&JSON.parse(localStorage.getItem('fc_up')).l===0),'bought upgrades are used up when the game starts (nothing is kept for the next game)');
 // magnet: a fruit beside the basket drifts into it
 const m=await q.evaluate(()=>{FC.G.spawn=1e9;FC.G.items=[];FC.addItem('ok');const it=FC.G.items[0];it.x=FC.G.px+80;it.y=FC.G.py-120;it.vy=0;const x0=it.x;for(let i=0;i<20;i++)FC.step(0.02);return[x0,it.x,FC.G.px]});

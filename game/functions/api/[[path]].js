@@ -81,7 +81,7 @@ export async function onRequest(ctx){
 
     // ---- the leaderboard (top 10 and, if asked, your own place) ----
     if(route==="top"&&m==="GET"){
-      // public board shows NO names: only rank, score and how many players. The owner (secret code) also sees the names.
+      // public board shows names only for the top 5 (if the player typed one); everyone else is anonymous. The owner (secret code) also sees the names.
       const isAdmin=!!env.ADMIN_CODE&&same(req.headers.get("x-admin-code")||"",env.ADMIN_CODE);
       const game=clip(url.searchParams.get("game")||"fruit",24),per=url.searchParams.get("period")||"all",vid=clip(url.searchParams.get("vid"),40);
       const P=periods(Date.now());if(!P[per])return J({error:"bad"},400);
@@ -89,7 +89,7 @@ export async function onRequest(ctx){
       let me=null;if(vid.length>=8){const mine=await db.prepare("SELECT score FROM gm_score WHERE game=? AND vid=? AND period=?").bind(game,vid,P[per]).first();if(mine)me={score:mine.score,rank:await rankOf(db,game,P[per],mine.score)}}
       const allSc=(await db.prepare("SELECT score FROM gm_score WHERE game=? AND period=? LIMIT 5000").bind(game,P[per]).all()).results||[],dist={};
       for(const x of allSc){let n=1;while(n<14&&5*(n+1)*n<=x.score)n++;dist[n]=(dist[n]||0)+1}
-      return J({period:per,total:await totalOf(db,game,P[per]),dist,top:rows.map(x=>isAdmin?{name:x.name,score:x.score,me:!!vid&&x.vid===vid}:{score:x.score,me:!!vid&&x.vid===vid}),me})}
+      return J({period:per,total:await totalOf(db,game,P[per]),dist,top:rows.map((x,i)=>isAdmin||(i<5&&x.name)?{name:x.name,score:x.score,me:!!vid&&x.vid===vid}:{score:x.score,me:!!vid&&x.vid===vid}),me})}
 
     // ---- the owner removes a player from the boards (needs the secret code) ----
     if(route==="score-delete"&&m==="POST"){

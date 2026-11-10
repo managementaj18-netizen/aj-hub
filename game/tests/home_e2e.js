@@ -32,7 +32,7 @@ const ok=(c,m)=>{console.log(c?'PASS':'FAIL',m);if(!c)process.exitCode=1};
  ok(rowsTxt.length===2&&/🥇/.test(rowsTxt[0])&&/200/.test(rowsTxt[0])&&/🥈/.test(rowsTxt[1])&&/120/.test(rowsTxt[1]),'a new visitor sees 🥇 200 and 🥈 120 (rank and score): '+rowsTxt.join(' | ').replace(/\n/g,' '));
  ok((await c.locator('#lbD .chip').count())>=2&&/Lv \d+/.test(await c.locator('#lbD').innerText()),'under the header: how many players reached each level ('+(await c.locator('#lbD').innerText()).replace(/\n/g,' ')+')');
  ok(rowsTxt.every(r=>/Lv \d+/.test(r))&&(await c.locator('#lbN').innerText()).includes('2 players'),'each row shows the level, the header says 2 players');
- ok(!(await c.locator('body').innerHTML()).includes('Dara')&&!/Sok/.test(rowsTxt.join(' ')),'other players names (Dara, Sok) are NOT shown to a visitor');
+ ok(/Dara|Sok/.test(rowsTxt.join(' ')),'the top 5 show their names to a visitor');
  ok(/\?/.test(await c.locator('#lbList li').first().innerHTML())&&await c.locator('#lbList li.me').count()===0,'others appear as "?" Player; none is marked as me');
  await a.click('#lb');await a.waitForSelector('#lbList li.me');
  ok((await a.locator('#lbList li.me').innerText()).includes('Sok')&&/#?🥈/.test(await a.locator('#lbList li.me').innerText()),'the player sees HIS OWN row with his own name (Sok, 🥈)');
