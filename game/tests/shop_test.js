@@ -52,11 +52,11 @@ ok(await q.evaluate(([c,p])=>FC.G.state==='play'&&FC.G.lives===1&&FC.COINS()===c
 await q.evaluate(()=>{FC.G.items=[];FC.addItem('bad');const it=FC.G.items[0];it.x=FC.G.px;it.y=FC.G.py;FC.step(0.02)});await q.waitForTimeout(200);}
 ok(await q.locator('#cont').isHidden(),'after 3 continues no more Continue in the same game');
 // 6) ready-made messages travel in the challenge link
-await q.click('#pms .pm[data-i="2"]');ok(await q.evaluate(()=>FC.PM())===2,'a ready-made message can be chosen');
+ok((await q.locator('#pms').count())===0&&await q.evaluate(()=>FC.PM())===-1,'the ready-made message bubbles are gone');
 await q.fill('#nm','Dara');await q.click('#share');await q.waitForTimeout(150);const sh=await q.evaluate(()=>window.__shared[0]||'');
-ok(/\?c=\d+&n=Dara&m=2&s=ch$/.test(sh),'the share link carries the message number: '+sh);
+ok(/\?c=\d+&n=Dara&s=ch$/.test(sh),'the share link has the score and name, no message: '+sh);
 let f=await mk();const lnk=sh.match(/http\S+/)[0].replace(/^https?:\/\/[^/]+/,'http://localhost:8824');await f.goto(lnk);await f.waitForSelector('#go');
-ok(/Rematch/.test(await f.locator('#tChal').innerText())&&/Dara/.test(await f.locator('#tChal').innerText()),'the friend sees the message: '+(await f.locator('#tChal').innerText()).replace(/\n/g,' | '));
+ok(/Dara/.test(await f.locator('#tChal').innerText()),'the friend sees who challenged: '+(await f.locator('#tChal').innerText()).replace(/\n/g,' | '));
 await f.screenshot({path:'/tmp/sc/fc_home.png'});
 let g=await mk();await g.goto('http://localhost:8824/fruit/?c=100&n=Bob&m=99');await g.waitForSelector('#go');ok(!/💬/.test(await g.locator('#tChal').innerText()),'an invalid message number is ignored (only the 4 ready-made messages exist; no free text)');
 let h=await mk();await h.goto('http://localhost:8824/fruit/?c=100&n=Bob&m=%3Cb%3E');await h.waitForSelector('#go');ok(!/💬/.test(await h.locator('#tChal').innerText())&&await h.locator('#tChal b').count()===0,'a non-number message is ignored too');
