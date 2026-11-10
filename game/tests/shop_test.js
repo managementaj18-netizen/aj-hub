@@ -18,7 +18,7 @@ await p.click('#cont');await p.waitForTimeout(100);ok(await p.evaluate(()=>FC.CO
 // 2) coins stay on the phone
 await p.reload();await p.waitForSelector('#go');ok(await p.evaluate(()=>FC.COINS())===10,'coins are remembered after closing the game');
 // 3) shop: not enough coins, then buy
-await p.click('#shopB');await p.waitForSelector('#tree');ok(await p.locator('#upg .up').count()===3,'the shop has 3 upgrades: extra lives, bigger basket, magnet');
+await p.click('#shopB');await p.waitForSelector('#upg .up');ok(await p.locator('#upg .up').count()===3,'the shop has 3 upgrades: extra lives, bigger basket, magnet');
 await p.screenshot({path:'/tmp/sc/fc_shop.png'});
 await p.locator('#upg button[data-k="l"]').click();ok(await p.evaluate(()=>FC.UP().l)===0&&/enough/.test(await p.locator('#toast').innerText()),'buying without enough coins is refused: "Not enough coins"');
 let q=await mk({fc_coins:'5000'});await q.goto('http://localhost:8824/fruit/');await q.waitForSelector('#go');await q.click('#shopB');
