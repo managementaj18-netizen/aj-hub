@@ -12,7 +12,7 @@ const srv=http.createServer((q,r)=>{let f=path.join(root,q.url.split('?')[0]);if
   await p.addInitScript(()=>{localStorage.setItem('fc_lang','"en"');localStorage.setItem('fc_coins','260');localStorage.setItem('fc_best','128');localStorage.setItem('fc_name','"Sokha"')});
   await p.goto('http://localhost:8852/fruit/');await p.waitForSelector('#go');await p.waitForTimeout(500);
   await p.screenshot({path:`${out}/iphone-${tag}-1-home.png`});
-  await p.click('#shopB');await p.waitForSelector('#tree');await p.waitForTimeout(400);await p.screenshot({path:`${out}/iphone-${tag}-4-shop.png`});await p.click('#shopBack');await p.waitForTimeout(200);
+  await p.click('#shopB');await p.waitForSelector('#upg .up');await p.waitForTimeout(400);await p.screenshot({path:`${out}/iphone-${tag}-4-shop.png`});await p.click('#shopBack');await p.waitForTimeout(200);
   await p.click('#go');await p.waitForTimeout(200);
   const scene=async(level,score,names)=>p.evaluate(([lv,sc,ns])=>{FC.G.spawn=1e9;FC.G.level=lv;FC.G.score=sc;FC.G.items=[];const W=window.innerWidth;ns.forEach((k,i)=>{FC.addItem(k.k);const it=FC.G.items.at(-1);if(k.e)it.e=k.e;it.x=W*(.15+.7*((i*37%100)/100));it.y=100+i*105;it.vy=0;it.w=0});FC.G.px=FC.G.tx=W/2;(function(w){w.classList.remove('z0','z1','z2','z3');w.classList.add('z'+(lv>=14?3:lv>=11?2:lv>=8?1:0))})(document.getElementById('wrap'))},[level,score,names]);
   await scene(2,14,[{k:'ok'},{k:'gold'},{k:'ok'},{k:'bad'},{k:'ok'},{k:'ok'}]);await p.waitForTimeout(900);await p.screenshot({path:`${out}/iphone-${tag}-2-play.png`});
