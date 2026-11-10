@@ -668,6 +668,40 @@ const DEFS = {
     sigs:[{k:'sig',l:'ហត្ថលេខាអ្នកស្នើសុំ / Requester Signature',req:1}],
     date:r=>r.fromDate, room:r=>'', name:r=>r.name, idn:r=>lbl(r.position||''), extra:r=>lbl(r.leaveType||'')+' · '+fmtD(r.fromDate)+' → '+fmtD(r.toDate)
   },
+  guard: {
+    icon:'🛡️', short:'យាមខាងក្រៅ', title:'Night Guard Report', full:'របាយការណ៍យាមខាងក្រៅ វេនយប់ ២ និងវេនយប់ ៣ / Night Outside Guard Report',
+    sections:[
+      {h:'អ្នកបំពេញ / Staff', fields:[
+        {k:'name',l:'ឈ្មោះ / Name',req:1},
+        {k:'shift',l:'វេន / Shift',t:'select',opts:['វេនយប់ ២ / Night 2','វេនយប់ ៣ ម្នាក់ឯង / Night 3 (alone)','វេនយប់ ៣ ជាក្រុម / Night 3 (team)'],req:1},
+        {k:'nightDate',l:'យប់ថ្ងៃទី / Night of',t:'date',def:'today',req:1}]},
+      {h:'កំណត់ត្រាការងារជាក់ស្តែង ចាប់ពី ១៨:៣០ ដល់បិទទ្វាររបង / What you actually did', fields:[
+        {k:'log',l:'ពីម៉ោងណា ដល់ម៉ោងណា នៅកន្លែងណា ធ្វើអ្វី (១ ជួរ = ១ សកម្មភាព)',t:'rows',full:1,cols:[{k:'from',t:'time',l:'ពីម៉ោង'},{k:'to',t:'time',l:'ដល់ម៉ោង'},{k:'place',l:'កន្លែង'},{k:'what',l:'ធ្វើអ្វី'}]}]},
+      {h:'ការងារដែលមិនបានធ្វើ និងមូលហេតុ / Tasks not done and why', fields:[
+        {k:'missed',l:'ការងារដែលមិនបានធ្វើ',t:'rows',full:1,cols:[{k:'task',l:'ការងារ'},{k:'time',l:'ម៉ោងដែលត្រូវធ្វើ'},{k:'reason',l:'មូលហេតុ'}]}]},
+      {h:'សំណួរ-ចម្លើយ (ចុចធីក) / Questions', fields:[
+        {k:'gateFrom',l:'១. អ្នកអង្គុយយាមនៅទ្វាររបង ពីម៉ោង',t:'time'},
+        {k:'gateTo',l:'ដល់ម៉ោង',t:'time'},
+        {k:'q2',l:'២. អ្នកអង្គុយនៅទ្វារបានគ្រប់ម៉ោងដែលកំណត់ទេ?',t:'checks',full:1,opts:['បានគ្រប់ថ្ងៃ','ពេលខ្លះ','មិនបាន']},
+        {k:'q2r',l:'បើមិនបាន មូលហេតុ',full:1},
+        {k:'q3',l:'៣. ពេលភ្លៀង អ្នកអង្គុយយាមនៅកន្លែងណា?',t:'checks',full:1,opts:['ចំណតឡាន','កន្លែងផ្សេង']},
+        {k:'q3r',l:'កន្លែងផ្សេង (បញ្ជាក់)',full:1},
+        {k:'q4',l:'៤. ម៉ោង ២២:៣០ – ២៣:៣០ វេនយប់ ២ និងវេនយប់ ៣ អង្គុយនៅទ្វារព្រមគ្នាទេ?',t:'checks',full:1,opts:['មែន','ទេ']},
+        {k:'q4r',l:'បើទេ អ្នកណានៅទ្វារ / ធ្វើការងារអ្វី',full:1},
+        {k:'q5',l:'៥. អ្នកណាបិទទ្វាររបងមួយចំហៀងដំបូង ហើយម៉ោងប៉ុន្មាន?',t:'checks',full:1,opts:['វេនយប់ ២','វេនយប់ ៣','០០:០០','០០:៣០','ម៉ោងផ្សេង']},
+        {k:'q6',l:'៦. អ្នកណាបិទទ្វារចំហៀងទីពីរម៉ោង ០១:០០ ហើយព្យួរផ្លាកលេខទំនាក់ទំនង?',t:'checks',full:1,opts:['វេនយប់ ២','វេនយប់ ៣','ព្យួររាល់ថ្ងៃ','ព្យួរពេលខ្លះ','មិនបានព្យួរ']},
+        {k:'q7',l:'៧. ការដើរឆែកមុខអាគារ និងជុំវិញអគាររាល់ ៣០ នាទី — អ្នកធ្វើបានទេ?',t:'checks',full:1,opts:['បាន','ពេលខ្លះ','មិនបាន']},
+        {k:'q8',l:'៨. ម៉ោង ២០:៣០ – ២១:៣០ អ្នកណាអង្គុយនៅទ្វាររបងជាក់ស្តែង?',t:'checks',full:1,opts:['វេនយប់ ១','វេនយប់ ២','វេនយប់ ៣','គ្មានអ្នកនៅ']},
+        {k:'q9',l:'៩. បញ្ហា ឬសំណូមពរអំពីការយាមខាងក្រៅ',t:'textarea',full:1}]}],
+    textTitle:'សេចក្ដីជូនដំណឹង និងការបញ្ជាក់ / Notice and Confirmation',
+    text:['តាមការពិនិត្យកាមេរ៉ាសុវត្ថិភាព ក្រុមហ៊ុនឃើញថា បុគ្គលិកវេនយប់ ២ និងវេនយប់ ៣ មិនបានអនុវត្តការយាមខាងក្រៅ (ពីម៉ោង ១៨:៣០ ដល់បិទទ្វាររបង) តាមគោលការណ៍របស់ក្រុមហ៊ុនទេ។ ក្រុមហ៊ុនបានឃើញសកម្មភាពរបស់អ្នកទាំងពីរ តាមកាមេរ៉ាសុវត្ថិភាពរួចហើយ។',
+      'ទោះយ៉ាងណា ក្រុមហ៊ុនសូមផ្ដល់ឱកាសឲ្យអ្នកបំពេញដោយស្មោះត្រង់៖ ធ្វើការងារអ្វី ពីម៉ោងណាដល់ម៉ោងណា ការងារណាមិនបានធ្វើ និងមូលហេតុ។ ក្រុមហ៊ុននឹងផ្ទៀងផ្ទាត់ចម្លើយជាមួយកាមេរ៉ាសុវត្ថិភាព។',
+      'តាមបញ្ជីការងារ៖ វេនយប់ ២ អង្គុយនៅច្រកចូលទ្វាររបង ២១:៣០–២៣:៣០ ហើយដើរឆែករាល់ ៣០ នាទី ២៣:៣០–០១:០០ (៣ ម៉ោងកន្លះ)។ វេនយប់ ៣ អង្គុយនៅច្រកចូល ២៣:៣០–០១:០០ (ជាក្រុម) ឬពី ២២:៣០ (ម្នាក់ឯង)។ ពេលភ្លៀង អង្គុយនៅចំណតឡាន។'],
+    agree:'ខ្ញុំសូមបញ្ជាក់ថា ព័ត៌មានដែលខ្ញុំបំពេញខាងលើ ពិតប្រាកដ / I confirm the above is true',
+    sigs:[{k:'sig',l:'ហត្ថលេខាបុគ្គលិក / Staff Signature',req:1}],
+    onRender:()=>{ const h=G.host.querySelector('h2'); if(h) h.insertAdjacentHTML('beforebegin',`<div class="alert" style="margin-top:10px;border:1.5px solid var(--bad);background:#fbeeed;border-radius:10px;padding:10px 12px"><b>⚠️ សេចក្ដីជូនដំណឹងពីក្រុមហ៊ុន</b><p style="margin:6px 0 0">${esc(DEFS.guard.text[0])}</p><p style="margin:6px 0 0">${esc(DEFS.guard.text[1])}</p></div>`); },
+    date:r=>r.nightDate, room:()=>'', name:r=>r.name, idn:r=>lbl(r.shift||''), extra:r=>lbl(r.shift||'')+' · '+fmtD(r.nightDate)
+  },
   luggage: {
     icon:'🧳', short:'ផ្ញើឥវ៉ាន់', title:'Luggage Storage', full:'ទំហំផ្ទុកទំនិញ / Luggage Storage Form',
     sections:[
@@ -782,6 +816,7 @@ const DEFS = {
 };
 const CHECKIN_META = {icon:'✍️', short:'ឆែកអ៊ីន', title:'Guest Check-in', full:'Guest Registration & Declaration'};
 const TABLET_TYPES = ['booking','checkin','arrival','companion','guarantee','cancel','luggage','leave','stock','drinks'];
+const LIST_TYPES = [...TABLET_TYPES,'guard']; /* boss list/filter only — 🛡️ guard report is opened by staff from «💬 សារពីមេ», never a locked tablet form */
 const QR_TYPES = [...TABLET_TYPES,'decl','view','payroll']; // payroll QR opens the boss page (password) straight on a new slip
 const qrHash = t => t==='payroll'?'#payroll':t==='view'?'#view':'#f/'+t;
 const DECL_URL = 'https://aj-guest-declaration-23-08-26.netlify.app/';
@@ -924,7 +959,7 @@ function route(){
   const h=location.hash.replace('#',''); clearTimeout(window._rt);
   ['vHome','vTablet','vForm','vBoss','vStaff','vLock','vView'].forEach(v=>$(v).classList.add('hide'));
   const T=TAB(); $('lockBtn').classList.toggle('hide',!T);
-  if(T&&!unlocked()&&h!=='boss'&&h!=='payroll'&&h!=='view'&&h!=='f/attend'&&h!=='f/work'&&h!=='f/msg'&&h!=='f/leave'&&h!=='f/'+T.form&&!(T.form==='checkin'&&h==='tablet')&&!(PAIR.includes(T.form)&&['f/booking','f/checkin','tablet'].includes(h))){ history.replaceState(null,'','#f/'+T.form); return route(); }
+  if(T&&!unlocked()&&h!=='boss'&&h!=='payroll'&&h!=='view'&&h!=='f/attend'&&h!=='f/work'&&h!=='f/msg'&&h!=='f/leave'&&h!=='f/guard'&&h!=='f/'+T.form&&!(T.form==='checkin'&&h==='tablet')&&!(PAIR.includes(T.form)&&['f/booking','f/checkin','tablet'].includes(h))){ history.replaceState(null,'','#f/'+T.form); return route(); }
   const ft=h==='tablet'?'checkin':(h.startsWith('f/')?h.slice(2):'');
   if(ft&&(ft==='checkin'||(DEFS[ft]&&!DEFS[ft].bossOnly))&&!deviceKey()) return tabletSetup(ft);
   if(h==='tablet'||h==='f/checkin'){ $('vTablet').classList.remove('hide'); initTabletCommon(); const first=!ciInit; initCheckin(); applyPrefill('checkin'); flowSwitch('checkin');
@@ -1288,6 +1323,7 @@ function fieldHTML(f){
   if(f.t==='rooms') return `<div style="grid-column:1/-1;display:grid;gap:4px;font-size:13px;color:var(--mute)">${esc(f.l)}${star}<input type="hidden" id="${id}"><div class="rpick" id="rp_${f.k}"></div><span class="muted" id="rpInfo"></span></div>`;
   if(f.t==='photo') return `<label${cls}>${esc(f.l)}<span class="photo" id="gp_${f.k}"><input type="file" accept="image/*" onchange="gPhoto('${f.k}',this)"><span>📷</span><span>${esc(lbl(f.l))}</span></span></label>`;
   if(f.t==='select') return `<label${cls}>${esc(f.l)}${star}<select id="${id}"><option></option>${(typeof f.opts==='function'?f.opts():f.opts).map(o=>`<option>${esc(o)}</option>`).join('')}</select></label>`;
+  if(f.t==='checks') return `<div class="full" style="grid-column:1/-1;display:grid;gap:6px"><span>${esc(f.l)}</span><div id="${id}" class="checks" style="display:flex;flex-wrap:wrap;gap:8px 18px">${f.opts.map(o=>`<label style="display:flex;align-items:center;gap:6px;font-size:16px;cursor:pointer"><input type="checkbox" value="${esc(o)}" style="width:22px;height:22px;margin:0">${esc(o)}</label>`).join('')}</div></div>`;
   if(f.t==='textarea') return `<label${cls}>${esc(f.l)}${star}<textarea id="${id}" rows="3"></textarea></label>`;
   if(f.t==='rows') return `<label class="full">${esc(f.l)}<div class="rowsbox" id="${id}"></div><button type="button" class="btn alt sm" style="justify-self:start" onclick="addRow('${f.k}')">+ បន្ថែម / Add</button></label>`;
   const type={date:'date',time:'time',month:'month',number:'number',tel:'tel',datetime:'datetime-local',email:'email'}[f.t]||'text';
@@ -1334,6 +1370,7 @@ function gCollect(){
   const r={};
   for(const f of allFields(G.type)){
     if(f.t==='photo'){ if(G.photos[f.k]) r[f.k]=G.photos[f.k]; continue; }
+    if(f.t==='checks'){ r[f.k]=[...$('g_'+f.k).querySelectorAll('input:checked')].map(i=>'☑ '+i.value).join('  '); continue; }
     if(f.t==='rows'){ r[f.k]=[...$('g_'+f.k).children].map(row=>{const o={};row.querySelectorAll('[data-c]').forEach(i=>o[i.dataset.c]=i.value.trim());return o}).filter(o=>Object.values(o).some(Boolean)); continue; }
     r[f.k]=$('g_'+f.k).value.trim();
   }
@@ -1342,7 +1379,7 @@ function gCollect(){
   return r;
 }
 function gCalc(){const d=DEFS[G.type];if(!d||!d.calc||!$('g_net'))return;const c=d.calc(gCollectNumbersOnly());$('g_net').textContent=money(c.net);$('g_calc').textContent=`សរុប ${money(c.gross)} − កាត់ ${money(c.ded)}`}
-function gCollectNumbersOnly(){const r={};for(const f of allFields(G.type)){if(f.t==='rows'){r[f.k]=[...$('g_'+f.k).children].map(row=>{const o={};row.querySelectorAll('[data-c]').forEach(i=>o[i.dataset.c]=i.value);return o});}else if(f.t!=='photo'){r[f.k]=$('g_'+f.k)?.value}}return r}
+function gCollectNumbersOnly(){const r={};for(const f of allFields(G.type)){if(f.t==='checks')continue;if(f.t==='rows'){r[f.k]=[...$('g_'+f.k).children].map(row=>{const o={};row.querySelectorAll('[data-c]').forEach(i=>o[i.dataset.c]=i.value);return o});}else if(f.t!=='photo'){r[f.k]=$('g_'+f.k)?.value}}return r}
 async function submitGeneric(){
   if(G.type==='arrival') return arrSaveDraft();
   const d=DEFS[G.type];
@@ -1492,7 +1529,7 @@ function enterBoss(){ ROLE='boss'; $('bossLogin').classList.add('hide'); $('boss
   if(window._openPayroll){ window._openPayroll=0; try{ showTab('payroll'); openPayrollNew(); }catch(e){} history.replaceState(null,'','#boss'); } }
 function startBoss(){
   if(bossStarted) return; bossStarted=true;
-  $('ciT').innerHTML='<option value="">គ្រប់ប្រភេទហ្វម</option>'+TABLET_TYPES.map(t=>`<option value="${t}">${typeMeta(t).icon} ${esc(typeMeta(t).short)}</option>`).join('');
+  $('ciT').innerHTML='<option value="">គ្រប់ប្រភេទហ្វម</option>'+LIST_TYPES.map(t=>`<option value="${t}">${typeMeta(t).icon} ${esc(typeMeta(t).short)}</option>`).join('');
   renderTabletLinks(); renderOldLinks(); renderLauncher();
   loadBoss(); setInterval(()=>{if(!document.hidden)loadBoss()},5*60*1000);
 }
@@ -1557,7 +1594,7 @@ function renderForms(){
   const q=$('ciQ').value.toLowerCase().trim(), m=$('ciM').value, t=$('ciT').value;
   const list=allForms().filter(r=>(!t||r.type===t)&&(!m||(fDate(r)||'').startsWith(m))&&(!q||JSON.stringify([fName(r),fIdn(r),fRoom(r),r.phone,r.email,r.guestName,r.nat,r.staff,r.staffName]).toLowerCase().includes(q)))
     .sort((a,b)=>String(b.ciAt||fDate(b)).localeCompare(String(a.ciAt||fDate(a))));
-  const cnt=TABLET_TYPES.map(t=>`${typeMeta(t).short} ${allForms().filter(r=>r.type===t).length}`).join(' · ');
+  const cnt=LIST_TYPES.map(t=>`${typeMeta(t).short} ${allForms().filter(r=>r.type===t).length}`).join(' · ');
   $('ciCount').textContent=`បង្ហាញ ${list.length} · ${cnt}`;
   $('tCi').innerHTML='<tr><th>ថ្ងៃ</th><th>ប្រភេទ</th><th>បន្ទប់</th><th>ឈ្មោះ</th><th>ID / លេខ</th><th>ព័ត៌មាន</th><th>ស៊ីញ៉េ</th></tr>'+
     (list.length?list.map(r=>`<tr class="click" onclick="openRecord('${r._id}')"><td class="nw">${fmtD(fDate(r))}</td><td>${typePill(r)}</td><td><b>${esc(fRoom(r))}</b></td><td>${esc(fName(r))}${r._edited?' <span class="pill" title="កែរួច / Fixed">✏️</span>':''}</td><td>${esc(fIdn(r))}</td><td>${esc(fExtra(r))}</td><td>${r.sigData||r.bookingSigData||r.sig?'✅':'<span class="pill bad">គ្មាន</span>'}</td></tr>`).join(''):'<tr><td colspan="7" class="muted">គ្មាន</td></tr>');
@@ -2265,6 +2302,7 @@ function renderLauncher(){
     ['❌','លុបចោលបន្ទប់',`${cnt('cancel')} ខែនេះ`,"$('ciT').value='cancel';renderForms();showTab('forms')"],
     ['🧳','ផ្ញើឥវ៉ាន់',`${cnt('luggage')} ខែនេះ`,"$('ciT').value='luggage';renderForms();showTab('forms')"],
     ['📄','សំណើច្បាប់',`${cnt('leave')} ខែនេះ`,"$('ciT').value='leave';renderForms();showTab('forms')"],
+    ['🛡️','យាមខាងក្រៅ',`${cnt('guard')} ខែនេះ`,"$('ciT').value='guard';renderForms();showTab('forms')"],
     ['📦','ស្តុក & ភេសជ្ជៈ',`${stockLevels('stock').filter(o=>o.min&&o.qty<=o.min).length} ជិតអស់`,"showTab('stock')"],
     ['🖨','Inhouse Report','បោះពុម្ពថ្ងៃនេះ',"$('day').value=todayStr();openInhouse()"],
     ['💵','ប្រាក់ខែ',`${S.payroll.filter(p=>p.month===m).length} Slip ខែនេះ`,"showTab('payroll')"],
@@ -2282,7 +2320,7 @@ function renderLauncher(){
 }
 
 /* Opening a QR / link (#f/<form>) on a page load switches this tablet to that form, so every QR works on any device */
-(function(){ const h=location.hash.replace('#',''); const T=TAB(); if(T&&h.startsWith('f/')){ const f=h.slice(2); if(f!==T.form&&(f==='checkin'||(DEFS[f]&&!DEFS[f].bossOnly))) setTAB(Object.assign({},T,{form:f,at:new Date().toISOString()})); } })();
+(function(){ const h=location.hash.replace('#',''); const T=TAB(); if(T&&h.startsWith('f/')){ const f=h.slice(2); if(f!==T.form&&f!=='guard'&&(f==='checkin'||(DEFS[f]&&!DEFS[f].bossOnly))) setTAB(Object.assign({},T,{form:f,at:new Date().toISOString()})); } })();
 /* ---------- Booking list on the tablet: waiting / checked-in ---------- */
 let BKL={f:'reserved',q:'',list:[]};
 function bklDate(d){ if(!d) return ''; const p=String(d).slice(0,10).split('-'); return p.length===3?p[2]+'/'+p[1]+'/'+p[0]:String(d); }
