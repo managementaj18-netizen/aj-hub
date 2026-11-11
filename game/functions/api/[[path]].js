@@ -105,6 +105,19 @@ export async function onRequest(ctx){
       if(!same(req.headers.get("x-admin-code")||"",code)){await new Promise(r=>setTimeout(r,400));return J({error:"denied"},401)}
       return J(OWNER)}
 
+    // ---- every player who typed a name (owner only): search, pages, newest/best first ----
+    if(route==="players"&&m==="GET"){
+      const code=env.ADMIN_CODE;if(!code)return J({error:"no_admin_code"},503);
+      if(!same(req.headers.get("x-admin-code")||"",code)){await new Promise(r=>setTimeout(r,400));return J({error:"denied"},401)}
+      const game=clip(url.searchParams.get("game")||"fruit",24),size=Math.max(1,Math.min(500,parseInt(url.searchParams.get("size"))||50)),page=Math.max(0,parseInt(url.searchParams.get("page"))||0);
+      const q=cleanName(url.searchParams.get("q")||"").replace(/[%_]/g,""),sort=url.searchParams.get("sort")==="score"?"s.score DESC":"s.ts DESC";
+      const like="%"+q+"%";
+      const tot=(await db.prepare("SELECT COUNT(*) c FROM gm_score WHERE game=? AND period='all'").bind(game).first())||{c:0};
+      const named=(await db.prepare("SELECT COUNT(*) c FROM gm_score WHERE game=? AND period='all' AND name<>''").bind(game).first())||{c:0};
+      const match=(await db.prepare("SELECT COUNT(*) c FROM gm_score WHERE game=? AND period='all' AND name<>'' AND name LIKE ?").bind(game,like).first())||{c:0};
+      const rows=(await db.prepare("SELECT s.name,s.score,s.ts,v.first,v.last,v.days,v.src FROM gm_score s LEFT JOIN (SELECT vid,MIN(day) first,MAX(day) last,COUNT(DISTINCT day) days,MAX(src) src FROM gm_vis GROUP BY vid) v ON v.vid=s.vid WHERE s.game=? AND s.period='all' AND s.name<>'' AND s.name LIKE ? ORDER BY "+sort+" LIMIT ? OFFSET ?").bind(game,like,size,page*size).all()).results||[];
+      return J({total:tot.c,named:named.c,match:match.c,page,size,rows})}
+
     // ---- numbers for the owner (needs the secret code) ----
     if(route==="stats"&&m==="GET"){
       const code=env.ADMIN_CODE;

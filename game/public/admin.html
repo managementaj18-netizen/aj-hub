@@ -1,56 +1,119 @@
-<!doctype html><html lang="km"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Soramma · ទំព័រម្ចាស់</title>
-<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;700&display=swap" rel="stylesheet">
+<!doctype html><html lang="km"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>Soramma · Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;600;700&display=swap" rel="stylesheet">
 <style>
-body{margin:0;font-family:"Kantumruy Pro",system-ui,sans-serif;background:#12202b;color:#eef3f6;padding:16px;max-width:780px;margin:auto}
-h1{font-size:22px;margin:6px 0 14px}h2{font-size:17px;margin:20px 0 8px}.card{background:#1c3140;border-radius:14px;padding:14px;margin:10px 0}
-.grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.tile{background:#1c3140;border-radius:14px;padding:12px}.tile b{display:block;font-size:30px;color:#ffd166}.tile span{font-size:13px;opacity:.8}
-input,select,button{font:inherit;padding:10px 12px;border-radius:10px;border:0}input{width:100%;box-sizing:border-box;margin:8px 0}button,a.btn{background:#ffb703;color:#3d2a00;font-weight:700;cursor:pointer;text-decoration:none;display:inline-block;border-radius:10px;padding:8px 14px;font-size:14px;border:0}
-.app{display:flex;align-items:center;gap:12px;background:#1c3140;border-radius:14px;padding:12px;margin:8px 0}.app .e{font-size:34px}.app .m{flex:1;min-width:0}.app b{display:block;font-size:16px}.app small{opacity:.75;display:block;font-size:12.5px}.app .n{font-size:13px;margin-top:3px;color:#ffd166}
-.chip{display:inline-block;border-radius:99px;padding:1px 9px;font-size:12px;font-weight:700;margin-left:6px}.live{background:#2e7d4f}.held{background:#8a6d1d}.todo{background:#6b4a8a}
-.row{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}.row i{display:block;height:12px;background:#ffb703;border-radius:6px;min-width:2px}.row span{width:84px;opacity:.8}.row em{font-style:normal;margin-left:4px}
-.muted{opacity:.7;font-size:13px}.err{color:#ff8a80}.lb{display:flex;align-items:center;gap:10px;background:#1c3140;border-radius:10px;padding:7px 12px;margin:5px 0}.lb b{width:34px}.lb span{flex:1}.lb i{font-style:normal;color:#ffd166}.lb button{background:#a33;color:#fff;padding:4px 10px;font-size:13px}
+:root{--navy:#0b2a5b;--navy2:#123a7a;--bg:#eef2f8;--card:#fff;--ink:#1b2a41;--mut:#6b7a90;--line:#e3e9f2;--blue:#2f6fdd;--green:#2e9e4f;--amber:#f2a516;--red:#e04848;--purple:#7b5cd6;--teal:#18a9b8}
+*{box-sizing:border-box}body{margin:0;font-family:"Kantumruy Pro",system-ui,sans-serif;background:var(--bg);color:var(--ink)}
+.top{background:var(--navy);color:#fff;padding:14px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.top h1{margin:0;font-size:20px;letter-spacing:.5px}.top small{display:block;opacity:.75;font-size:12.5px;margin-top:2px}.top .sp{flex:1}
+.top .kv{text-align:right;font-size:12px;opacity:.85}.top .kv b{display:block;font-size:20px;opacity:1}
+.wrap{display:flex;gap:14px;padding:14px;align-items:flex-start}
+.side{width:190px;flex:none;background:var(--navy);color:#fff;border-radius:12px;padding:14px;position:sticky;top:12px}
+.side h3{margin:0 0 10px;font-size:13px;letter-spacing:1px;opacity:.85}.side label{display:block;font-size:12px;opacity:.8;margin:10px 0 4px}
+.side select,.side button{width:100%;font:inherit;font-size:13px;padding:8px;border-radius:7px;border:0}.side button{background:#fff;color:var(--navy);font-weight:700;cursor:pointer;margin-top:12px}.side button.ghost{background:transparent;color:#fff;border:1px solid #ffffff55;margin-top:8px}
+.main{flex:1;min-width:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px}
+.kpi{background:var(--card);border-radius:12px;padding:12px;box-shadow:0 1px 3px #0b2a5b14;display:flex;flex-direction:column;gap:2px}
+.kpi .t{font-size:11.5px;font-weight:700;color:var(--mut);text-transform:uppercase;letter-spacing:.3px}.kpi .v{font-size:26px;font-weight:700;margin-top:4px}.kpi .s{font-size:11.5px;color:var(--mut)}
+.kpi i{width:8px;height:8px;border-radius:50%;display:inline-block;margin-right:6px}
+.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}
+.card{background:var(--card);border-radius:12px;box-shadow:0 1px 3px #0b2a5b14;overflow:hidden}
+.card>h2{margin:0;background:var(--navy);color:#fff;font-size:12.5px;letter-spacing:.8px;text-transform:uppercase;padding:9px 14px;display:flex;justify-content:space-between;align-items:center}
+.card .b{padding:12px 14px}.wide{grid-column:1/-1}
+.leg{display:flex;flex-direction:column;gap:6px;font-size:13px}.leg div{display:flex;align-items:center;gap:8px}.leg i{width:10px;height:10px;border-radius:2px}.leg span{flex:1}.leg em{font-style:normal;color:var(--mut)}
+.donut{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.hb{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:12.5px}.hb span{width:64px;color:var(--mut)}.hb i{display:block;height:12px;background:var(--blue);border-radius:3px;min-width:2px}.hb em{font-style:normal;font-weight:600}
+table{width:100%;border-collapse:collapse;font-size:13px}th{background:#f3f6fb;color:var(--mut);text-align:left;font-size:11.5px;text-transform:uppercase;letter-spacing:.4px;padding:8px 10px;white-space:nowrap}td{padding:8px 10px;border-top:1px solid var(--line)}td.n,th.n{text-align:right}
+tr:hover td{background:#f8fafd}.tw{overflow-x:auto}
+.tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;border-bottom:1px solid var(--line)}
+.tools input,.tools select{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:7px}.tools input{flex:1;min-width:140px}
+.btn{font:inherit;font-size:13px;font-weight:600;background:var(--blue);color:#fff;border:0;border-radius:7px;padding:7px 12px;cursor:pointer;text-decoration:none;display:inline-block}.btn.g{background:#eef2f8;color:var(--ink)}.btn.r{background:#fdeaea;color:var(--red);padding:4px 9px;font-size:12px}.btn[disabled]{opacity:.4;cursor:default}
+.pager{display:flex;align-items:center;gap:10px;padding:10px 14px;border-top:1px solid var(--line);font-size:13px;color:var(--mut)}.pager .sp{flex:1}
+.chip{display:inline-block;border-radius:99px;padding:1px 9px;font-size:11.5px;font-weight:700}.live{background:#e1f4e7;color:#1d7a39}.held{background:#fdf0d0;color:#8a6200}.todo{background:#ece6fb;color:#5a3fb0}
+.mut{color:var(--mut);font-size:12.5px}.err{color:var(--red);font-size:13px;margin-top:8px}
+#login{max-width:340px;margin:60px auto;background:#fff;border-radius:14px;padding:22px;box-shadow:0 2px 10px #0b2a5b22}#login input{width:100%;font:inherit;padding:10px;border:1px solid var(--line);border-radius:8px;margin:10px 0}#login .btn{width:100%;padding:10px}
+@media(max-width:760px){.wrap{flex-direction:column}.side{width:100%;position:static;display:grid;grid-template-columns:1fr 1fr;gap:8px}.side h3{grid-column:1/-1;margin:0}.side button{margin:0}}
 </style></head><body>
-<h1>🏠 ទំព័រម្ចាស់ Soramma</h1>
-<div id="login" class="card"><div>លេខកូដម្ចាស់ (Admin)</div><input id="code" type="password" autocomplete="current-password" placeholder="លេខកូដ"><button id="go">ចូល</button><div id="err" class="err"></div></div>
+<div id="login"><h2 style="margin:0">Soramma Dashboard</h2><div class="mut">លេខកូដម្ចាស់ (Admin)</div><input id="code" type="password" autocomplete="current-password" placeholder="លេខកូដ"><button class="btn" id="go">ចូល</button><div id="err" class="err"></div></div>
 <div id="out" hidden>
- <h2>🎮 ហ្គេម</h2><div id="games"></div>
- <h2>📱 App ផ្សេងទៀត</h2><div id="apps"></div>
- <h2>📊 អ្នកលេងហ្គេម</h2>
- <div class="muted">រយៈពេល: <select id="days"><option value="7">៧ ថ្ងៃ</option><option value="14" selected>១៤ ថ្ងៃ</option><option value="30">៣០ ថ្ងៃ</option><option value="90">៩០ ថ្ងៃ</option></select> <button id="re" style="padding:6px 12px">⟳</button></div>
- <div class="grid" id="tiles"></div>
- <div class="card"><b>តាមថ្ងៃ</b> <span class="muted">(អ្នកចូល / គ្រាលេង)</span><div id="perday"></div></div>
- <div class="card"><b>ចូលមកពីណា</b> <span class="muted">(អ្នកចូលផ្សេងគ្នា)</span><div id="src"></div></div>
- <h2>🏆 តារាងចំណាត់ថ្នាក់ Fruit Catch</h2><div class="muted">ចុច ✕ ដើម្បីលុបឈ្មោះមិនសមរម្យចេញពីតារាង (លុបគ្រប់ពិន្ទុរបស់ឈ្មោះនោះ)</div><div id="lb"></div>
- <p class="muted">ទិន្នន័យអនាមិក៖ មិនរក្សាឈ្មោះ លេខទូរស័ព្ទ ឬ IP ទេ លើកលែងតែឈ្មោះហៅក្រៅដែលអ្នកលេងសរសេរក្នុងតារាងចំណាត់ថ្នាក់។ "អ្នកចូល" = ទូរស័ព្ទមួយគ្រឿងរាប់មួយដងក្នុងមួយថ្ងៃ។</p>
-</div>
+ <div class="top"><div><h1>SORAMMA DASHBOARD</h1><small>ទិដ្ឋភាពទូទៅនៃអ្នកលេង និងហ្គេម · Players &amp; games overview</small></div><div class="sp"></div>
+  <div class="kv">Date range<b id="range">—</b></div><div class="kv">អ្នកលេងដែលមានឈ្មោះ<b id="named">—</b></div></div>
+ <div class="wrap">
+  <div class="side"><h3>FILTERS</h3>
+   <label>រយៈពេល / Period</label><select id="days"><option value="7">7 days</option><option value="14" selected>14 days</option><option value="30">30 days</option><option value="90">90 days</option></select>
+   <label>ហ្គេម / Game</label><select id="game"><option value="fruit">Fruit Catch</option></select>
+   <button id="re">⟳ Refresh</button><button class="ghost" id="out2">Log out</button>
+   <div class="mut" style="color:#fff;opacity:.65;margin-top:14px;font-size:11px" id="upd"></div></div>
+  <div class="main">
+   <div class="kpis" id="kpis"></div>
+   <div class="cards">
+    <div class="card wide"><h2>VISITORS &amp; PLAYS PER DAY</h2><div class="b" id="perday"></div></div>
+    <div class="card"><h2>TRAFFIC SOURCES</h2><div class="b" id="src"></div></div>
+    <div class="card"><h2>PLAYER LEVELS (ALL TIME)</h2><div class="b" id="lv"></div></div>
+    <div class="card wide"><h2>GAMES</h2><div class="tw" id="games"></div></div>
+    <div class="card wide"><h2>PLAYERS <span id="pcount"></span></h2>
+     <div class="tools"><input id="q" placeholder="ស្វែងរកឈ្មោះ / Search name"><select id="sort"><option value="score">ពិន្ទុខ្ពស់បំផុត / Top score</option><option value="ts">លេងចុងក្រោយ / Latest</option></select><select id="size"><option>25</option><option selected>50</option><option>100</option><option>200</option></select><button class="btn g" id="csv">⬇ CSV (ទាំងអស់)</button></div>
+     <div class="tw"><table><thead><tr><th>#</th><th>ឈ្មោះ / Name</th><th class="n">ពិន្ទុល្អបំផុត</th><th>លេងចុងក្រោយ</th><th>ចូលដំបូង</th><th class="n">ថ្ងៃដែលចូល</th><th>មកពី</th><th></th></tr></thead><tbody id="ptb"></tbody></table></div>
+     <div class="pager"><button class="btn g" id="prev">‹</button><span id="pinfo"></span><button class="btn g" id="next">›</button><span class="sp"></span><span class="mut">ឈ្មោះទាំងអស់ដែលអ្នកលេងបានសរសេរ</span></div></div>
+    <div class="card wide"><h2>OTHER APPS</h2><div class="tw" id="apps"></div></div>
+   </div>
+   <p class="mut">ទិន្នន័យអនាមិក ៖ មិនរក្សាលេខទូរស័ព្ទ ឬ IP ទេ លើកលែងតែឈ្មោះហៅក្រៅដែលអ្នកលេងសរសេរ។ "អ្នកចូល" = ទូរស័ព្ទមួយគ្រឿងរាប់មួយដងក្នុងមួយថ្ងៃ។</p>
+  </div></div></div>
 <script>
-var $=function(i){return document.getElementById(i)},CODE="";try{CODE=sessionStorage.getItem("gm_admin")||""}catch(e){}
-function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
-function bars(rows,key){var mx=Math.max.apply(null,rows.map(function(r){return r[key]}).concat([1]));return rows.map(function(r){return'<div class="row"><span>'+esc(r.k)+'</span><i style="width:'+Math.round(r[key]/mx*55)+'%"></i><em>'+r[key]+'</em></div>'}).join("")}
-var ST={live:"✅ ចេញផ្សាយ",held:"⏳ លាក់ (ត្រៀមរួច)",todo:"🔧 មិនទាន់ដាក់"};
+var $=function(i){return document.getElementById(i)},CODE="",PAGE=0,TOTALM=0,OWNER=null;try{CODE=sessionStorage.getItem("gm_admin")||""}catch(e){}
+var COL=["#2f6fdd","#2e9e4f","#f2a516","#7b5cd6","#18a9b8","#e04848","#8a94a6"];
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
 function hdr(){return{"x-admin-code":CODE}}
-function card(a,g){var n="";if(g)n='<div class="n">👥 '+(g.visitors||0)+' អ្នកចូល · 🎮 '+g.plays+' គ្រាលេង · 📲 '+g.installs+' install</div>';
- return'<div class="app"><span class="e">'+a.e+'</span><div class="m"><b>'+esc(a.name)+'<span class="chip '+a.status+'">'+ST[a.status]+'</span></b><small>'+esc(a.note||"")+'</small>'+n+'</div>'+(a.url?'<a class="btn" href="'+esc(a.url)+'" target="_blank" rel="noopener">បើក</a>':"")+'</div>'}
+function api(p){return fetch(p,{headers:hdr()}).then(function(r){return r.json().then(function(j){return{s:r.status,j:j}})})}
+function fd(t){return t?new Date(t).toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric"}):"—"}
+function fdd(s){return s?new Date(s+"T00:00:00Z").toLocaleDateString("en-GB",{day:"2-digit",month:"short",year:"numeric",timeZone:"UTC"}):"—"}
+function kpi(t,v,col,s){return'<div class="kpi"><div class="t"><i style="background:'+col+'"></i>'+t+'</div><div class="v">'+v+'</div><div class="s">'+(s||"&nbsp;")+'</div></div>'}
+function donut(items){var tot=items.reduce(function(a,x){return a+x.v},0)||1,C=2*Math.PI*40,off=0,svg='<svg width="130" height="130" viewBox="0 0 100 100"><circle cx="50" cy="50" r="40" fill="none" stroke="#eef2f8" stroke-width="18"/>';
+ items.forEach(function(x,i){var l=x.v/tot*C;svg+='<circle cx="50" cy="50" r="40" fill="none" stroke="'+COL[i%COL.length]+'" stroke-width="18" stroke-dasharray="'+l+' '+(C-l)+'" stroke-dashoffset="'+(-off)+'" transform="rotate(-90 50 50)"/>';off+=l});svg+='</svg>';
+ return'<div class="donut">'+svg+'<div class="leg">'+items.map(function(x,i){return'<div><i style="background:'+COL[i%COL.length]+'"></i><span>'+esc(x.k)+'</span><em>'+x.v+" ("+Math.round(x.v/tot*100)+"%)</em></div>"}).join("")+'</div></div>'}
+function chart(days){var W=720,H=200,pl=34,pb=24,pt=10,n=days.length,mx=Math.max.apply(null,days.map(function(d){return Math.max(d.v,d.p)}).concat([4])),bw=(W-pl)/n,sv='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto">';
+ for(var g=0;g<=4;g++){var y=pt+(H-pt-pb)*(1-g/4);sv+='<line x1="'+pl+'" x2="'+W+'" y1="'+y+'" y2="'+y+'" stroke="#e3e9f2"/><text x="'+(pl-6)+'" y="'+(y+4)+'" font-size="10" text-anchor="end" fill="#6b7a90">'+Math.round(mx*g/4)+'</text>'}
+ var pts=[];days.forEach(function(d,i){var h=(H-pt-pb)*d.v/mx,x=pl+i*bw+bw*.18;sv+='<rect x="'+x+'" y="'+(H-pb-h)+'" width="'+bw*.64+'" height="'+h+'" rx="3" fill="#2f6fdd"/>';pts.push((pl+i*bw+bw/2)+","+(H-pb-(H-pt-pb)*d.p/mx));
+  if(n<=16||i%Math.ceil(n/12)===0)sv+='<text x="'+(pl+i*bw+bw/2)+'" y="'+(H-8)+'" font-size="10" text-anchor="middle" fill="#6b7a90">'+d.k+'</text>'});
+ sv+='<polyline points="'+pts.join(" ")+'" fill="none" stroke="#f2a516" stroke-width="2.5"/>';pts.forEach(function(p){var a=p.split(",");sv+='<circle cx="'+a[0]+'" cy="'+a[1]+'" r="3" fill="#f2a516"/>'});
+ return sv+'</svg><div class="leg" style="flex-direction:row;gap:16px;margin-top:6px"><div><i style="background:#2f6fdd"></i>អ្នកចូល / Visitors</div><div><i style="background:#f2a516"></i>គ្រាលេង / Plays</div></div>'}
+var ST={live:"Live",held:"Held",todo:"To do"};
+function row(a,g){return'<tr><td>'+esc(a.name)+'</td><td><span class="chip '+a.status+'">'+ST[a.status]+'</span></td>'+(g?'<td class="n">'+(g.visitors||0)+'</td><td class="n">'+g.plays+'</td><td class="n">'+g.installs+'</td>':'')+'<td class="mut">'+esc(a.note||"")+'</td><td class="n">'+(a.url?'<a class="btn g" href="'+esc(a.url)+'" target="_blank" rel="noopener">Open</a>':"")+'</td></tr>'}
 function load(){$("err").textContent="";
- fetch("/api/owner",{headers:hdr()}).then(function(r){return r.json().then(function(j){return[r.status,j]})}).then(function(a){var s=a[0],o=a[1];
+ api("/api/owner").then(function(a){var s=a.s,o=a.j;
   if(s===401){$("err").textContent="លេខកូដមិនត្រូវ";$("login").hidden=false;$("out").hidden=true;return}
   if(s===503){$("err").textContent=o.error==="no_admin_code"?"មិនទាន់កំណត់ ADMIN_CODE ក្នុង Cloudflare":"មិនទាន់ភ្ជាប់ database (DB)";return}
   if(s!==200){$("err").textContent="កំហុស: "+(o.detail||o.error);return}
-  try{sessionStorage.setItem("gm_admin",CODE)}catch(e){}$("login").hidden=true;$("out").hidden=false;window.__owner=o;stats()}).catch(function(){$("err").textContent="មិនអាចភ្ជាប់បាន"})}
-function stats(){var o=window.__owner;
- fetch("/api/stats?days="+$("days").value,{headers:hdr()}).then(function(r){return r.json()}).then(function(d){
-  $("games").innerHTML=o.games.map(function(g){return card(g,d.games&&d.games[g.id])}).join("");$("apps").innerHTML=o.apps.map(function(a){return card(a)}).join("");
-  var T=[["👥",d.visitors,"អ្នកចូលសរុប ("+d.days+" ថ្ងៃ)"],["🔁",d.returning,"ត្រឡប់មកលេងវិញ"],["🎮",d.plays,"គ្រាលេងសរុប"],["📲",d.installs,"ដាក់លើអេក្រង់ (install)"],["📤",d.shares,"ចុចចែករំលែក"],["👍",d.fbClicks,"ចុចទៅ Facebook Page"],["🌍",d.visitorsAllTime,"អ្នកចូលតាំងពីដើម"]];
-  $("tiles").innerHTML=T.map(function(t){return'<div class="tile"><b>'+t[1]+'</b><span>'+t[0]+" "+t[2]+"</span></div>"}).join("");
-  var days=Object.keys(d.perDay).reverse().map(function(k){return{k:k.slice(5),v:d.perDay[k].visitors,p:d.perDay[k].plays}});
-  $("perday").innerHTML=days.map(function(x){return'<div class="row"><span>'+x.k+'</span><i style="width:'+Math.round(x.v/Math.max.apply(null,days.map(function(y){return y.v}).concat([1]))*55)+'%"></i><em>'+x.v+" / "+x.p+"</em></div>"}).join("");
-  var names={direct:"ផ្ទាល់",facebook:"Facebook",instagram:"Instagram",telegram:"Telegram",google:"Google",tiktok:"TikTok",ch:"លីងប្រកួត",hub:"បញ្ជី",fb:"Facebook (លីង)",ig:"Instagram (លីង)",tg:"Telegram (លីង)",other:"ផ្សេងៗ"};
-  $("src").innerHTML=d.sources.length?bars(d.sources.map(function(x){return{k:names[x.src]||x.src,c:x.c}}),"c"):'<div class="muted">មិនទាន់មានទិន្នន័យ</div>';
-  board()})}
-function board(){fetch("/api/top?game=fruit&period=all",{headers:hdr()}).then(function(r){return r.json()}).then(function(j){var L=$("lb");L.innerHTML="";if(!j.top||!j.top.length){L.innerHTML='<div class="muted">មិនទាន់មាននរណាម្នាក់ក្នុងតារាង</div>';return}
-  j.top.forEach(function(x,i){var d=document.createElement("div");d.className="lb";var a=document.createElement("b"),b=document.createElement("span"),c=document.createElement("i"),k=document.createElement("button");a.textContent="#"+(i+1);b.textContent=x.name||"(គ្មានឈ្មោះ)";c.textContent=x.score;k.textContent="✕ លុប";
-   k.onclick=function(){if(!confirm("លុបឈ្មោះ \""+x.name+"\" ចេញពីតារាង?"))return;fetch("/api/score-delete",{method:"POST",headers:{"x-admin-code":CODE,"content-type":"application/json"},body:JSON.stringify({name:x.name})}).then(board)};
-   d.appendChild(a);d.appendChild(b);d.appendChild(c);d.appendChild(k);L.appendChild(d)})}).catch(function(){})}
+  try{sessionStorage.setItem("gm_admin",CODE)}catch(e){}$("login").hidden=true;$("out").hidden=false;OWNER=o;
+  $("game").innerHTML=o.games.map(function(g){return'<option value="'+esc(g.id)+'">'+esc(g.name)+'</option>'}).join("");stats()}).catch(function(){$("err").textContent="មិនអាចភ្ជាប់បាន"})}
+function stats(){var o=OWNER;
+ api("/api/stats?days="+$("days").value).then(function(a){var d=a.j,keys=Object.keys(d.perDay);
+  $("range").textContent=fdd(keys[0])+" – "+fdd(keys[keys.length-1]);$("upd").textContent="Updated "+new Date().toLocaleTimeString("en-GB",{hour:"2-digit",minute:"2-digit"});
+  var conv=d.visitors?Math.round(d.plays/d.visitors*10)/10:0,ret=d.visitors?Math.round(d.returning/d.visitors*100):0;
+  $("kpis").innerHTML=kpi("អ្នកចូល Visitors",d.visitors,"#2f6fdd",d.days+" days")+kpi("ត្រឡប់មកវិញ Returning",d.returning,"#2e9e4f",ret+"% of visitors")+kpi("គ្រាលេង Plays",d.plays,"#f2a516",conv+" per visitor")+kpi("Installs",d.installs,"#7b5cd6","add to home screen")+kpi("ចែករំលែក Shares",d.shares,"#18a9b8")+kpi("Facebook clicks",d.fbClicks,"#e04848")+kpi("All-time visitors",d.visitorsAllTime,"#0b2a5b");
+  var days=keys.map(function(k){return{k:k.slice(5),v:d.perDay[k].visitors,p:d.perDay[k].plays}});$("perday").innerHTML=chart(days);
+  var nm={direct:"Direct",facebook:"Facebook",instagram:"Instagram",telegram:"Telegram",google:"Google",tiktok:"TikTok",ch:"Challenge link",hub:"Hub",fb:"Facebook (link)",ig:"Instagram (link)",tg:"Telegram (link)",other:"Other"};
+  $("src").innerHTML=d.sources.length?donut(d.sources.map(function(x){return{k:nm[x.src]||x.src,v:x.c}})):'<div class="mut">មិនទាន់មានទិន្នន័យ</div>';
+  $("games").innerHTML='<table><thead><tr><th>Game</th><th>Status</th><th class="n">Visitors</th><th class="n">Plays</th><th class="n">Installs</th><th>Note</th><th></th></tr></thead><tbody>'+o.games.map(function(g){return row(g,d.games&&d.games[g.id]||{visitors:0,plays:0,installs:0})}).join("")+'</tbody></table>';
+  $("apps").innerHTML='<table><thead><tr><th>App</th><th>Status</th><th>Note</th><th></th></tr></thead><tbody>'+o.apps.map(function(a){return row(a)}).join("")+'</tbody></table>';
+  levels();PAGE=0;players()})}
+function levels(){api("/api/top?game="+$("game").value+"&period=all").then(function(a){var d=a.j.dist||{},ks=Object.keys(d).map(Number).sort(function(x,y){return x-y});
+ if(!ks.length){$("lv").innerHTML='<div class="mut">មិនទាន់មានទិន្នន័យ</div>';return}
+ var mx=Math.max.apply(null,ks.map(function(k){return d[k]}));$("lv").innerHTML=ks.map(function(k){return'<div class="hb"><span>Level '+k+'</span><i style="width:'+Math.round(d[k]/mx*60)+'%"></i><em>'+d[k]+'</em></div>'}).join("")}).catch(function(){})}
+function players(){var q=encodeURIComponent($("q").value.trim());
+ api("/api/players?game="+$("game").value+"&q="+q+"&sort="+$("sort").value+"&size="+$("size").value+"&page="+PAGE).then(function(a){var j=a.j;if(a.s!==200){return}
+  TOTALM=j.match;$("named").textContent=j.named+" / "+j.total;$("pcount").textContent=j.named+" named of "+j.total+" players";
+  var T=$("ptb");T.innerHTML="";if(!j.rows.length){T.innerHTML='<tr><td colspan="8" class="mut">មិនមានអ្នកលេង</td></tr>'}
+  j.rows.forEach(function(x,i){var tr=document.createElement("tr");tr.innerHTML='<td class="mut">'+(PAGE*j.size+i+1)+'</td><td><b>'+esc(x.name)+'</b></td><td class="n"><b>'+x.score+'</b></td><td>'+fd(x.ts)+'</td><td>'+fdd(x.first)+'</td><td class="n">'+(x.days||"—")+'</td><td class="mut">'+esc(x.src||"—")+'</td><td class="n"></td>';
+   var b=document.createElement("button");b.className="btn r";b.textContent="✕";b.title="លុប";b.onclick=function(){if(!confirm("លុបឈ្មោះ \""+x.name+"\" ចេញពីតារាង?"))return;fetch("/api/score-delete",{method:"POST",headers:{"x-admin-code":CODE,"content-type":"application/json"},body:JSON.stringify({name:x.name})}).then(players)};tr.lastChild.appendChild(b);T.appendChild(tr)});
+  var pages=Math.max(1,Math.ceil(j.match/j.size));$("pinfo").textContent="Page "+(PAGE+1)+" / "+pages+" · "+j.match+" players";$("prev").disabled=PAGE<=0;$("next").disabled=PAGE+1>=pages})}
+function csv(){var rows=[["name","best_score","last_played","first_seen","days_active","source"]],p=0;
+ (function nx(){api("/api/players?game="+$("game").value+"&sort=score&size=500&page="+p).then(function(a){var r=a.j.rows||[];r.forEach(function(x){rows.push([x.name,x.score,x.ts?new Date(x.ts).toISOString().slice(0,10):"",x.first||"",x.days||"",x.src||""])});
+  if(r.length===500){p++;nx();return}
+  var t=rows.map(function(r){return r.map(function(c){return'"'+String(c).replace(/"/g,'""')+'"'}).join(",")}).join("\n"),u=URL.createObjectURL(new Blob(["﻿"+t],{type:"text/csv"})),l=document.createElement("a");l.href=u;l.download="players.csv";l.click()})})()}
 $("go").onclick=function(){CODE=$("code").value.trim();if(CODE)load()};$("code").onkeydown=function(e){if(e.key==="Enter")$("go").onclick()};
-$("days").onchange=$("re").onclick=stats;if(CODE)load();
+$("days").onchange=$("re").onclick=stats;$("game").onchange=function(){levels();PAGE=0;players()};
+var tm;$("q").oninput=function(){clearTimeout(tm);tm=setTimeout(function(){PAGE=0;players()},300)};$("sort").onchange=$("size").onchange=function(){PAGE=0;players()};
+$("prev").onclick=function(){if(PAGE>0){PAGE--;players()}};$("next").onclick=function(){PAGE++;players()};$("csv").onclick=csv;
+$("out2").onclick=function(){try{sessionStorage.removeItem("gm_admin")}catch(e){}location.reload()};
+if(CODE)load();
 </script></body></html>

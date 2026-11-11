@@ -15,8 +15,8 @@ const t=await p.locator('#games').innerText();ok(/Fruit Catch/.test(t)&&/English
 ok(await p.locator('#games .chip.live').count()===2&&await p.locator('#games .chip.held').count()===2,'two are marked released, two are marked held back');
 ok(/Laundry Pro/.test(await p.locator('#apps').innerText())&&/Family/.test(await p.locator('#apps').innerText())&&await p.locator('#apps a.btn').count()>=3,'the other apps are listed with Open buttons');
 ok(await p.locator('#games a.btn').count()===4,'every game has an Open button (including the private test ones)');
-ok(/Bad Name/.test(await p.locator('#lb').innerText()),'the Fruit Catch leaderboard is shown to the owner');
+ok(/Bad Name/.test(await p.locator('#ptb').innerText()),'the Fruit Catch leaderboard is shown to the owner');
 await p.screenshot({path:'/tmp/sc/owner.png',fullPage:true});
-p.on('dialog',d=>d.accept());await p.locator('#lb button').first().click();await p.waitForTimeout(700);ok(!/Bad Name/.test(await p.locator('#lb').innerText()),'the owner removes a name with one tap');
+p.on('dialog',d=>d.accept());await p.locator('#ptb button').first().click();await p.waitForTimeout(700);ok(!/Bad Name/.test(await p.locator('#ptb').innerText()),'the owner removes a name with one tap');
 ok(errs.length===0,'no page errors '+errs.join());
 await b.close();srv.kill()})();
