@@ -175,7 +175,8 @@ function drawStaff(){ const box=$('mgMain'); if(!box) return;
     <div style="text-align:center;font-weight:600;margin-top:16px">👇 ចុចវេន ឬ ផ្នែករបស់អ្នក</div>
     <div class="mg-names">${G.map((g,i)=>{ const u=unread(g.k); return `<button onclick="mgMe(${i})"><b>${mine.includes(g.k)?'★ ':''}${g.ic} ${esc(g.n)}</b>${u?`<span class="mg-badge">${u}</span>`:''}<small>${esc(g.sub)}</small></button>`; }).join('')}</div>
     <h3 style="margin-top:18px">📢 សារទូទៅរបស់ក្រុមហ៊ុន <span class="muted" style="font-size:13px;font-weight:400">— អ្នកណាក៏មើលបាន</span></h3>${(()=>{ const A=msgs().filter(m=>!m.to||m.to.k==='all'), h0=0; const h=A.map(m=>msgCard(m,!seenAny(m.id))).join(''); markSeen('all',A.map(m=>m.id)); return h||'<p class="muted">មិនទាន់មាន</p>'; })()}
-    <p class="muted" style="font-size:13px">📄 ចង់ស្នើសុំច្បាប់ / ប្ដូរវេន / ឈប់? → <a href="#f/leave">បំពេញ «លិខិតស្នើសុំ»</a> ហើយត្រឡប់មកទីនេះដើម្បីមើលចម្លើយពីមេ (ក្នុងផ្នែករបស់អ្នក)។</p>`;
+    <p class="muted" style="font-size:13px">📄 ចង់ស្នើសុំច្បាប់ / ប្ដូរវេន / ឈប់? → <a href="#f/leave">បំពេញ «លិខិតស្នើសុំ»</a> ហើយត្រឡប់មកទីនេះដើម្បីមើលចម្លើយពីមេ (ក្នុងផ្នែករបស់អ្នក)។</p>
+    <p style="font-size:14px;margin:8px 0;padding:8px 10px;border:1.5px solid var(--bad);border-radius:10px;background:#fbeeed">🛡️ <b>វេនយប់ ២ និងវេនយប់ ៣៖</b> <a href="#f/guard">បំពេញ «របាយការណ៍យាមខាងក្រៅ»</a> ចុចធីក ឆ្លើយ ហើយស៊ីញ៉េ → ផ្ញើទៅមេ</p>`;
     return; }
   const g=grpByKey(ME); if(!g){ ME=''; return drawStaff(); }
   const S={has:id=>seenSet(ME).has(id)||seenAny(id)}, L=msgs().filter(m=>forMe(m,ME));
