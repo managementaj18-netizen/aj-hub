@@ -22,6 +22,7 @@
 <script src="work.js?v=18" defer></script>
 <script src="msg.js?v=10" defer></script>
 <script src="weekly.js?v=1" defer></script>
+<script src="home.js?v=1" defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@400;500;600;700&family=Cormorant+Garamond:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
@@ -87,6 +88,32 @@ dialog::backdrop{background:#0008}
 .hello{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;background:#fff;border:1px solid var(--line);border-radius:18px;padding:18px}
 .logo{display:block;width:150px;max-width:60%;margin:0 auto}}
 @media (prefers-reduced-motion:reduce){.tile{transition:none}.tile:hover{transform:none}}
+/* ---- boss home: KPI strip + grouped tiles (home.js) ---- */
+#launcher.arranged{display:block;margin-top:16px}
+@media (min-width:760px){#t-home:not(.hide){display:grid;grid-template-columns:1fr 1fr;column-gap:12px;align-items:stretch}#t-home>*{grid-column:1/-1}#t-home>.card{grid-column:auto}}
+.home2{display:flex;flex-direction:column;gap:22px}
+.kpis{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:10px}
+.kpi{font:inherit;text-align:left;cursor:pointer;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 14px 12px;display:flex;flex-direction:column;gap:2px;color:var(--ink);transition:border-color .12s,box-shadow .12s}
+.kpi:hover{border-color:var(--ink);box-shadow:0 4px 14px #0000000f}
+.kpi .kn{font-size:30px;font-weight:700;line-height:1.1;font-variant-numeric:tabular-nums}
+.kpi .kl{font-size:13px;font-weight:600}
+.kpi .ks{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.06em}
+.kpi.hot{border-color:#e9b86b;background:linear-gradient(180deg,#fffaf0,#fff)}
+.kpi.hot .kn{color:var(--warn)}
+.hgrp .hgh{display:flex;align-items:baseline;gap:10px;margin:0 2px 10px;padding-bottom:8px;border-bottom:1px solid var(--line)}
+.hgrp .hgh span{font-weight:700;font-size:15px}
+.hgrp .hgh small{font-size:11px;color:var(--mute);text-transform:uppercase;letter-spacing:.08em}
+.hgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+#launcher.arranged .tile{display:grid;grid-template-columns:44px 1fr;grid-template-rows:auto auto;column-gap:12px;row-gap:1px;align-items:center;min-height:0;padding:12px 14px;border-radius:14px}
+#launcher.arranged .tile .ti{grid-row:1/3;width:44px;height:44px;border-radius:12px;background:var(--brand2);display:flex;align-items:center;justify-content:center;font-size:22px;margin:0}
+#launcher.arranged .tile b{font-size:14.5px;line-height:1.35;align-self:end}
+#launcher.arranged .tile .ts{font-size:12px;align-self:start;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#launcher.arranged .tile:hover{transform:none;box-shadow:0 4px 14px #0000000f}
+#launcher.arranged .tile.due .ts{color:var(--warn);font-weight:600}
+#launcher.arranged .tile.due .ti{background:var(--warnbg)}
+@media (max-width:900px){.kpis{grid-template-columns:repeat(3,minmax(0,1fr))}.hgrid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media (max-width:420px){.kpi .kn{font-size:24px}#launcher.arranged .tile{grid-template-columns:36px 1fr;padding:10px}#launcher.arranged .tile .ti{width:36px;height:36px;font-size:18px}}
+
 #lockBtn{position:fixed;left:10px;bottom:10px;z-index:50;width:38px;height:38px;border-radius:50%;border:1px solid var(--line);background:#fff;opacity:.55;font-size:16px;cursor:pointer}
 #lockBtn.hide{display:none}
 .center{min-height:70vh;display:flex;align-items:center;justify-content:center;padding:16px}
