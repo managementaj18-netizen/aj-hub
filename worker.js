@@ -586,6 +586,16 @@ async function postTask(env, text, ownerName) {
 async function onAssistantButton(env, q) {
   const d = String(q.data || ''), who = [q.from && q.from.first_name, q.from && q.from.last_name].filter(Boolean).join(' ') || 'staff';
   const ans = (text, alert) => tgApi(env, 'answerCallbackQuery', { callback_query_id: q.id, text, show_alert: !!alert });
+  if (d.startsWith('oa:') || d.startsWith('oz:')) {
+    if (String(q.from && q.from.id) !== String(await ownerId(env))) { await ans('សម្រាប់តែមេប៉ុណ្ណោះ', true); return; }
+    const tok = await env.PRE.get('otareq:' + d.slice(3));
+    const edit = (txt) => q.message ? tgApi(env, 'editMessageText', { chat_id: q.message.chat.id, message_id: q.message.message_id, text: txt }) : null;
+    if (!tok) { await ans('ផុតកំណត់ហើយ សូម Run ស្គ្រីបម្តងទៀត', true); return; }
+    await env.PRE.delete('otareq:' + d.slice(3));
+    if (d.startsWith('oa:')) { await env.PRE.put('cfg:otatoken', tok); await edit('✅ បានភ្ជាប់ Gmail រួចហើយ។ ពីឥឡូវ ខ្ញុំនឹងប្រាប់មេភ្លាមៗពេលមានការកក់ពី Agoda, Booking.com, Expedia, Trip.com...'); }
+    else await edit('❌ បានបដិសេធការភ្ជាប់នេះ។');
+    await ans('OK'); return;
+  }
   if (d.startsWith('fc:') || d.startsWith('fx:')) {
     if (String(q.from && q.from.id) !== String(await ownerId(env))) { await ans('សម្រាប់តែមេប៉ុណ្ណោះ', true); return; }
     const k = 'ofm:' + d.slice(3), x = JSON.parse((await env.PRE.get(k)) || 'null');
@@ -1068,7 +1078,7 @@ async function handleTg(request, env, ctx) {
 }
 
 async function onUpdate(env, u) {
-  if (u.callback_query) { const cd = String(u.callback_query.data || ''); if (cd.startsWith('nb:')) await onBookingButton(env, u.callback_query); else if (/^(tk|pr|ob|ox|om|oc|ot|ou|fc|fx):/.test(cd)) await onAssistantButton(env, u.callback_query); return; }
+  if (u.callback_query) { const cd = String(u.callback_query.data || ''); if (cd.startsWith('nb:')) await onBookingButton(env, u.callback_query); else if (/^(tk|pr|ob|ox|om|oc|ot|ou|fc|fx|oa|oz):/.test(cd)) await onAssistantButton(env, u.callback_query); return; }
   if (u.message && u.message.chat && u.message.chat.type !== 'private') { await onGroupMsg(env, u.message); return; }
   if (u.message && /^\/owner\b/.test(u.message.text || '')) { await claimOwner(env, u.message); return; }
   if (u.message && u.message.from && String(u.message.from.id) === String(await ownerId(env))) { await onOwner(env, u.message); return; }
@@ -1243,8 +1253,19 @@ async function askClaude(env, messages) {
 // Needs Secret OTA_SECRET (same value as in the Apps Script).
 async function handleOtaIn(request, env) {
   let p = null; try { p = await request.json(); } catch (e) {}
-  if (!p || !env.OTA_SECRET || p.secret !== String(env.OTA_SECRET).trim()) return json({ ok: false, error: 'forbidden' }, 403);
-  if (!env.PRE) return json({ ok: false, error: 'no KV' }, 500);
+  if (!p || !env.PRE) return json({ ok: false, error: 'bad request' }, 400);
+  const approved = await env.PRE.get('cfg:otatoken');
+  const okSecret = (env.OTA_SECRET && p.secret === String(env.OTA_SECRET).trim()) || (approved && p.token && p.token === approved);
+  if (!okSecret && p.register && /^[A-Za-z0-9_-]{24,80}$/.test(String(p.token || ''))) {
+    // a new Gmail script asks to connect: the owner approves it with one tap in Telegram
+    if ((await env.PRE.get('otareqlimit'))) return json({ ok: false, error: 'waiting for owner approval' }, 403);
+    const id = Date.now().toString(36);
+    await env.PRE.put('otareq:' + id, String(p.token), { expirationTtl: 86400 });
+    await env.PRE.put('otareqlimit', '1', { expirationTtl: 120 });
+    await tellOwner(env, '🔗 ស្គ្រីប Gmail "A&J OTA bookings to bot" (' + String(p.account || '').slice(0, 60) + ') សុំភ្ជាប់មកខ្ញុំ ដើម្បីបញ្ជូនការកក់ពី Agoda, Booking.com, Expedia... មកមេ។\n\nបើមេទើបតែចុច Run ស្គ្រីបនោះ សូមចុច ✅ យល់ព្រម។', { reply_markup: { inline_keyboard: [[{ text: '✅ យល់ព្រម', callback_data: 'oa:' + id }, { text: '❌ បដិសេធ', callback_data: 'oz:' + id }]] } });
+    return json({ ok: false, pending: true }, 202);
+  }
+  if (!okSecret) return json({ ok: false, error: 'forbidden' }, 403);
   const done = [];
   for (const it of (p.items || []).slice(0, 15)) {
     const mid = String(it.id || '').slice(0, 80); if (!mid) continue;
