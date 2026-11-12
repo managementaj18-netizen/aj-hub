@@ -16,7 +16,7 @@ const OWNER={
     {id:"abc",name:"English Friends",e:"🐵",url:"https://play.soramma.app/abc/",status:"live",note:"36 words, kids"},
     {id:"sort",name:"Juice Sort",e:"🧪",url:"https://play.soramma.app/try-6d7b31c6ea/sort/",status:"held",note:"ready, not announced"},
     {id:"merge",name:"Fruit Merge",e:"🍉",url:"https://play.soramma.app/try-6d7b31c6ea/merge/",status:"held",note:"merge game, ready to try"},
-    {id:"smoothie",name:"Smoothie Shift",e:"🥤",url:"https://play.soramma.app/try-6d7b31c6ea/smoothie/",status:"held",note:"merge + orders + blender, stage 1"},
+    {id:"blend",name:"Fruit Blend",e:"🍹",url:"https://play.soramma.app/try-6d7b31c6ea/blend/",status:"held",note:"merge + orders + blender (private test)"},
     {id:"kids",name:"Animal Friends",e:"🐾",url:"https://play.soramma.app/try-6d7b31c6ea/kids/",status:"held",note:"ready, not announced"}],
   apps:[
     {name:"Laundry Pro",e:"🧺",url:"https://laundrypro.soramma.app",status:"live",note:"own login, multi-shop"},
