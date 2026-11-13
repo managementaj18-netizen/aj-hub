@@ -728,11 +728,18 @@ async function recentChatsText(env) {
   }
   return out.length ? '\nRECENT GUEST CHATS (last 3 days, newest first; Telegram hotel account + Messenger):\n' + out.join('\n') : '\nRECENT GUEST CHATS: none in the last 3 days.';
 }
-async function sendToGuest(env, key, text) {
+async function sendToGuest(env, key, text, tags) {
   const t = noEmoji(text);
-  if (key.startsWith('b:')) { const p = key.split(':'); const r = await tgApi(env, 'sendMessage', { business_connection_id: p[1], chat_id: p.slice(2).join(':'), text: t }); if (!r || !r.ok) return (r && r.description) || 'failed'; }
-  else if (key.startsWith('d:')) { const r = await tgApi(env, 'sendMessage', { chat_id: key.slice(2), text: t }); if (!r || !r.ok) return (r && r.description) || 'failed'; }
-  else if (key.startsWith('f:')) { const r = await fbSend(env, key.slice(2), { text: t }); if (!r || !r.message_id) return (r && r.error && r.error.message) || 'failed (Messenger allows replies only within 24 hours of the guest\'s last message)'; }
+  tags = tags || {};
+  const tok = (tags.app || tags.moto) ? await chatTok(env, key) : '';
+  const btns = [];
+  if (tags.app) btns.push({ t: '📱 Open App', u: APP_URL + '?c=' + tok });
+  if (tags.moto) btns.push({ t: '🛵 ជ្រើសរើសម៉ូតូ / Choose a motorbike', u: APP_URL + '?page=moto&c=' + tok });
+  if (tags.map) btns.push({ t: '📍 Map', u: MAP_URL });
+  const kb = (web) => btns.length ? { reply_markup: { inline_keyboard: btns.map(b => [web && b.u !== MAP_URL ? { text: b.t, web_app: { url: b.u } } : { text: b.t, url: b.u }]) } } : {};
+  if (key.startsWith('b:')) { const p = key.split(':'); const r = await tgApi(env, 'sendMessage', Object.assign({ business_connection_id: p[1], chat_id: p.slice(2).join(':'), text: t }, kb(false))); if (!r || !r.ok) return (r && r.description) || 'failed'; }
+  else if (key.startsWith('d:')) { const r = await tgApi(env, 'sendMessage', Object.assign({ chat_id: key.slice(2), text: t }, kb(true))); if (!r || !r.ok) return (r && r.description) || 'failed'; }
+  else if (key.startsWith('f:')) { const r = btns.length && t.length <= 640 ? await fbSend(env, key.slice(2), { attachment: { type: 'template', payload: { template_type: 'button', text: t, buttons: btns.slice(0, 3).map(b => ({ type: 'web_url', url: b.u, title: b.t.slice(0, 20) })) } } }) : await fbSend(env, key.slice(2), { text: t }); if (!r || !r.message_id) return (r && r.error && r.error.message) || 'failed (Messenger allows replies only within 24 hours of the guest\'s last message)'; }
   else return 'unknown chat';
   const h = JSON.parse((await env.PRE.get('hist:' + key)) || '[]'); h.push({ role: 'assistant', content: t }); while (h.length > 16) h.shift();
   await env.PRE.put('hist:' + key, JSON.stringify(h), { expirationTtl: HIST_TTL });
@@ -832,11 +839,13 @@ async function onGroupMsg(env, m) {
       const lastGuest = [...hist].reverse().find(x => x.role === 'user');
       let out = t;
       try {
-        out = await callAI(env, 'You are the front desk of A&J Kampot Boutique, a small hotel in Kampot, Cambodia. A staff member wrote a reply (often short, informal Khmer) for a guest. Rewrite it as one polite, warm, professional front-office chat message TO THE GUEST, in the same language the guest wrote in (Khmer guests: natural everyday Khmer, call the guest "បង"). Keep every fact exactly (prices, dates, times, room names, rules); add nothing new, no emojis, no markdown. Return only the message text.', [{ role: 'user', content: 'Guest\'s last message: ' + (lastGuest ? String(lastGuest.content).replace(/\[BOOKING ON FILE[^\]]*\]/g, '').slice(0, 800) : '(unknown)') + '\n\nStaff reply to send: ' + t }], 700) || t;
+        out = await callAI(env, 'You are the front desk of A&J Kampot Boutique, a small hotel in Kampot, Cambodia. A staff member wrote a reply (often short, informal Khmer) for a guest. Rewrite it as one polite, warm, professional front-office chat message TO THE GUEST, in the same language the guest wrote in (Khmer guests: natural everyday Khmer, call the guest "បង"). Keep every fact exactly (prices, dates, times, room names, rules); add nothing new, no emojis, no markdown, never write web links. Buttons: if the reply is about renting a motorbike, add the tag [MOTO] at the end (the guest gets a button to choose a bike); if it asks the guest to book, check in early, or use the app, add [APP]; if it is about our location or directions, add [MAP]. Return only the message text (with any tags).', [{ role: 'user', content: 'Guest\'s last message: ' + (lastGuest ? String(lastGuest.content).replace(/\[BOOKING ON FILE[^\]]*\]/g, '').slice(0, 800) : '(unknown)') + '\n\nStaff reply to send: ' + t }], 700) || t;
       } catch (e) { out = t; }
-      const err = await sendToGuest(env, key, out);
+      const tags = { app: /\[APP\]/i.test(out), moto: /\[MOTO\]/i.test(out), map: /\[MAP\]/i.test(out) };
+      out = out.replace(/\[(APP|MOTO|MAP)\]/gi, '').replace(/https?:\/\/\S+/g, '').trim() || t;
+      const err = await sendToGuest(env, key, out, tags);
       const by = [m.from && m.from.first_name, m.from && m.from.last_name].filter(Boolean).join(' ');
-      await tgApi(env, 'sendMessage', { chat_id: m.chat.id, reply_to_message_id: m.message_id, text: err ? '⚠️ ផ្ញើទៅភ្ញៀវមិនបាន: ' + err : '✅ Bot បានផ្ញើទៅភ្ញៀវ' + (by ? ' (ពី ' + by + ')' : '') + ':\n\n' + noEmoji(out) });
+      await tgApi(env, 'sendMessage', { chat_id: m.chat.id, reply_to_message_id: m.message_id, text: err ? '⚠️ ផ្ញើទៅភ្ញៀវមិនបាន: ' + err : '✅ Bot បានផ្ញើទៅភ្ញៀវ' + (by ? ' (ពី ' + by + ')' : '') + ':\n\n' + noEmoji(out) + (tags.moto ? '\n[+ ប៊ូតុង 🛵 ជ្រើសរើសម៉ូតូ]' : '') + (tags.app ? '\n[+ ប៊ូតុង 📱 Open App]' : '') + (tags.map ? '\n[+ ប៊ូតុង 📍 Map]' : '') });
       if (!err) { await env.PRE.delete('pend:' + key); }
       return;
     }
