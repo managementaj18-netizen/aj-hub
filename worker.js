@@ -374,7 +374,7 @@ async function onFbEvent(env, ev) {
     if (m.sticker_id) return;
     await helloOnce(env, key, () => fbSend(env, psid, { attachment: { type: 'image', payload: { url: ST_BASE + 'hello.png?v=4', is_reusable: true } } }));
     await fbSend(env, psid, { text: 'Thank you! 🙏 Our team will check it and reply shortly. / អរគុណបង! 🙏 ក្រុមការងារយើងនឹងពិនិត្យ ហើយឆ្លើយបងឆាប់ៗ។' });
-    await notifyStaff(env, `📎 ${who} sent a photo/file/voice on Facebook Messenger — please check the Page inbox.`);
+    await notifyStaff(env, `📎 ${who} sent a photo/file/voice on Facebook Messenger — please check the Page inbox.`, key);
     return;
   }
   fetch(`${FB_API}/me/messages?access_token=${encodeURIComponent(env.FB_PAGE_TOKEN)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ recipient: { id: psid }, sender_action: 'typing_on' }) }).catch(() => {});
@@ -386,7 +386,7 @@ async function onFbEvent(env, ev) {
   try { const note = await bookingNote(env, key); reply = await askClaude(env, note ? hist.map((x, i) => i === hist.length - 1 ? { role: 'user', content: x.content + note } : x) : hist); } catch (e) { console.log('claude', e && e.message); }
   if (!reply) {
     await fbSend(env, psid, { text: 'Thank you! Our team will reply shortly. 🙏' });
-    await notifyStaff(env, `💬 ${who}: ${text.slice(0, 500)}\n(AI could not answer — please reply in the Page inbox)`);
+    await notifyStaff(env, `💬 ${who}: ${text.slice(0, 500)}\n(AI could not answer — please reply in the Page inbox)`, key);
     return;
   }
   const wantApp = /\[APP\]/i.test(reply), wantMap = /\[MAP\]/i.test(reply), wantStaff = /\[STAFF\]/i.test(reply), wantThx = /\[THX\]/i.test(reply), wantUrgent = /\[URGENT\]/i.test(reply);
@@ -404,7 +404,7 @@ async function onFbEvent(env, ev) {
   await afterGuestReply(env, { key, who, text, ch: 'Messenger', staff: wantStaff, urgent: wantUrgent });
   hist.push({ role: 'assistant', content: clean });
   if (env.PRE) await env.PRE.put('hist:' + key, JSON.stringify(hist), { expirationTtl: HIST_TTL });
-  if (wantStaff) await notifyStaff(env, `🙋 ${who} needs staff (Facebook Messenger):\n"${text.slice(0, 600)}"`);
+  if (wantStaff) await notifyStaff(env, `🙋 ${who} needs staff (Facebook Messenger):\n"${text.slice(0, 600)}"`, key);
 }
 
 // ---- link a guest chat (Telegram / Messenger) to the booking made in the Guest App ----
@@ -822,6 +822,24 @@ You CAN see OTA bookings (Agoda, Booking.com, Expedia, Trip.com…) in OTA BOOKI
 }
 async function onGroupMsg(env, m) {
   const t = String(m.text || '');
+  // staff / owner replies to a guest alert in the staff group -> the bot sends it to that guest
+  const rt = m.reply_to_message;
+  if (rt && t && !t.startsWith('/') && env.PRE) {
+    const key = await env.PRE.get('gm:' + rt.message_id);
+    if (key) {
+      const hist = JSON.parse((await env.PRE.get('hist:' + key)) || '[]');
+      const lastGuest = [...hist].reverse().find(x => x.role === 'user');
+      let out = t;
+      try {
+        out = await callAI(env, 'You are the front desk of A&J Kampot Boutique, a small hotel in Kampot, Cambodia. A staff member wrote a reply (often short, informal Khmer) for a guest. Rewrite it as one polite, warm, professional front-office chat message TO THE GUEST, in the same language the guest wrote in (Khmer guests: natural everyday Khmer, call the guest "បង"). Keep every fact exactly (prices, dates, times, room names, rules); add nothing new, no emojis, no markdown. Return only the message text.', [{ role: 'user', content: 'Guest\'s last message: ' + (lastGuest ? String(lastGuest.content).replace(/\[BOOKING ON FILE[^\]]*\]/g, '').slice(0, 800) : '(unknown)') + '\n\nStaff reply to send: ' + t }], 700) || t;
+      } catch (e) { out = t; }
+      const err = await sendToGuest(env, key, out);
+      const by = [m.from && m.from.first_name, m.from && m.from.last_name].filter(Boolean).join(' ');
+      await tgApi(env, 'sendMessage', { chat_id: m.chat.id, reply_to_message_id: m.message_id, text: err ? '⚠️ ផ្ញើទៅភ្ញៀវមិនបាន: ' + err : '✅ Bot បានផ្ញើទៅភ្ញៀវ' + (by ? ' (ពី ' + by + ')' : '') + ':\n\n' + noEmoji(out) });
+      if (!err) { await env.PRE.delete('pend:' + key); }
+      return;
+    }
+  }
   if (/^\/setgroup\b/.test(t) && String(m.from && m.from.id) === String(await ownerId(env))) {
     await env.PRE.put('cfg:taskchat', String(m.chat.id));
     await tgApi(env, 'sendMessage', { chat_id: m.chat.id, text: '✅ ក្រុមនេះនឹងទទួលការងារពីថ្នាក់ដឹកនាំ តាមរយៈ Bot។' });
@@ -1133,14 +1151,14 @@ async function onUpdate(env, u) {
     if (!m.sticker) {
       await helloOnce(env, key, () => tgApi(env, 'sendSticker', Object.assign({ chat_id: chatId, sticker: ST_BASE + 'hello.webp?v=4' }, biz ? { business_connection_id: biz.business_connection_id } : {})));
       await send(m.from && m.from.language_code === 'km' ? 'អរគុណ! 🙏 បុគ្គលិករបស់យើងនឹងពិនិត្យ ហើយឆ្លើយអ្នកឆាប់ៗ។' : 'Thank you! 🙏 Our team will check it and reply shortly.');
-      await notifyStaff(env, `📎 ${who} sent a ${media}${biz ? ' to the hotel Telegram' : ' to @AJKampotBot'} — please check the chat.`);
+      await notifyStaff(env, `📎 ${who} sent a ${media}${biz ? ' to the hotel Telegram' : ' to @AJKampotBot'} — please check the chat.`, key);
     }
     return;
   }
 
   if (!(env.AI_KEY || env.ANTHROPIC_API_KEY)) {
     await send('Thank you for your message! Our team will reply shortly. 🙏', { reply_markup: appButtons(biz) });
-    await notifyStaff(env, `💬 ${who}: ${text.slice(0, 500)}\n(AI not set up yet — please reply)`);
+    await notifyStaff(env, `💬 ${who}: ${text.slice(0, 500)}\n(AI not set up yet — please reply)`, key);
     return;
   }
 
@@ -1153,7 +1171,7 @@ async function onUpdate(env, u) {
   try { const note = await bookingNote(env, key); reply = await askClaude(env, note ? hist.map((x, i) => i === hist.length - 1 ? { role: 'user', content: x.content + note } : x) : hist); } catch (e) { console.log('claude', e && e.message); }
   if (!reply) {
     await send('Thank you! Our team will reply shortly. 🙏');
-    await notifyStaff(env, `💬 ${who}: ${text.slice(0, 500)}\n(AI could not answer — please reply)`);
+    await notifyStaff(env, `💬 ${who}: ${text.slice(0, 500)}\n(AI could not answer — please reply)`, key);
     return;
   }
 
@@ -1170,7 +1188,7 @@ async function onUpdate(env, u) {
   await afterGuestReply(env, { key, who, text, ch: biz ? 'Telegram' : 'Telegram bot', staff: wantStaff, urgent: wantUrgent });
   hist.push({ role: 'assistant', content: clean || '🙏' });
   if (env.PRE) await env.PRE.put('hist:' + key, JSON.stringify(hist), { expirationTtl: HIST_TTL });
-  if (wantStaff) await notifyStaff(env, `🙋 ${who} needs staff${biz ? ' (hotel Telegram chat)' : ' (@AJKampotBot chat)'}:\n"${text.slice(0, 600)}"`);
+  if (wantStaff) await notifyStaff(env, `🙋 ${who} needs staff${biz ? ' (hotel Telegram chat)' : ' (@AJKampotBot chat)'}:\n"${text.slice(0, 600)}"`, key);
 }
 
 function appButtons(biz) {
@@ -1206,8 +1224,10 @@ async function transcribeVoice(env, f) {
   }
   return '';
 }
-async function notifyStaff(env, text) {
-  if (env.STAFF_CHAT_ID) await tgApi(env, 'sendMessage', { chat_id: env.STAFF_CHAT_ID, text });
+async function notifyStaff(env, text, key) {
+  if (!env.STAFF_CHAT_ID) return;
+  const r = await tgApi(env, 'sendMessage', { chat_id: env.STAFF_CHAT_ID, text: key ? text + '\n\n↩️ Reply លើសារនេះ ដើម្បីឲ្យ Bot ផ្ញើចម្លើយទៅភ្ញៀវ' : text });
+  if (key && env.PRE && r && r.ok && r.result) await env.PRE.put('gm:' + r.result.message_id, key, { expirationTtl: 3 * 86400 });
 }
 
 // Live room availability from the Nobeds booking engine (a room type is free on a night if it is listed for that night).
