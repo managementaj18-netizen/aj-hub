@@ -6,17 +6,18 @@ var W=360,H=640,HZ=205,YP=545,D0=18,LW=96,UH=60,ZMAX=74,G=26,NL=TK.LEVELS.length
 function P(x,z){var s=D0/(D0+z);return{sx:180+x*LW*s,sy:HZ+(YP-HZ)*s,s:s}}
 var rr=TK.rr,shade=TK.shade;
 var cv=$("cv"),cx=cv.getContext("2d"),dpr=Math.min(1.5,window.devicePixelRatio||1);
-var prog=ld("tk3_prog",null);if(!prog||!prog.stars||prog.stars.length!==NL)prog={stars:TK.LEVELS.map(function(){return 0}),unlocked:0,coins:0};
+var prog=ld("tk3_prog",null);if(!prog||!prog.stars||prog.stars.length!==NL)prog={stars:TK.LEVELS.map(function(){return 0}),unlocked:0,coins:0};if(/[?&]unlock/.test(location.search))prog.unlocked=NL-1;
 function saveProg(){sv("tk3_prog",prog)}
 var S=TK.S={mode:"home",over:true,paused:false,li:0,L:TK.LEVELS[0],D:0,speed:13,lane:0,x:0,h:0,vy:0,slide:0,slideK:0,landT:0,jb:0,hearts:3,coins:0,spawned:0,hits:0,inv:0,t:0,ents:[],scen:[],parts:[],wx:[],nextRow:0,nextScen:0,banner:null,flash:0,shake:0,done:false,doneT:0,cp:null,cpHit:{},snd:ld("tk3_snd",true),seen:ld("tk3_seen",false),afterHow:false,sel:0};
-var AC=null;function tone(f,d,tp,v){if(!S.snd)return;try{AC=AC||new(window.AudioContext||window.webkitAudioContext)();var o=AC.createOscillator(),g=AC.createGain();o.type=tp||"sine";o.frequency.value=f;g.gain.setValueAtTime(v||.1,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
+var AC=null;TK.audio=function(){AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();TK.Music.init(AC);return AC};
+function tone(f,d,tp,v){if(!S.snd)return;try{TK.audio();var o=AC.createOscillator(),g=AC.createGain();o.type=tp||"sine";o.frequency.value=f;g.gain.setValueAtTime(v||.1,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
 
 /* ---------------- one level per country ---------------- */
-var NEAR={panda:1,dragon:1,merlion:1,nonla:1,junk:1,bayon:1,apsara:1,tuktuk:1,church:1,cabin:1,obelisk:1,lamppost:1};
+var NEAR={panda:1,dragon:1,merlion:1,nonla:1,junk:1,bayon:1,apsara:1,tuktuk:1,church:1,cabin:1,obelisk:1,lamppost:1,yurt:1,adobe:1,llama:1,barn:1,windmill:1,townhouse:1,mosque:1,minaret:1,temple:1,totem:1,sailboat:1,cypress:1};
 function addScen(z){var L=S.L,k=L.scen[(Math.random()*L.scen.length)|0],left=Math.random()<.5,near=NEAR[k]?2.15+Math.random()*.5:2.4+Math.random()*2.6;S.scen.push({k:k,x:(left?-1:1)*near,z:z,left:left,v:(Math.random()*3)|0})}
 function addCoins(lane,z,n,arc){for(var i=0;i<n;i++){S.ents.push({t:"coin",lane:lane,z:z+i*2.4,hh:arc?.7+Math.sin(i/(n-1)*Math.PI)*1.45:.7});S.spawned++}}
-function rowGap(){var p=S.D/S.L.len;return Math.max(12.5,25-S.li*.9-p*5)}
-function spawnRow(z){if(z<45||z>S.L.len-70)return;var r=Math.random(),lanes=[-1,0,1],L=lanes[(Math.random()*3)|0],T=["block","low","high"],hard=Math.min(1,S.li*.1+S.D/S.L.len*.5);
+function rowGap(){var p=S.D/S.L.len;return Math.max(11,27-S.L.dd*9-p*6)}
+function spawnRow(z){if(z<45||z>S.L.len-70)return;var r=Math.random(),lanes=[-1,0,1],L=lanes[(Math.random()*3)|0],T=["block","low","high"],hard=Math.min(1,S.L.dd*.7+S.D/S.L.len*.45);
  if(r<.30+(1-hard)*.15){addCoins(L,z,5+((Math.random()*3)|0),Math.random()<.45)}
  else if(r<.62){var t=T[(Math.random()*3)|0];S.ents.push({t:t,lane:L,z:z});var o=lanes.filter(function(l){return l!==L});addCoins(o[(Math.random()*2)|0],z,4,false)}
  else if(r<.90){var a=lanes.slice();a.sort(function(){return Math.random()-.5});var t1=T[(Math.random()*3)|0],t2=T[(Math.random()*3)|0];S.ents.push({t:t1,lane:a[0],z:z});S.ents.push({t:t2,lane:a[1],z:z});addCoins(a[2],z,5,false)}
@@ -31,7 +32,7 @@ var SKYC={};
 function skyFor(L){var f=SKYC[L.id];if(f)return f;f=document.createElement("canvas");f.width=W*2;f.height=(HZ+4)*2;var c=f.getContext("2d");c.scale(2,2);var g=c.createLinearGradient(0,0,0,HZ);g.addColorStop(0,L.sky[0]);g.addColorStop(.55,L.sky[1]);g.addColorStop(1,L.sky[2]);c.fillStyle=g;c.fillRect(0,0,W,HZ+4);
  var sx=250,sg=c.createRadialGradient(sx,HZ-66,4,sx,HZ-66,110);sg.addColorStop(0,L.sun);sg.addColorStop(.25,"rgba(255,255,255,.5)");sg.addColorStop(1,"rgba(255,255,255,0)");c.fillStyle=sg;c.fillRect(0,0,W,HZ);c.fillStyle=L.sun;c.beginPath();c.arc(sx,HZ-66,22,0,7);c.fill();
  c.save();c.translate(sx,HZ-66);for(var i=0;i<9;i++){c.rotate(Math.PI*2/9);var rg=c.createLinearGradient(0,0,0,-260);rg.addColorStop(0,"rgba(255,255,255,.16)");rg.addColorStop(1,"rgba(255,255,255,0)");c.fillStyle=rg;c.beginPath();c.moveTo(0,0);c.lineTo(-14,-260);c.lineTo(14,-260);c.fill()}c.restore();SKYC[L.id]=f;return f}
-function startLevel(i,fromCp){var L=TK.LEVELS[i];S.li=i;S.L=L;S.mode="play";S.over=false;S.paused=false;S.done=false;S.doneT=0;
+function startLevel(i,fromCp){var L=TK.LEVELS[i];try{TK.audio();TK.Music.mute(!S.snd);TK.Music.play(L,false)}catch(e){}S.li=i;S.L=L;S.mode="play";S.over=false;S.paused=false;S.done=false;S.doneT=0;
  var cp=fromCp&&S.cp&&S.cp.li===i?S.cp:null;if(!cp)S.cp=null;S.cpHit={};
  S.D=cp?cp.D:0;S.coins=cp?cp.coins:0;S.spawned=cp?cp.spawned:0;S.hits=0;S.hearts=3;S.speed=L.v0;S.lane=0;S.x=0;S.h=0;S.vy=0;S.slide=0;S.slideK=0;S.landT=0;S.jb=0;S.inv=0;S.ents=[];S.scen=[];S.parts=[];S.wx=[];S.shake=0;S.flash=0;
  TK.clearSceneCache();TK.clearObstacleCache();TK.clearOutfitCache();S.hz=TK.buildHorizon(L);S.sky=skyFor(L);S.ovl=overlayFor(L);S.fog=fogFor(L);S.of=TK.OUTFITS[L.outfit];
@@ -53,7 +54,7 @@ function hit(){if(S.inv>0)return;S.hearts--;S.hits++;S.inv=1.5;S.speed*=.7;S.sha
 /* ---------------- one step of the run ---------------- */
 function step(dt){
  if(S.mode!=="play"||S.over||S.paused)return;var L=S.L;
- if(!S.done){var tgt=L.v0+(L.v1-L.v0)*Math.min(1,S.D/L.len);S.speed+=(tgt-S.speed)*Math.min(1,dt*1.2);S.D+=S.speed*dt}
+ if(!S.done){var pr=Math.min(1,S.D/L.len),tgt=L.v0+(L.v1-L.v0)*(pr<.12?pr*pr*8:.115+(pr-.12)*1.0);tgt=Math.min(L.v1,tgt);S.speed+=(tgt-S.speed)*Math.min(1,dt*1.2);TK.Music.setSpeed(S.speed);S.D+=S.speed*dt}
  else{S.doneT+=dt;S.speed=Math.max(0,S.speed-dt*20);S.D+=S.speed*dt}
  if(S.D>L.len-55&&!S.done)S.lane=0;
  S.x+=(S.lane-S.x)*Math.min(1,dt*13);
@@ -76,25 +77,25 @@ function step(dt){
 /* ---------------- results ---------------- */
 function starsFor(){var r=S.spawned?S.coins/S.spawned:1,s=1;if(r>=.6)s++;if(S.hits<=1)s++;return s}
 function completeLevel(){if(S.over)return;S.over=true;var st=starsFor();prog.stars[S.li]=Math.max(prog.stars[S.li],st);prog.unlocked=Math.max(prog.unlocked,Math.min(NL-1,S.li+1));prog.coins+=S.coins;saveProg();S.cp=null;
- var L=S.L,last=S.li===NL-1;$("dTitle").textContent=last?"TREASURE FOUND!":"LEVEL COMPLETE!";$("dSub").textContent=last?"អ្នកបានរកឃើញកំណប់នៅអង្គរវត្ត! ដំណើរជុំវិញពិភពលោកបានបញ្ចប់!":L.n+" · "+L.km;
+ var L=S.L,last=S.li===NL-1;$("dTitle").textContent=last?"TREASURE FOUND!":"LEVEL COMPLETE!";$("dSub").textContent=last?"អ្នកបានរកឃើញកំណប់នៅអង្គរវត្ត! ដំណើរជុំវិញពិភពលោកបានបញ្ចប់!":L.n+" · "+(L.km||L.cap);
  var sh="";for(var i=0;i<3;i++)sh+='<span class="'+(i<st?"on":"")+'" style="animation-delay:'+(i*.18)+'s">★</span>';$("dStars").innerHTML=sh;$("dCoins").textContent=S.coins;$("dHits").textContent=S.hits;$("dFact").textContent=L.fact;
- var stamps="";TK.LEVELS.forEach(function(T,i){var on=prog.stars[i]>0;stamps+='<div class="stamp'+(on?" on":"")+'" style="--r:'+((i%2?5:-6))+'deg"><canvas data-f="'+T.flag+'" width="44" height="30"></canvas><b>'+T.n+"</b></div>"});$("dStamps").innerHTML=stamps;Array.prototype.forEach.call($("dStamps").querySelectorAll("canvas"),function(cn){var g=cn.getContext("2d");TK.flag(g,cn.getAttribute("data-f"),2,2,40,26)});
+ var stamps="";TK.LEVELS.forEach(function(T,i){if(i>S.li||i<S.li-11)return;var on=prog.stars[i]>0;stamps+='<div class="stamp'+(on?" on":"")+'" style="--r:'+((i%2?5:-6))+'deg"><canvas data-f="'+T.flag+'" width="44" height="30"></canvas><b>'+T.n+"</b></div>"});$("dStamps").innerHTML=stamps;Array.prototype.forEach.call($("dStamps").querySelectorAll("canvas"),function(cn){var g=cn.getContext("2d");TK.flag(g,cn.getAttribute("data-f"),2,2,40,26)});
  $("dNext").textContent=last?"WORLD MAP":"NEXT COUNTRY";$("dNext").onclick=function(){$("ovDone").classList.add("hide");if(last)showLevels(S.li,null);else{showLevels(S.li,S.li+1)}};
  $("dAgain").onclick=function(){startLevel(S.li,false)};
  $("ovDone").classList.remove("hide");$("top").classList.add("hide")}
-function failLevel(){if(S.over)return;S.over=true;tone(150,.5,"sawtooth",.1);$("fSub").textContent=S.L.n+" · "+Math.floor(S.D/S.L.len*100)+"%";var hasCp=S.cp&&S.cp.li===S.li;$("fRetry").textContent=hasCp?"RETRY FROM CHECKPOINT":"TRY AGAIN";$("fRetry").onclick=function(){startLevel(S.li,hasCp)};$("fMap").onclick=function(){$("ovFail").classList.add("hide");showLevels(S.li,null)};setTimeout(function(){$("ovFail").classList.remove("hide");$("top").classList.add("hide")},700)}
+function failLevel(){if(S.over)return;S.over=true;TK.Music.stop();tone(150,.5,"sawtooth",.1);$("fSub").textContent=S.L.n+" · "+Math.floor(S.D/S.L.len*100)+"%";var hasCp=S.cp&&S.cp.li===S.li;$("fRetry").textContent=hasCp?"RETRY FROM CHECKPOINT":"TRY AGAIN";$("fRetry").onclick=function(){startLevel(S.li,hasCp)};$("fMap").onclick=function(){$("ovFail").classList.add("hide");showLevels(S.li,null)};setTimeout(function(){$("ovFail").classList.remove("hide");$("top").classList.add("hide")},700)}
 
 /* ---------------- level select (the world map) ---------------- */
 var lc=$("lc"),lx=lc.getContext("2d");
-function showLevels(sel,flyTo){S.mode="levels";S.over=true;["ovStart","ovHow","ovDone","ovFail"].forEach(function(id){$(id).classList.add("hide")});$("ovLevels").classList.remove("hide");$("top").classList.add("hide");sizeLevels();
+function showLevels(sel,flyTo){try{if(S.snd){TK.audio();TK.Music.mute(false);TK.Music.play(TK.LEVELS[sel],true)}}catch(e){}S.mode="levels";S.over=true;["ovStart","ovHow","ovDone","ovFail"].forEach(function(id){$(id).classList.add("hide")});$("ovLevels").classList.remove("hide");$("top").classList.add("hide");sizeLevels();
  var M=TK.LevelMap;M.select(sel,true);S.sel=sel;
  if(flyTo!=null){$("lvCard").classList.add("away");M.fly(sel,flyTo,function(){S.sel=flyTo;cardFor(flyTo);$("lvCard").classList.remove("away");tone(700,.15,"triangle",.1)})}else{cardFor(sel);$("lvCard").classList.remove("away")}}
 function cardFor(i){var L=TK.LEVELS[i],unlocked=i<=prog.unlocked,st=prog.stars[i];S.sel=i;TK.LevelMap.select(i,false);
- $("cName").textContent=L.n;$("cKm").textContent=L.km+" · LEVEL "+(i+1)+" / "+NL;$("cLm").textContent=L.lm;$("cOutfit").textContent=outfitName(L.outfit);
+ $("cName").textContent=L.n;$("cKm").textContent=(L.km?L.km+" · ":"")+"LEVEL "+(i+1)+" / "+NL+" · "+L.tn;$("cKm").className="t"+L.tier;$("cLm").textContent=L.lm;$("cOutfit").textContent=outfitName(L.outfit);
  var sh="";for(var k=0;k<3;k++)sh+='<span class="'+(k<st?"on":"")+'">★</span>';$("cStars").innerHTML=sh;
  $("cPlay").textContent=unlocked?(st?"PLAY AGAIN":"PLAY"):"LOCKED";$("cPlay").classList.toggle("lock",!unlocked);$("cNote").textContent=unlocked?"":"Finish "+TK.LEVELS[i-1].n+" to unlock";
- $("cPrev").disabled=i===0;$("cNext").disabled=i===NL-1;var fc=$("cFlag").getContext("2d");fc.clearRect(0,0,60,40);TK.flag(fc,L.flag,2,2,56,36)}
-function outfitName(id){return{kebaya:"Kebaya & batik sarong",aodai:"Áo dài & conical hat",hanfu:"Hanfu robe",ushanka:"Ushanka fur hat & coat",galabeya:"Galabeya & headscarf",samba:"Carnival feathers",sampot:"Sampot & krama"}[id]}
+ $("cPrev").disabled=i===0;$("cNext").disabled=i===NL-1;$("cPrev10").disabled=i<1;$("cNext10").disabled=i>=Math.min(prog.unlocked,NL-1);var fc=$("cFlag").getContext("2d");fc.clearRect(0,0,60,40);TK.flag(fc,L.flag,2,2,56,36)}
+function outfitName(id){return TK.OUTFITS[id].nm||id}
 function sizeLevels(){var r=$("ovLevels").getBoundingClientRect();if(!r.width)return;lc.width=Math.round(r.width*dpr);lc.height=Math.round(r.height*dpr);TK.LevelMap.size(r.width,r.height);TK.LevelMap.select(S.sel,true)}
 
 /* ---------------- drawing the world of a level ---------------- */
@@ -163,7 +164,7 @@ function drawBanner(c){var b=S.banner;if(!b)return;var t=S.t-b.t0;
  if(b.cp){if(t>1.6){S.banner=null;return}c.save();c.globalAlpha=Math.min(1,t*5,(1.6-t)*4);c.fillStyle="rgba(20,120,60,.9)";rr(c,90,250,180,40,20);c.fill();c.fillStyle="#fff";c.font='400 20px "Lilita One",sans-serif';c.textAlign="center";c.fillText("CHECKPOINT!",180,277);c.restore();return}
  if(t>3.6){S.banner=null;return}var L=b.txt,a=Math.min(1,t*4,(3.6-t)*3),yy=244-ease(Math.min(1,t*3))*10;
  c.save();c.globalAlpha=a;c.translate(W/2,yy);var sc=.88+.12*Math.min(1,t*4);c.scale(sc,sc);c.fillStyle="rgba(0,0,0,.3)";rr(c,-160,-56,320,134,26);c.fill();var g=c.createLinearGradient(0,-60,0,74);g.addColorStop(0,"rgba(0,20,50,.82)");g.addColorStop(1,"rgba(0,20,50,.66)");c.fillStyle=g;rr(c,-156,-60,312,134,26);c.fill();c.strokeStyle="#ffd84a";c.lineWidth=4;c.stroke();
- TK.flag(c,L.flag,-136,-36,64,42);c.fillStyle="#9fd8ff";c.textAlign="left";c.font='400 14px "Lilita One",sans-serif';c.fillText("LEVEL "+(S.li+1)+" / "+NL,-56,-34);c.fillStyle="#fff";c.font='400 36px "Lilita One",sans-serif';c.fillText(L.n,-56,4);c.fillStyle="#ffe9a8";c.font='700 19px "Kantumruy Pro",sans-serif';c.fillText(L.km,-56,30);c.fillStyle="#cfe9ff";c.font='700 12px "Kantumruy Pro",sans-serif';c.fillText(L.lm,-136,64);c.restore()}
+ TK.flag(c,L.flag,-136,-36,64,42);c.fillStyle="#9fd8ff";c.textAlign="left";c.font='400 14px "Lilita One",sans-serif';c.fillText("LEVEL "+(S.li+1)+" / "+NL,-56,-34);c.fillStyle="#fff";c.font='400 36px "Lilita One",sans-serif';c.fillText(L.n,-56,4);c.fillStyle="#ffe9a8";c.font='700 19px "Kantumruy Pro",sans-serif';c.fillText(L.km||("Capital: "+L.cap),-56,30);c.fillStyle="#cfe9ff";c.font='700 12px "Kantumruy Pro",sans-serif';c.fillText(L.lm,-136,64);c.restore()}
 function ease(x){return x*x*(3-2*x)}
 function render(){cx.setTransform(cv.width/W,0,0,cv.height/H,0,0);cx.save();if(S.shake>0)cx.translate(Math.sin(S.t*80)*5*S.shake,Math.cos(S.t*70)*4*S.shake);drawWorld(cx);cx.restore();drawHud(cx);drawBanner(cx);
  if(S.paused){cx.fillStyle="rgba(0,0,0,.5)";cx.fillRect(0,0,W,H);cx.fillStyle="#fff";cx.font='400 48px "Lilita One",sans-serif';cx.textAlign="center";cx.fillText("PAUSED",W/2,H/2);cx.font='400 18px "Lilita One",sans-serif';cx.fillText("Tap to continue",W/2,H/2+34)}
@@ -178,7 +179,8 @@ function adapt(dt){fAcc+=dt;fN++;if(fN>=40){var avg=fAcc/fN;if(avg>.026&&Q>.55){
 /* ---------------- the home screen: the explorer changes into each country's clothes ---------------- */
 var hc=$("hc"),hx=hc.getContext("2d"),HW=360,HH=640,HS={x:0,y:0,w:0,h:0};
 function sizeHome(){var o=$("ovStart");if(!o||o.classList.contains("hide"))return;var r=o.getBoundingClientRect();HW=r.width;HH=r.height;hc.width=Math.round(HW*dpr);hc.height=Math.round(HH*dpr);var hr=$("hero").getBoundingClientRect();HS={x:hr.left-r.left,y:hr.top-r.top,w:hr.width,h:hr.height}}
-function drawHome(t){var c=hx;c.setTransform(hc.width/HW,0,0,hc.height/HH,0,0);var i=Math.floor(t/2.4)%NL,L=TK.LEVELS[i],lp=TK.pj(L.lon,L.lat),sw=(t/2.4)%1;
+var HOME=["jp","fr","eg","br","in","it","au","ke","gr","pe","kr","no","cn","th","mx","ru"].map(function(id){return TK.LEVELS.findIndex(function(l){return l.id===id})});
+function drawHome(t){var c=hx;c.setTransform(hc.width/HW,0,0,hc.height/HH,0,0);var i=HOME[Math.floor(t/2.4)%HOME.length],L=TK.LEVELS[i],lp=TK.pj(L.lon,L.lat),sw=(t/2.4)%1;
  var cam={x:lp[0]+Math.sin(t*.2)*20,y:lp[1]+Math.cos(t*.15)*10,z:1.5,cy:HH*.5};TK.drawEarth(c,HW,HH,cam,t);
  var dim=c.createLinearGradient(0,0,0,HH);dim.addColorStop(0,"rgba(255,160,60,.30)");dim.addColorStop(.5,"rgba(255,160,60,.08)");dim.addColorStop(1,"rgba(255,160,60,.35)");c.fillStyle=dim;c.fillRect(0,0,HW,HH);
  var cxh=HW/2,cyh=HS.y+HS.h*.5,sc=Math.min(HS.h/150,2.2),f=TK.outfitSprite(L.outfit,t*13,0);
@@ -197,7 +199,7 @@ function showHow(then){S.afterHow=!!then;$("ovHow").classList.remove("hide")}
 
 /* ---------------- input ---------------- */
 var tp=null;
-function gStart(x,y){if(S.mode!=="play")return;if(S.paused){S.paused=false;return}tp={x:x,y:y}}
+function gStart(x,y){if(S.mode!=="play")return;if(S.paused){S.paused=false;TK.Music.duck(false);return}tp={x:x,y:y}}
 function gAct(dx,dy,th){var ax=Math.abs(dx),ay=Math.abs(dy);if(ax>=th&&ax>=ay){move(dx>0?1:-1);return true}if(ay>=th){if(dy<0)jump();else slide();return true}return false}
 function gMove(x,y){if(!tp)return;if(gAct(x-tp.x,y-tp.y,16)){tp.x=x;tp.y=y}}
 cv.addEventListener("touchstart",function(e){e.preventDefault();var t=e.changedTouches[0];gStart(t.clientX,t.clientY)},{passive:false});
@@ -211,13 +213,14 @@ cv.addEventListener("pointerup",function(e){if(e.pointerType==="touch")return;if
 window.addEventListener("keydown",function(e){var k=e.key;if(k==="ArrowLeft"||k==="a")move(-1);else if(k==="ArrowRight"||k==="d")move(1);else if(k==="ArrowUp"||k==="w"||k===" ")jump();else if(k==="ArrowDown"||k==="s")slide();else if(k==="p")S.paused=!S.paused});
 function playFromHome(){if(!S.seen){S.seen=true;sv("tk3_seen",true);showHow(true)}else showLevels(Math.min(prog.unlocked,NL-1),null)}
 $("go").onclick=playFromHome;$("how-ok").onclick=function(){$("ovHow").classList.add("hide");if(S.afterHow){S.afterHow=false;showLevels(Math.min(prog.unlocked,NL-1),null)}};
-$("howB").onclick=function(){showHow(false)};$("pz").onclick=function(){if(S.mode==="play"&&!S.over)S.paused=!S.paused};
+$("howB").onclick=function(){showHow(false)};$("pz").onclick=function(){if(S.mode==="play"&&!S.over){S.paused=!S.paused;TK.Music.duck(S.paused)}};
 $("cPlay").onclick=function(){if(S.sel<=prog.unlocked)startLevel(S.sel,false);else tone(130,.15,"square",.05)};
+$("cPrev10").onclick=function(){if(!TK.LevelMap.fl)cardFor(Math.max(0,S.sel-10))};$("cNext10").onclick=function(){if(!TK.LevelMap.fl)cardFor(Math.min(prog.unlocked,NL-1,S.sel+10))};
 $("cPrev").onclick=function(){if(S.sel>0&&!TK.LevelMap.fl)cardFor(S.sel-1)};$("cNext").onclick=function(){if(S.sel<NL-1&&!TK.LevelMap.fl)cardFor(S.sel+1)};
 $("lvBack").onclick=function(){$("ovLevels").classList.add("hide");$("ovStart").classList.remove("hide");S.mode="home";sizeHome()};
 $("fHome").onclick=function(){$("ovFail").classList.add("hide");showLevels(S.li,null)};
 function setSnd(){$("snd").style.opacity=S.snd?1:.4;$("sndH").style.opacity=S.snd?1:.45}setSnd();
-$("snd").onclick=$("sndH").onclick=function(){S.snd=!S.snd;sv("tk3_snd",S.snd);setSnd()};
+$("snd").onclick=$("sndH").onclick=function(){S.snd=!S.snd;sv("tk3_snd",S.snd);setSnd();try{TK.audio();TK.Music.mute(!S.snd)}catch(e){}};
 function share(txt,el){try{if(navigator.share)navigator.share({text:txt,url:location.href.split("?")[0]+"?s=share"});else if(navigator.clipboard){navigator.clipboard.writeText(txt+" "+location.href);if(el&&el.tagName==="BUTTON"&&!el.classList.contains("ic"))el.textContent="LINK COPIED"}}catch(e){}}
 $("dShare").onclick=function(){share("I finished "+S.L.n+" in Treasure Trek! Can you travel around the world and find the treasure at Angkor Wat?",this)};$("shareH").onclick=function(){share("Travel the world in Treasure Trek - run through 7 countries and find the treasure at Angkor Wat!",this)};
 $("resetP").onclick=function(){if(confirm("Reset your world tour progress?")){prog={stars:TK.LEVELS.map(function(){return 0}),unlocked:0,coins:0};saveProg();cardFor(0)}};

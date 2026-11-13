@@ -1,11 +1,11 @@
 /* Treasure Trek - data: levels (one country each), traditional outfits, world map shapes */
 (function(TK){
 /* A trip around the world. One level = one country. Each has its own look, weather, obstacles and traditional clothes. */
-TK.LEVELS=[
+TK.FEATURED=[
  {id:"sg",n:"SINGAPORE",km:"សិង្ហបុរី",flag:"sg",lon:103.82,lat:1.35,len:2000,v0:13,v1:19,
   sky:["#2aa6ee","#8fdcf7","#e6f8ff"],sun:"#fffbe0",fog:"#d4eef8",tint:"rgba(120,200,255,.05)",
   road:["#4c515e","#454a56"],verge:["#4fae52","#46a049"],edge:"#f4f4f4",ground:"asphalt",
-  scen:["tower","supertree","palm","merlion","supertree","tower"],lm:"Merlion · Marina Bay · Supertrees",hz:"sg",weather:"none",
+  scen:["tower","supertree","palm","sailboat","supertree","tower"],lm:"Merlion · Marina Bay · Supertrees",hz:"sg",weather:"none",
   obs:{block:"cart",low:"barrier",high:"gantry"},pal:["#e8442a","#fff","#1b7a8a"],outfit:"kebaya",
   fact:"The Merlion has a lion's head and a fish's body!"},
  {id:"vn",n:"VIETNAM",km:"វៀតណាម",flag:"vn",lon:107.0,lat:20.95,len:2200,v0:13.5,v1:19.5,
@@ -48,25 +48,25 @@ TK.LEVELS=[
 
 /* traditional clothing for each country (drawn on the runner) */
 TK.OUTFITS={
- kebaya:{btype:"skirt",blen:22,tlen:8,skin:"#e9b48a",hair:"#2a1a14",style:"bun",
+ kebaya:{nm:"Kebaya & batik sarong",btype:"skirt",blen:22,tlen:8,skin:"#e9b48a",hair:"#2a1a14",style:"bun",
   top:["#3fc2b0","#1f8f86"],trim:"#ffd9e8",pattern:"floral",long:false,
   bottom:["#c8455a","#8f2a40"],bpat:"batik",sleeve:"3/4",shoe:["#f4d8a8","#c49a5a"],acc:"flower"},
- aodai:{btype:"pants",blen:0,tlen:30,skin:"#ecb98e",hair:"#1a1210",style:"pony",
+ aodai:{nm:"Áo dài & conical hat",btype:"pants",blen:0,tlen:30,skin:"#ecb98e",hair:"#1a1210",style:"pony",
   top:["#fbfbff","#d8e4f4"],trim:"#ff9ab8",pattern:"none",long:true,
   bottom:["#ffffff","#e8eef8"],bpat:"none",sleeve:"long",shoe:["#f4efe4","#c4b898"],acc:"nonla"},
- hanfu:{btype:"skirt",blen:26,tlen:28,skin:"#f0c49a",hair:"#17100c",style:"buns",
+ hanfu:{nm:"Hanfu robe",btype:"skirt",blen:26,tlen:28,skin:"#f0c49a",hair:"#17100c",style:"buns",
   top:["#d92a2a","#9a1818"],trim:"#ffd24a",pattern:"cloud",long:true,
   bottom:["#e8b82a","#b88a10"],bpat:"none",sleeve:"wide",shoe:["#7a1818","#4a0c0c"],acc:"pins"},
- ushanka:{btype:"pants",blen:0,tlen:17,skin:"#f2c9a8",hair:"#6a4a2a",style:"none",
+ ushanka:{nm:"Ushanka fur hat & coat",btype:"pants",blen:0,tlen:17,skin:"#f2c9a8",hair:"#6a4a2a",style:"none",
   top:["#c4302a","#8a1c18"],trim:"#f4f4f4",pattern:"fur",long:true,
   bottom:["#2a3a5a","#1a2540"],bpat:"none",sleeve:"long",shoe:["#6a4a2a","#3e2a14"],acc:"ushanka"},
- galabeya:{btype:"pants",blen:0,tlen:33,skin:"#d9a070",hair:"#1a1210",style:"none",
+ galabeya:{nm:"Galabeya & headscarf",btype:"pants",blen:0,tlen:33,skin:"#d9a070",hair:"#1a1210",style:"none",
   top:["#f6f1e4","#d8cfb8"],trim:"#ffd24a",pattern:"gold",long:true,
   bottom:["#f6f1e4","#d8cfb8"],bpat:"none",sleeve:"long",shoe:["#8a5a2a","#5a3a14"],acc:"headscarf"},
- samba:{btype:"shorts",blen:0,tlen:0,skin:"#c98a5c",hair:"#241610",style:"long",
+ samba:{nm:"Carnival feathers",btype:"shorts",blen:0,tlen:0,skin:"#c98a5c",hair:"#241610",style:"long",
   top:["#ffd24a","#e8a010"],trim:"#2ac46a",pattern:"sequin",long:false,
   bottom:["#2ac46a","#148a48"],bpat:"none",sleeve:"none",shoe:["#e8442a","#a82818"],acc:"feathers"},
- sampot:{btype:"skirt",blen:22,tlen:6,skin:"#dca47a",hair:"#1c1410",style:"pony",
+ sampot:{nm:"Sampot & krama",btype:"skirt",blen:22,tlen:6,skin:"#dca47a",hair:"#1c1410",style:"pony",
   top:["#fff3d6","#e8d6a8"],trim:"#e8b82a",pattern:"none",long:false,
   bottom:["#7a2a9a","#4a1666"],bpat:"gold",sleeve:"short",shoe:["#e8c25a","#a8861a"],acc:"krama"}
 };

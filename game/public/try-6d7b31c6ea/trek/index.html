@@ -73,7 +73,8 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 .stamp{border:2px dashed #c8b890;border-radius:10px;padding:4px 0;display:flex;flex-direction:column;align-items:center;gap:2px;opacity:.4;font:400 8px "Lilita One",sans-serif;color:#8a7a60;background:#fff}
 .stamp.on{opacity:1;border:2px solid #1c6a5a;color:#1c6a5a;transform:rotate(var(--r))}.stamp canvas{width:34px;height:23px}
 .res .btn{display:block;margin:10px auto 0;width:100%;min-width:0}.res .btn.alt{margin-top:8px}
-#top.hide{display:none}</style></head><body>
+#top.hide{display:none}.arr.s{font-size:14px;opacity:.85}#cKm.t0{color:#7be07b}#cKm.t1{color:#ffd24a}#cKm.t2{color:#ff8a7a}
+</style></head><body>
 <div id="wrap">
  <div id="top" class="hide"><div class="pill"><small>Coins</small><b id="sc">0</b></div><div class="pill"><small>Distance</small><b id="ds">0m</b></div><div class="hearts" id="hr"></div><div class="sp"></div><button class="ib" id="pz" aria-label="pause">II</button><button class="ib" id="snd" aria-label="sound">♪</button></div>
  <div id="stage"><canvas id="cv"></canvas></div>
@@ -90,7 +91,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
   <div class="lvtop"><button class="ib" id="lvBack" aria-label="back">‹</button><h2>WORLD TOUR</h2><div style="width:40px"></div></div>
   <button class="mini" id="resetP">reset progress</button>
   <div class="lvcard" id="lvCard">
-   <div class="lvrow"><button class="arr" id="cPrev">‹</button><canvas id="cFlag" width="60" height="40"></canvas><div class="nm"><b id="cName">SINGAPORE</b><small id="cKm"></small></div><button class="arr" id="cNext">›</button></div>
+   <div class="lvrow"><button class="arr s" id="cPrev10">«</button><button class="arr" id="cPrev">‹</button><canvas id="cFlag" width="60" height="40"></canvas><div class="nm"><b id="cName">SINGAPORE</b><small id="cKm"></small></div><button class="arr" id="cNext">›</button><button class="arr s" id="cNext10">»</button></div>
    <div class="lvinfo"><i>Landmarks:</i> <span id="cLm"></span><br><i>Traditional dress:</i> <span id="cOutfit"></span></div>
    <div class="lvgo"><div class="stars" id="cStars"></div><button class="btn" id="cPlay">PLAY</button></div><div id="cNote"></div>
   </div></div>
@@ -111,7 +112,10 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 </div>
 <script src="/track.js"></script>
 <script src="js/data.js"></script>
+<script src="js/countries.js"></script>
+<script src="js/music.js"></script>
 <script src="js/art.js"></script>
+<script src="js/art2.js"></script>
 <script src="js/world.js"></script>
 <script src="js/game.js"></script>
 </body></html>
