@@ -6,9 +6,9 @@ var W=360,H=640,HZ=205,YP=545,D0=18,LW=96,UH=60,ZMAX=74,G=26,NL=TK.LEVELS.length
 function P(x,z){var s=D0/(D0+z);return{sx:180+x*LW*s,sy:HZ+(YP-HZ)*s,s:s}}
 var rr=TK.rr,shade=TK.shade;
 var cv=$("cv"),cx=cv.getContext("2d"),dpr=Math.min(1.5,window.devicePixelRatio||1);
-var R3=TK.R3D,use3d=false;try{use3d=!!(R3&&R3.init($("gl")))}catch(e){use3d=false}if(!use3d)$("gl").style.display="none";if(use3d){YP=R3.YP;LW=R3.LW;UH=R3.UH}
-var prog=ld("tk3_prog",null);if(!prog||!prog.stars||prog.stars.length!==NL)prog={stars:TK.LEVELS.map(function(){return 0}),unlocked:0,coins:0};if(/[?&]unlock/.test(location.search))prog.unlocked=NL-1;
-function saveProg(){sv("tk3_prog",prog)}
+var S0noShadow=false,R3=TK.R3D,use3d=false;try{use3d=!!(R3&&R3.init($("gl")))}catch(e){use3d=false}if(!use3d)$("gl").style.display="none";if(use3d){YP=R3.YP;LW=R3.LW;UH=R3.UH;try{if((navigator.hardwareConcurrency||8)<=4||(navigator.deviceMemory||4)<=2){R3.shadows(false);S0noShadow=true}}catch(e){}}
+var prog=ld("tk3_prog",null);if(!prog||!prog.stars||prog.stars.length!==NL)prog={stars:TK.LEVELS.map(function(){return 0}),unlocked:0,coins:0};var CHEAT=/[?&]unlock/.test(location.search);(function(){var real=0;for(var i=0;i<NL;i++)if(prog.stars[i]>0)real=i+1;prog.ru=Math.min(NL-1,real);prog.unlocked=CHEAT?NL-1:prog.ru})();function startIdx(){for(var i=0;i<NL;i++)if(!(prog.stars[i]>0))return i;return NL-1}
+function saveProg(){var u=prog.unlocked;prog.unlocked=prog.ru||0;sv("tk3_prog",prog);prog.unlocked=u}
 var S=TK.S={mode:"home",over:true,paused:false,li:0,L:TK.LEVELS[0],D:0,speed:13,lane:0,x:0,h:0,vy:0,slide:0,slideK:0,landT:0,jb:0,hearts:3,coins:0,spawned:0,hits:0,inv:0,t:0,ents:[],scen:[],parts:[],wx:[],nextRow:0,nextScen:0,banner:null,flash:0,shake:0,done:false,doneT:0,cp:null,cpHit:{},snd:ld("tk3_snd",true),seen:ld("tk3_seen",false),afterHow:false,sel:0};
 var AC=null;TK.audio=function(){AC=AC||new(window.AudioContext||window.webkitAudioContext)();if(AC.state==="suspended")AC.resume();TK.Music.init(AC);return AC};
 function tone(f,d,tp,v){if(!S.snd)return;try{TK.audio();var o=AC.createOscillator(),g=AC.createGain();o.type=tp||"sine";o.frequency.value=f;g.gain.setValueAtTime(v||.1,AC.currentTime);g.gain.exponentialRampToValueAtTime(.001,AC.currentTime+d);o.connect(g);g.connect(AC.destination);o.start();o.stop(AC.currentTime+d)}catch(e){}}
@@ -64,7 +64,7 @@ function step(dt){
  if(!S.done){var pr=Math.min(1,S.D/L.len),tgt=L.v0+(L.v1-L.v0)*(pr<.12?pr*pr*8:.115+(pr-.12)*1.0);tgt=Math.min(L.v1,tgt);S.speed+=(tgt-S.speed)*Math.min(1,dt*1.2);TK.Music.setSpeed(S.speed);S.D+=S.speed*dt}
  else{S.doneT+=dt;S.speed=Math.max(0,S.speed-dt*20);S.D+=S.speed*dt}
  if(S.D>L.len-55&&!S.done)S.lane=0;
- S.x+=(S.lane-S.x)*Math.min(1,dt*13);
+ S.x+=(S.lane-S.x)*Math.min(1,dt*10.5);
  if(S.h>0||S.vy>0){S.vy-=G*dt;S.h+=S.vy*dt;if(S.h<=0){S.h=0;if(S.vy<-3){S.landT=.2;for(var di=0;di<7;di++)S.parts.push({x:180+S.x*LW+(Math.random()-.5)*40,y:YP,vx:(Math.random()-.5)*110,vy:-20-Math.random()*40,life:.35,c:"rgba(255,255,255,.65)",r:3+Math.random()*3})}S.vy=0;if(S.jb>0){S.jb=0;S.vy=9.2;tone(420,.12,"triangle",.09)}}}
  S.cd=Math.min(1.2,S.cd+dt*(S.cd<.45?.075:.04));if(S.mag>0)S.mag-=dt;for(var ti=S.txt.length-1;ti>=0;ti--){S.txt[ti].t+=dt;if(S.txt[ti].t>1)S.txt.splice(ti,1)}
  if(S.slide>0)S.slide-=dt;S.slideK+=((S.slide>0?1:0)-S.slideK)*Math.min(1,dt*16);if(S.landT>0)S.landT-=dt;if(S.jb>0)S.jb-=dt;if(S.inv>0)S.inv-=dt;if(S.shake>0)S.shake-=dt;if(S.flash>0)S.flash-=dt;
@@ -88,7 +88,7 @@ function step(dt){
 /* ---------------- results ---------------- */
 function starsFor(){var r=S.spawned?S.coins/S.spawned:1,s=1;if(r>=.6)s++;if(S.hits<=1)s++;return s}
 function recordBest(){prog.best=prog.best||{};var sc=Math.floor(S.score),old=prog.best[S.L.id]||0,nb=sc>old;if(nb)prog.best[S.L.id]=sc;return{sc:sc,old:old,nb:nb}}
-function completeLevel(){if(S.over)return;S.over=true;var bs=recordBest();var st=starsFor();prog.stars[S.li]=Math.max(prog.stars[S.li],st);prog.unlocked=Math.max(prog.unlocked,Math.min(NL-1,S.li+1));prog.coins+=S.coins;saveProg();S.cp=null;
+function completeLevel(){if(S.over)return;S.over=true;var bs=recordBest();var st=starsFor();prog.stars[S.li]=Math.max(prog.stars[S.li],st);prog.ru=Math.max(prog.ru||0,Math.min(NL-1,S.li+1));prog.unlocked=CHEAT?NL-1:prog.ru;prog.coins+=S.coins;saveProg();S.cp=null;
  var L=S.L,last=S.li===NL-1;$("dTitle").textContent=last?"TREASURE FOUND!":"LEVEL COMPLETE!";$("dSub").textContent=(last?"អ្នកបានរកឃើញកំណប់នៅអង្គរវត្ត! ដំណើរជុំវិញពិភពលោកបានបញ្ចប់! ":L.n+" · ")+"SCORE "+bs.sc.toLocaleString()+(bs.nb?" · NEW BEST!":" · BEST "+bs.old.toLocaleString());
  var sh="";for(var i=0;i<3;i++)sh+='<span class="'+(i<st?"on":"")+'" style="animation-delay:'+(i*.18)+'s">★</span>';$("dStars").innerHTML=sh;$("dCoins").textContent=S.coins;$("dHits").textContent=S.hits;$("dFact").textContent=L.fact;
  var stamps="";TK.LEVELS.forEach(function(T,i){if(i>S.li||i<S.li-11)return;var on=prog.stars[i]>0;stamps+='<div class="stamp'+(on?" on":"")+'" style="--r:'+((i%2?5:-6))+'deg"><canvas data-f="'+T.flag+'" width="44" height="30"></canvas><b>'+T.n+"</b></div>"});$("dStamps").innerHTML=stamps;Array.prototype.forEach.call($("dStamps").querySelectorAll("canvas"),function(cn){var g=cn.getContext("2d");TK.flag(g,cn.getAttribute("data-f"),2,2,40,26)});
@@ -202,7 +202,7 @@ function setBacking(){var st=$("stage"),w=st.clientWidth-8,h=st.clientHeight,sc=
  if(use3d){var gl=$("gl");gl.style.width=W*sc+"px";gl.style.height=H*sc+"px";gl.style.left=cv.offsetLeft+"px";gl.style.top=cv.offsetTop+"px";R3.setSize(W*sc,H*sc,Math.min(2,dpr*(Q<1?Math.max(.6,Q):1)*1.0))}}
 function resize(){setBacking();sizeHome();sizeLevels()}
 /* adaptive quality: if the phone cannot keep up, draw at a lower resolution so the game stays smooth */
-function adapt(dt){fAcc+=dt;fN++;if(fN>=40){var avg=fAcc/fN;if(avg>.026&&Q>.55){Q=Math.max(.55,Q-.15);setBacking()}else if(avg>.03&&use3d&&!S.noShadow){S.noShadow=true;R3.shadows(false)}else if(avg<.0185&&Q<1){Q=Math.min(1,Q+.1);setBacking()}fAcc=0;fN=0}}
+function adapt(dt){fAcc+=dt;fN++;if(fN>=40){var avg=fAcc/fN;if(use3d){if(avg>.022&&!S.noShadow){S.noShadow=true;R3.shadows(false)}else if(avg>.024&&Q>.6){Q=Math.max(.6,Q-.2);setBacking()}}else if(avg>.026&&Q>.55){Q=Math.max(.55,Q-.15);setBacking()}else if(avg<.0185&&Q<1){Q=Math.min(1,Q+.1);setBacking()}fAcc=0;fN=0}}
 
 /* ---------------- the home screen: the explorer changes into each country's clothes ---------------- */
 var hc=$("hc"),hx=hc.getContext("2d"),HW=360,HH=640,HS={x:0,y:0,w:0,h:0};
@@ -239,8 +239,8 @@ cv.addEventListener("pointerdown",function(e){if(e.pointerType==="touch")return;
 cv.addEventListener("pointermove",function(e){if(e.pointerType==="touch")return;gMove(e.clientX,e.clientY)});
 cv.addEventListener("pointerup",function(e){if(e.pointerType==="touch")return;if(tp&&!tp.acted)gAct(e.clientX-tp.x,e.clientY-tp.y,12);tp=null});
 window.addEventListener("keydown",function(e){var k=e.key;if(k==="ArrowLeft"||k==="a")move(-1);else if(k==="ArrowRight"||k==="d")move(1);else if(k==="ArrowUp"||k==="w"||k===" ")jump();else if(k==="ArrowDown"||k==="s")slide();else if(k==="p")S.paused=!S.paused});
-function playFromHome(){if(!S.seen){S.seen=true;sv("tk3_seen",true);showHow(true)}else showLevels(Math.min(prog.unlocked,NL-1),null)}
-$("go").onclick=playFromHome;$("how-ok").onclick=function(){$("ovHow").classList.add("hide");if(S.afterHow){S.afterHow=false;showLevels(Math.min(prog.unlocked,NL-1),null)}};
+function playFromHome(){if(!S.seen){S.seen=true;sv("tk3_seen",true);showHow(true)}else showLevels(startIdx(),null)}
+$("go").onclick=playFromHome;$("how-ok").onclick=function(){$("ovHow").classList.add("hide");if(S.afterHow){S.afterHow=false;showLevels(startIdx(),null)}};
 $("howB").onclick=function(){showHow(false)};$("pz").onclick=function(){if(S.mode==="play"&&!S.over){S.paused=!S.paused;TK.Music.duck(S.paused)}};
 $("cPlay").onclick=function(){if(S.sel<=prog.unlocked)startLevel(S.sel,false);else tone(130,.15,"square",.05)};
 $("cPrev10").onclick=function(){if(!TK.LevelMap.fl)cardFor(Math.max(0,S.sel-10))};$("cNext10").onclick=function(){if(!TK.LevelMap.fl)cardFor(Math.min(prog.unlocked,NL-1,S.sel+10))};

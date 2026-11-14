@@ -20,20 +20,25 @@ H.shade=function(hex,t){var c=new T.Color(hex);if(t<0)c.lerp(new T.Color(0x00000
 H.rnd=function(seed){var s=seed>>>0;return function(){s=(s*1664525+1013904223)>>>0;return s/4294967296}};
 H.tex=function(w,h,fn,rep){var c=document.createElement("canvas");c.width=w;c.height=h;var g=c.getContext("2d");fn(g,w,h);var t=new T.CanvasTexture(c);t.anisotropy=8;if(rep){t.wrapS=t.wrapT=T.RepeatWrapping}H.texList.push(t);return t};
 
-/* merge many small meshes into one mesh per material so phones draw a building in a handful of calls */
-H.merge=function(g,cast,recv){g.updateMatrixWorld(true);var inv=new T.Matrix4().copy(g.matrixWorld).invert(),by={},out=new T.Group();
- g.traverse(function(m){if(!m.isMesh)return;if(Array.isArray(m.material)||m.userData.nomerge){m.castShadow=!!cast;m.receiveShadow=!!recv;return}var k=m.material.uuid;(by[k]=by[k]||{mat:m.material,list:[]}).list.push(m)});
- for(var k in by){var e=by[k],pos=[],nor=[],uv=[],idx=[],off=0;
-  e.list.forEach(function(m){var geo=m.geometry,rel=new T.Matrix4().multiplyMatrices(inv,m.matrixWorld),nm=new T.Matrix3().getNormalMatrix(rel),Pp=geo.attributes.position,N=geo.attributes.normal,U=geo.attributes.uv,v=new T.Vector3(),i,j;
-   for(i=0;i<Pp.count;i++){v.fromBufferAttribute(Pp,i).applyMatrix4(rel);pos.push(v.x,v.y,v.z);if(N){v.fromBufferAttribute(N,i).applyMatrix3(nm).normalize();nor.push(v.x,v.y,v.z)}else nor.push(0,1,0);if(U)uv.push(U.getX(i),U.getY(i));else uv.push(0,0)}
-   if(geo.index){for(j=0;j<geo.index.count;j++)idx.push(geo.index.getX(j)+off)}else{for(j=0;j<Pp.count;j++)idx.push(j+off)}off+=Pp.count});
-  var mg=new T.BufferGeometry();mg.setAttribute("position",new T.Float32BufferAttribute(pos,3));mg.setAttribute("normal",new T.Float32BufferAttribute(nor,3));mg.setAttribute("uv",new T.Float32BufferAttribute(uv,2));mg.setIndex(idx);
-  var mm=new T.Mesh(mg,e.mat);mm.castShadow=!!cast;mm.receiveShadow=!!recv;out.add(mm);e.list.forEach(function(m){if(m.parent)m.parent.remove(m)})}
- g.add(out);return g};
+/* merge many small meshes so phones draw a building/tree/runner in a handful of calls: plain-colour parts are baked into ONE vertex-coloured mesh */
+var VC=null;function vcMat(){if(!VC){VC=new T.MeshLambertMaterial({vertexColors:true});VC.userData.shared=1}return VC}
+function bake(list,relFn,vcOut,byMat){list.forEach(function(m){var mt=m.material,plain=!mt.map&&!mt.transparent&&(!mt.emissive||(mt.emissive.r+mt.emissive.g+mt.emissive.b)===0);var geo=m.geometry;if(mt.flatShading){geo=geo.toNonIndexed();geo.computeVertexNormals()}
+ var dst=plain?vcOut:(byMat[mt.uuid]=byMat[mt.uuid]||{mat:mt,pos:[],nor:[],uv:[],col:null,idx:[],off:0});var rel=relFn(m),nm=new T.Matrix3().getNormalMatrix(rel),Pp=geo.attributes.position,N=geo.attributes.normal,U=geo.attributes.uv,v=new T.Vector3(),i,j;
+ for(i=0;i<Pp.count;i++){v.fromBufferAttribute(Pp,i).applyMatrix4(rel);dst.pos.push(v.x,v.y,v.z);if(N){v.fromBufferAttribute(N,i).applyMatrix3(nm).normalize();dst.nor.push(v.x,v.y,v.z)}else dst.nor.push(0,1,0);if(U)dst.uv.push(U.getX(i),U.getY(i));else dst.uv.push(0,0);if(plain)dst.col.push(mt.color.r,mt.color.g,mt.color.b)}
+ if(geo.index){for(j=0;j<geo.index.count;j++)dst.idx.push(geo.index.getX(j)+dst.off)}else{for(j=0;j<Pp.count;j++)dst.idx.push(j+dst.off)}dst.off+=Pp.count})}
+function mk(d,mat,cast,recv){var mg=new T.BufferGeometry();mg.setAttribute("position",new T.Float32BufferAttribute(d.pos,3));mg.setAttribute("normal",new T.Float32BufferAttribute(d.nor,3));mg.setAttribute("uv",new T.Float32BufferAttribute(d.uv,2));if(d.col)mg.setAttribute("color",new T.Float32BufferAttribute(d.col,3));mg.setIndex(d.idx);var mm=new T.Mesh(mg,mat);mm.castShadow=!!cast;mm.receiveShadow=!!recv;return mm}
+H.merge=function(g,cast,recv,matOverride){g.updateMatrixWorld(true);var inv=new T.Matrix4().copy(g.matrixWorld).invert(),list=[],out=new T.Group();
+ g.traverse(function(m){if(!m.isMesh)return;if(Array.isArray(m.material)||m.userData.nomerge){m.castShadow=!!cast;m.receiveShadow=!!recv;return}list.push(m)});
+ var vcOut={pos:[],nor:[],uv:[],col:[],idx:[],off:0},byMat={};bake(list,function(m){return new T.Matrix4().multiplyMatrices(inv,m.matrixWorld)},vcOut,byMat);
+ if(vcOut.idx.length)out.add(mk(vcOut,matOverride||vcMat(),cast,recv));for(var k in byMat){var d=byMat[k];out.add(mk(d,d.mat,cast,recv))}
+ list.forEach(function(m){if(m.parent)m.parent.remove(m)});g.add(out);return g};
+/* same idea for a rig: inside every bone group, the plain direct-child meshes become one mesh (bones keep moving) */
+H.mergeLocal=function(root,cast){var groups=[];root.traverse(function(o){if(o.isGroup)groups.push(o)});groups.forEach(function(gr){var list=gr.children.filter(function(m){return m.isMesh&&!Array.isArray(m.material)&&!m.userData.nomerge});if(!list.length)return;var vcOut={pos:[],nor:[],uv:[],col:[],idx:[],off:0},byMat={};bake(list,function(m){m.updateMatrix();return m.matrix.clone()},vcOut,byMat);
+  if(vcOut.idx.length)gr.add(mk(vcOut,vcMat(),cast,false));for(var k in byMat){var d=byMat[k];gr.add(mk(d,d.mat,cast,false))}list.forEach(function(m){gr.remove(m)})})};
 H.T=T;
 
 /* ---------- renderer, camera, light ---------- */
-var renderer,scene,camera,sun,hemi,gl;
+var renderer,scene,camera,sun,hemi,gl,TUN=new T.Color(0x0c1418);
 var roadTex=null,groundTex=null,walkTex=null,roadMesh,groundMesh,walkL,walkR,backdrop,world,ents=new Map(),street={L:[],R:[]},cur=null,curState=null;
 R.init=function(canvas){try{renderer=new T.WebGLRenderer({canvas:canvas,antialias:true,alpha:false,powerPreference:"high-performance"});
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.setClearColor(0xbfe4f4,1);
@@ -44,7 +49,7 @@ R.init=function(canvas){try{renderer=new T.WebGLRenderer({canvas:canvas,antialia
 R.setSize=function(cw,ch,pr){if(!R.ok)return;renderer.setPixelRatio(pr);renderer.setSize(cw,ch,false);camera.aspect=cw/ch;camera.updateProjectionMatrix()};
 R.shadows=function(on){if(R.ok)sun.castShadow=on};
 /* camera sits behind and above the runner, looking down the road like a chase camera */
-function camPlace(x,shake){camera.position.set(x*.55,3.0,6.4);camera.rotation.set(-.215,0,0);camera.rotation.order="YXZ";if(shake){camera.position.x+=Math.sin(shake*80)*.1;camera.position.y+=Math.cos(shake*70)*.08}camera.updateMatrixWorld(true)}
+function camPlace(x,shake){camera.position.set(x*.4,3.0,6.4);camera.rotation.set(-.215,0,0);camera.rotation.order="YXZ";if(shake){camera.position.x+=Math.sin(shake*80)*.1;camera.position.y+=Math.cos(shake*70)*.08}camera.updateMatrixWorld(true)}
 /* where things land on the 360x640 screen, so 2D effects (sparkles, scores) line up with the 3D world */
 function projectConsts(){var v=new T.Vector3(0,0,0).project(camera);R.YP=(1-v.y)/2*HH;var a=new T.Vector3(2,0,0).project(camera);R.LW=(a.x-v.x)/2*W;var b=new T.Vector3(0,1,0).project(camera);R.UH=Math.abs((v.y-b.y)/2*HH);var f=new T.Vector3(0,0,-1e4).project(camera);R.HZ=(1-f.y)/2*HH}
 R.screen=function(x,y,z){var v=new T.Vector3(x,y,z).project(camera);return[(v.x+1)/2*W,(1-v.y)/2*HH]};
@@ -84,7 +89,7 @@ function syncEnts(S){var seen=new Set();S.ents.forEach(function(e){var z=e.z-S.D
 
 R.render=function(S,dt){if(!R.ok||!cur)return;
  ensureStreet(S);syncEnts(S);
- var tk=0;(R.zones||[]).forEach(function(q){var e=Math.max(0,Math.min(1,(S.D-(q.a-6))/16)),x=Math.max(0,Math.min(1,((q.b+6)-S.D)/16));tk=Math.max(tk,Math.min(e,x))});R.tk=tk;if(R.base){hemi.intensity=R.base.hemi*(1-.55*tk);sun.intensity=R.base.sun*(1-.85*tk);scene.fog.color.copy(R.base.fog).lerp(new T.Color(0x0c1418),tk);scene.fog.near=24-14*tk;scene.fog.far=100-38*tk;R.tl.intensity=tk*1.5;backdrop.visible=tk<.6}
+ var tk=0;(R.zones||[]).forEach(function(q){var e=Math.max(0,Math.min(1,(S.D-(q.a-6))/16)),x=Math.max(0,Math.min(1,((q.b+6)-S.D)/16));tk=Math.max(tk,Math.min(e,x))});R.tk=tk;if(R.base){hemi.intensity=R.base.hemi*(1-.55*tk);sun.intensity=R.base.sun*(1-.85*tk);scene.fog.color.copy(R.base.fog).lerp(TUN,tk);scene.fog.near=24-14*tk;scene.fog.far=100-38*tk;R.tl.intensity=tk*1.5;backdrop.visible=tk<.6}
  var off=S.D;roadTex.offset.y=(off/8)%1;walkTex.offset.y=(off/4)%1;
  var sp=Math.max(0,Math.min(1,(S.speed-cur.v0)/Math.max(3,cur.v1-cur.v0)));camera.fov=60+sp*6+(S.shake>0?2:0);camera.updateProjectionMatrix();
  camPlace(S.x*2,S.shake>0?S.shake:0);

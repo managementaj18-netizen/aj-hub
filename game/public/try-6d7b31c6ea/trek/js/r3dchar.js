@@ -77,7 +77,7 @@ C.build=function(o){var g=new T.Group(),rt=new T.Group();g.add(rt);var sk=o.skin
   if(sl==="wide"||longS){H.cyl(.075,.075,.03,H.mat(o.trim),0,-.25,0,el,12)}
   H.sph(.09,sk,0,-.31,0,el,null,1,1.1,.95);return{sh:sg,el:el}}
  parts.armL=arm(-1);parts.armR=arm(1);
- g.traverse(function(m){if(m.isMesh){m.castShadow=true}});
+ H.mergeLocal(g,true);
  return parts};
 
 /* blob shadow so feet always look planted */
