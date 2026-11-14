@@ -83,13 +83,26 @@ C.build=function(o){var g=new T.Group(),rt=new T.Group();g.add(rt);var sk=o.skin
 /* blob shadow so feet always look planted */
 var blob=null;
 function blobShadow(){var t=H.tex(64,64,function(g,w,h){var gr=g.createRadialGradient(32,32,2,32,32,30);gr.addColorStop(0,"rgba(0,0,0,.55)");gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.fillRect(0,0,w,h)});var m=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({map:t,transparent:true,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.y=.02;return m}
-C.set=function(L,world){if(P&&P.root.parent)P.root.parent.remove(P.root);if(blob&&blob.parent)blob.parent.remove(blob);P=C.build(TK.OUTFITS[L.outfit]);P.airK=0;P.rt=0;P.root.scale.setScalar(1.05);var bub=new T.Mesh(new T.SphereGeometry(1.15,18,14),new T.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:.26,depthWrite:false}));bub.position.y=.9;bub.visible=false;P.root.add(bub);P.bubble=bub;world.add(P.root);if(!blob)blob=blobShadow();world.add(blob);C.parts=P};
+C.set=function(L,world){if(P&&P.root.parent)P.root.parent.remove(P.root);if(blob&&blob.parent)blob.parent.remove(blob);if(R.Hero&&R.Hero.ready){var hp=R.Hero.make(TK.OUTFITS[L.outfit]);P={root:hp.root,body:hp.root,hero:hp,airK:0,rt:0}}else{P=C.build(TK.OUTFITS[L.outfit]);P.airK=0;P.rt=0;P.root.scale.setScalar(1.05)}var bub=new T.Mesh(new T.SphereGeometry(1.15,18,14),new T.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:.26,depthWrite:false}));bub.position.y=.9;bub.visible=false;P.root.add(bub);P.bubble=bub;world.add(P.root);if(!blob)blob=blobShadow();world.add(blob);C.parts=P};
 
 /* ---------- animation: run cycle, jump, crouch-slide, blended smoothly ---------- */
 var K=["hipY","pitch","lean","twist","head","thL","knL","thR","knR","shL","elL","shR","elR","spread","sy","fa","fb"];
 function pose(){var o={};K.forEach(function(k){o[k]=0});return o}
 var pr=pose(),pa=pose(),ps=pose(),out=pose();
-C.update=function(S,dt,L){if(!P)return;
+function heroUpdate(S,dt,L){var h=P.hero,sp=clamp((S.speed-L.v0)/Math.max(3,L.v1-L.v0),0,1);
+ P.airK+=((S.h>.04?1:0)-P.airK)*Math.min(1,dt*16);
+ var want=(S.slideK>.5&&P.airK<.5&&h.acts.slide)?"slide":(P.airK>.5&&h.acts.jump)?"jump":"run";
+ if(want!==h.cur){var a=h.acts[want],b=h.acts[h.cur];if(a){a.reset().play();if(want==="jump"){a.time=Math.max(0,a.getClip().duration*.05)}if(b)a.crossFadeFrom(b,.12,false);h.cur=want}}
+ if(h.cur==="run"&&h.acts.run)h.acts.run.timeScale=.85+sp*.7+S.speed*.012;
+ else if(h.acts[h.cur]){var cl=h.acts[h.cur].getClip().duration;h.acts[h.cur].timeScale=h.cur==="slide"?cl/.8:cl/.62}
+ h.mixer.update(dt);
+ var p=P,lq=S.landT>0?S.landT/.2:0,roll=clamp((S.lane-S.x)*.22,-.3,.3);
+ p.root.position.set(S.x*2,S.h*1.0,0);p.root.rotation.z=roll;p.root.rotation.y=clamp((S.lane-S.x)*-.2,-.28,.28);
+ var sq=S.landT>0?1-.08*lq:1;p.root.scale.set(1+(1-sq)*.5,sq,1+(1-sq)*.5);
+ p.root.visible=!(S.inv>0&&((S.t*14)|0)%2);
+ if(p.bubble){p.bubble.visible=S.shield>0;if(S.shield>0&&S.shield<1.2&&((S.t*10)|0)%2)p.bubble.visible=false}
+ if(blob){blob.position.x=S.x*2;var k=1-clamp(S.h/3,0,.7);blob.scale.set(.95*k,.95*k,1);blob.position.z=0}}
+C.update=function(S,dt,L){if(!P)return;if(P.hero){heroUpdate(S,dt,L);return}
  var sp=clamp((S.speed-L.v0)/Math.max(3,L.v1-L.v0),0,1),t=S.t,ph=t*(8.2+S.speed*.22);
  P.airK+=((S.h>.04?1:0)-P.airK)*Math.min(1,dt*16);
  var s=Math.sin(ph),c=Math.cos(ph),s2=Math.sin(ph+Math.PI),c2=Math.cos(ph+Math.PI);
@@ -130,6 +143,7 @@ C.update=function(S,dt,L){if(!P)return;
 /* ---------- a separate small 3D stage for portraits (title screen, character sheets): front view, running in place, slowly turning ---------- */
 var PR=null;
 C.portrait=function(outfit,t,front){if(!PR){var cv=document.createElement("canvas");cv.width=300;cv.height=380;var rd=new T.WebGLRenderer({canvas:cv,antialias:true,alpha:true,preserveDrawingBuffer:true});rd.setClearColor(0x000000,0);var sc=new T.Scene();sc.add(new T.HemisphereLight(0xffffff,0xaa9a80,.85));var dl=new T.DirectionalLight(0xfff0d0,.85);dl.position.set(-3,5,5);sc.add(dl);var cam=new T.PerspectiveCamera(28,300/380,.1,50);cam.position.set(0,1.15,5.6);cam.lookAt(0,.92,0);PR={cv:cv,rd:rd,sc:sc,cam:cam,cur:null,key:null}}
+ if(R.Hero&&R.Hero.ready){if(PR.key!==("h|"+outfit)){if(PR.cur)PR.sc.remove(PR.cur.root);var hh=R.Hero.make(TK.OUTFITS[outfit]);PR.cur={root:hh.root,hero:hh};PR.sc.add(hh.root);PR.key="h|"+outfit}var hh2=PR.cur.hero;hh2.mixer.update(.016);PR.cur.root.rotation.y=Math.PI+Math.sin(t*.7)*.5;PR.rd.render(PR.sc,PR.cam);return PR.cv}
  if(PR.key!==outfit){if(PR.cur){PR.sc.remove(PR.cur.root)}PR.cur=C.build(TK.OUTFITS[outfit]);PR.cur.root.scale.setScalar(1.05);PR.sc.add(PR.cur.root);PR.key=outfit}
  var p=PR.cur,ph=t*9,s=Math.sin(ph),c2=Math.cos(ph),s2=Math.sin(ph+Math.PI),c3=Math.cos(ph+Math.PI);
  p.hip.position.y=.74+.04*Math.cos(2*ph);p.torso.rotation.x=-.12;p.torso.rotation.y=.12*s;p.head.rotation.x=.1;
