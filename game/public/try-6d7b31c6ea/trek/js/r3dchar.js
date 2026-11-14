@@ -14,32 +14,32 @@ var clothTex=function(col,pat,trim,hem){return H.tex(128,128,function(g,w,h){var
  if(hem){g.fillStyle=trim;g.fillRect(0,h-9,w,6)}},true)};clothTex=H.memo(clothTex);
 
 C.build=function(o){var g=new T.Group(),rt=new T.Group();g.add(rt);var sk=o.skin,dk=H.shade(sk,-.16);var parts={root:g,body:rt};
- var hip=new T.Group();hip.position.y=.84;rt.add(hip);parts.hip=hip;
+ var hip=new T.Group();hip.position.y=.74;rt.add(hip);parts.hip=hip;
  var pantsCol=o.bottom[0],isPants=o.btype==="pants",isSkirt=o.btype==="skirt",isShorts=o.btype==="shorts";
  /* legs */
- function leg(sd){var th=new T.Group();th.position.set(sd*.105,-.02,0);hip.add(th);
+ function leg(sd){var th=new T.Group();th.position.set(sd*.125,-.02,0);hip.add(th);
   var upCol=isPants?pantsCol:(isShorts?pantsCol:sk),loCol=isPants?pantsCol:sk;
-  var thM=H.cyl(.085,.07,.43,H.mat(upCol),0,-.215,0,th,12);var sh=new T.Group();sh.position.y=-.43;th.add(sh);var shM=H.cyl(.068,.052,.4,H.mat(loCol),0,-.2,0,sh,12);
-  H.sph(.07,isPants?pantsCol:(isShorts?pantsCol:sk),0,0,0,th);H.sph(.06,loCol,0,0,0,sh);
-  if(isShorts){H.cyl(.092,.088,.2,H.mat(pantsCol),0,-.1,0,th,12)}
-  var ft=new T.Group();ft.position.y=-.4;sh.add(ft);var shoe=H.mat(o.shoe[0]);H.box(.13,.085,.27,shoe,0,-.02,-.06,ft);H.box(.134,.03,.275,H.mat(o.shoe[1]),0,-.06,-.06,ft);H.sph(.065,o.shoe[0],0,-.02,-.17,ft,null,1,.75,1.1);
+  var thM=H.cyl(.112,.09,.38,H.mat(upCol),0,-.19,0,th,14);var sh=new T.Group();sh.position.y=-.38;th.add(sh);var shM=H.cyl(.09,.068,.36,H.mat(loCol),0,-.18,0,sh,14);
+  H.sph(.112,isPants?pantsCol:(isShorts?pantsCol:sk),0,0,0,th);H.sph(.09,loCol,0,0,0,sh);
+  if(isShorts){H.cyl(.118,.114,.19,H.mat(pantsCol),0,-.095,0,th,14)}
+  var ft=new T.Group();ft.position.y=-.35;sh.add(ft);var shoe=H.mat(o.shoe[0]);H.sph(.1,o.shoe[0],0,-.035,-.04,ft,null,1.05,.9,1.9);H.box(.19,.045,.36,H.mat(o.shoe[1]),0,-.09,-.06,ft);H.sph(.075,o.shoe[0],0,-.02,.07,ft,null,1.2,1,1);
   return{th:th,sh:sh,ft:ft}}
  parts.legL=leg(-1);parts.legR=leg(1);
  /* skirt or wrap */
- if(isSkirt){var len=clamp(o.blen/71*1.75,.15,.8),sm=new T.Mesh(new T.CylinderGeometry(.2,.3,len,18,1,true),new T.MeshLambertMaterial({map:clothTex(o.bottom,o.bpat,o.trim,true),side:T.DoubleSide}));sm.position.y=.0-len/2+.06;hip.add(sm);parts.skirt=sm}
+ if(isSkirt){var len=clamp(o.blen/71*1.75,.15,.8),sm=new T.Mesh(new T.CylinderGeometry(.24,.31,len,20,1,true),new T.MeshLambertMaterial({map:clothTex(o.bottom,o.bpat,o.trim,true),side:T.DoubleSide}));sm.position.y=.0-len/2+.06;hip.add(sm);parts.skirt=sm}
  /* torso */
  var tor=new T.Group();hip.add(tor);parts.torso=tor;
  var tm=new T.MeshLambertMaterial({map:clothTex(o.top,o.pattern,o.trim,false)});
- var tb=new T.Mesh(new T.CylinderGeometry(.165,.15,.5,18),tm);tb.scale.z=.72;tb.position.y=.27;tor.add(tb);
- var sh1=H.sph(.17,H.mat(o.top[0]),0,.5,0,tor,null,1,.62,.74);
- H.cyl(.15,.17,.1,H.mat(H.shade(o.trim,0)),0,.04,0,tor,18).scale.z=.74;
+ var tb=new T.Mesh(new T.CylinderGeometry(.215,.19,.47,20),tm);tb.scale.z=.74;tb.position.y=.25;tor.add(tb);
+ var sh1=H.sph(.215,H.mat(o.top[0]),0,.46,0,tor,null,1,.6,.76);
+ H.cyl(.19,.215,.1,H.mat(H.shade(o.trim,0)),0,.04,0,tor,20).scale.z=.76;
  /* long tunic / robe */
- var tl=o.tlen||0;if(tl>4){var tlen=clamp(tl*.0235,.16,.86),tu=new T.Mesh(new T.CylinderGeometry(.18,.3,tlen,18,1,true),new T.MeshLambertMaterial({map:clothTex(o.top,o.pattern,o.trim,true),side:T.DoubleSide}));tu.position.y=.46-tlen/2;tu.scale.z=.82;tor.add(tu);parts.tunic=tu}
+ var tl=o.tlen||0;if(tl>4){var tlen=clamp(tl*.0235,.16,.86),tu=new T.Mesh(new T.CylinderGeometry(.22,.32,tlen,20,1,true),new T.MeshLambertMaterial({map:clothTex(o.top,o.pattern,o.trim,true),side:T.DoubleSide}));tu.position.y=.42-tlen/2;tu.scale.z=.82;tor.add(tu);parts.tunic=tu}
  /* backpack */
- var bp=new T.Group();bp.position.set(0,.3,.21);tor.add(bp);H.box(.3,.34,.15,"#c98a4a",0,0,0,bp);H.box(.3,.1,.16,"#8f5a28",0,.12,0,bp);H.box(.2,.14,.05,"#a8703a",0,-.06,.09,bp);H.box(.04,.3,.04,"#5a3612",-.1,.0,-.09,bp);H.box(.04,.3,.04,"#5a3612",.1,.0,-.09,bp);H.box(.08,.03,.06,"#e8c25a",0,.12,.09,bp);
+ var bp=new T.Group();bp.position.set(0,.27,.27);bp.scale.setScalar(1.22);tor.add(bp);H.box(.3,.34,.15,"#c98a4a",0,0,0,bp);H.box(.3,.1,.16,"#8f5a28",0,.12,0,bp);H.box(.2,.14,.05,"#a8703a",0,-.06,.09,bp);H.box(.04,.3,.04,"#5a3612",-.1,.0,-.09,bp);H.box(.04,.3,.04,"#5a3612",.1,.0,-.09,bp);H.box(.08,.03,.06,"#e8c25a",0,.12,.09,bp);
  /* neck + head */
- H.cyl(.06,.07,.1,H.mat(dk),0,.63,0,tor,10);
- var hd=new T.Group();hd.position.y=.8;tor.add(hd);parts.head=hd;
+ H.cyl(.08,.09,.1,H.mat(dk),0,.57,0,tor,12);
+ var hd=new T.Group();hd.position.y=.83;hd.scale.setScalar(1.28);tor.add(hd);parts.head=hd;
  H.sph(.19,sk,0,0,0,hd,null,1,1.03,1);H.sph(.04,dk,-.19,-.01,0,hd);H.sph(.04,dk,.19,-.01,0,hd);
  /* face (only seen on the title screen) */
  H.sph(.022,"#2a1a10",-.07,.02,-.175,hd);H.sph(.022,"#2a1a10",.07,.02,-.175,hd);H.sph(.025,H.shade(sk,-.1),0,-.03,-.19,hd,null,.8,.8,.7);
@@ -69,13 +69,13 @@ C.build=function(o){var g=new T.Group(),rt=new T.Group();g.add(rt);var sk=o.skin
  if(ac==="cap"){var cp2=new T.Mesh(new T.SphereGeometry(1,16,12,0,Math.PI*2,0,Math.PI*.55),H.mat(acc));cp2.scale.set(.215,.21,.215);cp2.position.y=.03;hd.add(cp2);H.cyl(.216,.216,.03,H.mat("#ffd24a"),0,.1,0,hd,16)}
  if(ac==="beads"){var bc=["#e8442a","#2a8ae8","#ffd24a","#2ac46a"];for(var b=0;b<14;b++){var an=b/14*Math.PI*2;H.sph(.028,bc[b%4],Math.cos(an)*.17,-.2,Math.sin(an)*.15,hd)}H.cyl(.205,.205,.04,H.mat("#e8442a"),0,.08,0,hd,16)}
  /* arms */
- function arm(sd){var sg=new T.Group();sg.position.set(sd*.225,.5,0);tor.add(sg);var sl=o.sleeve,sleeveCol=o.top[0],longS=sl==="long"||sl==="wide",tq=sl==="3/4";
+ function arm(sd){var sg=new T.Group();sg.position.set(sd*.28,.45,0);tor.add(sg);var sl=o.sleeve,sleeveCol=o.top[0],longS=sl==="long"||sl==="wide",tq=sl==="3/4";
   var uCol=sl==="none"?sk:sleeveCol,fCol=(longS||tq)?sleeveCol:sk;if(tq)fCol=sk;
-  H.sph(.075,sl==="none"?sk:sleeveCol,0,0,0,sg);H.cyl(.07,.062,.3,H.mat(uCol),0,-.15,0,sg,10);
-  var el=new T.Group();el.position.y=-.3;sg.add(el);H.sph(.06,fCol,0,0,0,el);
-  var fm=H.cyl(sl==="wide"?.1:.058,sl==="wide"?.14:.05,.28,H.mat(fCol),0,-.14,0,el,10);
-  if(sl==="wide"||longS){H.cyl(.06,.06,.03,H.mat(o.trim),0,-.27,0,el,10)}
-  H.sph(.055,sk,0,-.31,0,el);return{sh:sg,el:el}}
+  H.sph(.105,sl==="none"?sk:sleeveCol,0,0,0,sg);H.cyl(.095,.08,.28,H.mat(uCol),0,-.14,0,sg,12);
+  var el=new T.Group();el.position.y=-.28;sg.add(el);H.sph(.08,fCol,0,0,0,el);
+  var fm=H.cyl(sl==="wide"?.12:.078,sl==="wide"?.16:.066,.26,H.mat(fCol),0,-.13,0,el,12);
+  if(sl==="wide"||longS){H.cyl(.075,.075,.03,H.mat(o.trim),0,-.25,0,el,12)}
+  H.sph(.09,sk,0,-.31,0,el,null,1,1.1,.95);return{sh:sg,el:el}}
  parts.armL=arm(-1);parts.armR=arm(1);
  g.traverse(function(m){if(m.isMesh){m.castShadow=true}});
  return parts};
@@ -83,53 +83,56 @@ C.build=function(o){var g=new T.Group(),rt=new T.Group();g.add(rt);var sk=o.skin
 /* blob shadow so feet always look planted */
 var blob=null;
 function blobShadow(){var t=H.tex(64,64,function(g,w,h){var gr=g.createRadialGradient(32,32,2,32,32,30);gr.addColorStop(0,"rgba(0,0,0,.55)");gr.addColorStop(1,"rgba(0,0,0,0)");g.fillStyle=gr;g.fillRect(0,0,w,h)});var m=new T.Mesh(new T.PlaneGeometry(1,1),new T.MeshBasicMaterial({map:t,transparent:true,depthWrite:false}));m.rotation.x=-Math.PI/2;m.position.y=.02;return m}
-C.set=function(L,world){if(P&&P.root.parent)P.root.parent.remove(P.root);if(blob&&blob.parent)blob.parent.remove(blob);P=C.build(TK.OUTFITS[L.outfit]);P.airK=0;P.rt=0;P.root.scale.setScalar(1.12);world.add(P.root);if(!blob)blob=blobShadow();world.add(blob);C.parts=P};
+C.set=function(L,world){if(P&&P.root.parent)P.root.parent.remove(P.root);if(blob&&blob.parent)blob.parent.remove(blob);P=C.build(TK.OUTFITS[L.outfit]);P.airK=0;P.rt=0;P.root.scale.setScalar(1.05);var bub=new T.Mesh(new T.SphereGeometry(1.15,18,14),new T.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:.26,depthWrite:false}));bub.position.y=.9;bub.visible=false;P.root.add(bub);P.bubble=bub;world.add(P.root);if(!blob)blob=blobShadow();world.add(blob);C.parts=P};
 
 /* ---------- animation: run cycle, jump, crouch-slide, blended smoothly ---------- */
-var K=["hipY","lean","twist","head","roll","thL","knL","thR","knR","shL","elL","shR","elR","spread","sy"];
+var K=["hipY","pitch","lean","twist","head","thL","knL","thR","knR","shL","elL","shR","elR","spread","sy","fa","fb"];
 function pose(){var o={};K.forEach(function(k){o[k]=0});return o}
 var pr=pose(),pa=pose(),ps=pose(),out=pose();
 C.update=function(S,dt,L){if(!P)return;
- var sp=clamp((S.speed-L.v0)/Math.max(3,L.v1-L.v0),0,1),t=S.t,ph=t*(7.6+S.speed*.36);
+ var sp=clamp((S.speed-L.v0)/Math.max(3,L.v1-L.v0),0,1),t=S.t,ph=t*(8.2+S.speed*.22);
  P.airK+=((S.h>.04?1:0)-P.airK)*Math.min(1,dt*16);
  var s=Math.sin(ph),c=Math.cos(ph),s2=Math.sin(ph+Math.PI),c2=Math.cos(ph+Math.PI);
- /* running: big swings, knees lift, arms pump, body leans into it */
- pr.hipY=.835+.055*Math.cos(2*ph);pr.lean=-(.16+.22*sp);pr.twist=.16*s;pr.head=.16+.2*sp;pr.roll=0;
- pr.thL=1.05*s;pr.knL=-(.22+1.15*Math.max(0,c));pr.thR=1.05*s2;pr.knR=-(.22+1.15*Math.max(0,c2));
- pr.shL=1.0*s2;pr.shR=1.0*s;pr.elL=1.2+.25*s2;pr.elR=1.2+.25*s;pr.spread=.08;pr.sy=1;
- /* jumping: take-off stretch, tucked legs, arms up, then reaching down for the ground */
+ /* run: high knees on the recovery swing, long reach, foot rolls heel-to-toe, arms drive with bent elbows, body rocks */
+ var ampT=.85+.2*sp;
+ pr.hipY=.725+.04*Math.abs(Math.cos(ph));pr.pitch=0;pr.lean=-(.12+.2*sp);pr.twist=.2*s;pr.head=.12+.18*sp;
+ pr.thL=ampT*s+.1;pr.knL=-(.15+1.35*Math.max(0,c));pr.thR=ampT*s2+.1;pr.knR=-(.15+1.35*Math.max(0,c2));
+ pr.shL=1.1*s2;pr.shR=1.1*s;pr.elL=1.45+.35*Math.max(0,s2);pr.elR=1.45+.35*Math.max(0,s);pr.spread=.12;pr.sy=1;
+ pr.fa=.5*Math.max(0,c)-.35*Math.max(0,-c);pr.fb=.5*Math.max(0,c2)-.35*Math.max(0,-c2);
+ /* jump: stretched take-off with one knee driving up, arms thrown wide, then legs reach for the ground */
  var u=clamp(.5+S.vy/16,0,1);
- pa.hipY=lerp(.86,.9,u);pa.lean=lerp(-.08,-.2,u);pa.twist=0;pa.head=.1;pa.roll=0;
- pa.thL=lerp(.4,.95,u);pa.knL=lerp(-.35,-1.55,u);pa.thR=lerp(-.05,-.35,u);pa.knR=lerp(-.25,-.6,u);
- pa.shL=lerp(.1,-.55,u);pa.elL=lerp(.7,.5,u);pa.shR=lerp(.9,2.5,u);pa.elR=lerp(.7,.4,u);pa.spread=lerp(.75,.2,u);pa.sy=lerp(.98,1.04,u);
- /* ducking under a bar: deep crouch, chest low and pitched forward, head up looking ahead */
- ps.hipY=.5;ps.lean=-1.0;ps.twist=0;ps.head=.8;ps.roll=0;ps.thL=1.3+.05*s;ps.knL=-1.9;ps.thR=1.35-.05*s;ps.knR=-1.95;ps.shL=-.9+.08*s;ps.elL=.6;ps.shR=-.7-.08*s;ps.elR=.7;ps.spread=.3;ps.sy=1;
+ pa.hipY=lerp(.76,.8,u);pa.pitch=0;pa.lean=lerp(-.05,-.15,u);pa.twist=0;pa.head=.05;
+ pa.thL=lerp(.35,1.3,u);pa.knL=lerp(-.3,-1.6,u);pa.thR=lerp(-.05,-.4,u);pa.knR=lerp(-.25,-.5,u);
+ pa.shL=lerp(.2,-.9,u);pa.elL=lerp(.6,.4,u);pa.shR=lerp(.9,2.6,u);pa.elR=lerp(.6,.3,u);pa.spread=lerp(.9,.35,u);pa.sy=lerp(.98,1.04,u);pa.fa=lerp(.3,-.2,u);pa.fb=lerp(.3,-.2,u);
+ /* slide: a dive-slide along the ground, arms stretched ahead, chest low, feet trailing */
+ ps.hipY=.3;ps.pitch=-1.42;ps.lean=0;ps.twist=0;ps.head=.95;ps.thL=.15;ps.knL=-.6;ps.thR=.05;ps.knR=-.9;ps.shL=3.0;ps.elL=.12;ps.shR=2.85;ps.elR=.15;ps.spread=.3;ps.sy=1;ps.fa=-.3;ps.fb=-.3;
  var ws=clamp(S.slideK,0,1)*(1-P.airK),wa=P.airK,wr=Math.max(0,1-wa-ws);
  K.forEach(function(k){out[k]=pr[k]*wr+pa[k]*wa+ps[k]*ws});
- /* landing squash: knees give, body dips */
- var lq=S.landT>0?S.landT/.2:0;out.hipY-=.16*lq;out.thL+=.55*lq;out.thR+=.55*lq;out.knL-=.9*lq;out.knR-=.9*lq;out.lean-=.18*lq;
- /* apply */
- var p=P;p.hip.position.y=out.hipY;p.torso.rotation.x=out.lean;p.torso.rotation.y=out.twist;p.torso.rotation.z=0;p.head.rotation.x=out.head-out.lean*.35;p.head.rotation.y=-out.twist*.6;
- p.legL.th.rotation.x=out.thL;p.legL.sh.rotation.x=out.knL;p.legL.ft.rotation.x=-(out.thL+out.knL)*.45;
- p.legR.th.rotation.x=out.thR;p.legR.sh.rotation.x=out.knR;p.legR.ft.rotation.x=-(out.thR+out.knR)*.45;
+ var lq=S.landT>0?S.landT/.2:0;out.hipY-=.12*lq;out.thL+=.5*lq;out.thR+=.5*lq;out.knL-=.8*lq;out.knR-=.8*lq;out.lean-=.15*lq;
+ var p=P,th=out.pitch;p.hip.position.y=.74;
+ p.body.rotation.x=th;p.body.position.y=out.hipY-.74*Math.cos(th);p.body.position.z=-.74*Math.sin(th);
+ p.torso.rotation.x=out.lean;p.torso.rotation.y=out.twist;p.head.rotation.x=out.head-out.lean*.4;p.head.rotation.y=-out.twist*.7;
+ p.legL.th.rotation.x=out.thL;p.legL.sh.rotation.x=out.knL;p.legL.ft.rotation.x=out.fa;
+ p.legR.th.rotation.x=out.thR;p.legR.sh.rotation.x=out.knR;p.legR.ft.rotation.x=out.fb;
  p.armL.sh.rotation.x=out.shL;p.armL.sh.rotation.z=-out.spread;p.armL.el.rotation.x=out.elL;
  p.armR.sh.rotation.x=out.shR;p.armR.sh.rotation.z=out.spread;p.armR.el.rotation.x=out.elR;
- /* cloth and hair follow the motion */
- if(p.skirt){p.skirt.rotation.x=.12*s*wr+.4*ws;p.skirt.rotation.z=.06*c*wr;p.skirt.scale.set(1+.06*Math.abs(s)+.12*wa,1,1+.06*Math.abs(c)+.12*wa)}
- if(p.tunic){p.tunic.rotation.x=.16*s*wr+.5*ws+.25*wa;p.tunic.rotation.z=.05*c}
- if(p.pony){p.pony.rotation.x=.55+.55*s*wr+.3*wa-.4*ws;p.pony.rotation.z=.15*c}
- if(p.hairL){p.hairL.rotation.x=.3+.35*s*wr+.4*wa}
- /* body in the world: lane position, height, lean into lane changes */
- p.root.position.set(S.x*2,S.h*1.0,0);p.body.rotation.z=clamp((S.lane-S.x)*.22,-.3,.3);p.body.rotation.y=clamp((S.lane-S.x)*-.18,-.25,.25);
- var sq=S.landT>0?1-.1*lq:1;p.body.scale.set(1+(1-sq)*.6,sq*out.sy,1+(1-sq)*.6);
+ if(p.skirt){p.skirt.rotation.x=.14*s*wr+.2*ws;p.skirt.rotation.z=.07*c*wr;p.skirt.scale.set(1+.05*Math.abs(s)+.12*wa,1,1+.05*Math.abs(c)+.12*wa)}
+ if(p.tunic){p.tunic.rotation.x=.18*s*wr+.1*ws+.25*wa;p.tunic.rotation.z=.05*c}
+ if(p.pony){p.pony.rotation.x=.55+.6*s*wr+.3*wa-.5*ws;p.pony.rotation.z=.15*c}
+ if(p.hairL){p.hairL.rotation.x=.3+.4*s*wr+.4*wa}
+ p.root.position.set(S.x*2,S.h*1.0,0);
+ var roll=clamp((S.lane-S.x)*.22,-.3,.3);p.root.rotation.z=roll*(1-ws);p.root.rotation.y=clamp((S.lane-S.x)*-.2,-.28,.28);
+ var sq=S.landT>0?1-.1*lq:1;p.root.scale.set(1.05*(1+(1-sq)*.6),1.05*sq*out.sy,1.05*(1+(1-sq)*.6));
  if(S.inv>0&&((S.t*14)|0)%2){p.root.visible=false}else p.root.visible=true;
- if(blob){blob.position.x=S.x*2;var k=1-clamp(S.h/3,0,.7);blob.scale.set(.95*k,.95*k,1);blob.position.z=0}}
+ if(p.bubble){p.bubble.visible=S.shield>0;p.bubble.scale.setScalar(1+.04*Math.sin(S.t*8));if(S.shield>0&&S.shield<1.2&&((S.t*10)|0)%2)p.bubble.visible=false}
+ if(blob){blob.position.x=S.x*2;var k=1-clamp(S.h/3,0,.7);blob.scale.set(.95*k*(1+ws*.9),.95*k*(1+ws*1.1),1);blob.position.z=-ws*.5}}
+
 /* ---------- a separate small 3D stage for portraits (title screen, character sheets): front view, running in place, slowly turning ---------- */
 var PR=null;
 C.portrait=function(outfit,t,front){if(!PR){var cv=document.createElement("canvas");cv.width=300;cv.height=380;var rd=new T.WebGLRenderer({canvas:cv,antialias:true,alpha:true,preserveDrawingBuffer:true});rd.setClearColor(0x000000,0);var sc=new T.Scene();sc.add(new T.HemisphereLight(0xffffff,0xaa9a80,.85));var dl=new T.DirectionalLight(0xfff0d0,.85);dl.position.set(-3,5,5);sc.add(dl);var cam=new T.PerspectiveCamera(28,300/380,.1,50);cam.position.set(0,1.15,5.6);cam.lookAt(0,.92,0);PR={cv:cv,rd:rd,sc:sc,cam:cam,cur:null,key:null}}
  if(PR.key!==outfit){if(PR.cur){PR.sc.remove(PR.cur.root)}PR.cur=C.build(TK.OUTFITS[outfit]);PR.cur.root.scale.setScalar(1.05);PR.sc.add(PR.cur.root);PR.key=outfit}
  var p=PR.cur,ph=t*9,s=Math.sin(ph),c2=Math.cos(ph),s2=Math.sin(ph+Math.PI),c3=Math.cos(ph+Math.PI);
- p.hip.position.y=.835+.05*Math.cos(2*ph);p.torso.rotation.x=-.12;p.torso.rotation.y=.12*s;p.head.rotation.x=.1;
+ p.hip.position.y=.74+.04*Math.cos(2*ph);p.torso.rotation.x=-.12;p.torso.rotation.y=.12*s;p.head.rotation.x=.1;
  p.legL.th.rotation.x=1.0*s;p.legL.sh.rotation.x=-(.2+1.1*Math.max(0,c2));p.legR.th.rotation.x=1.0*s2;p.legR.sh.rotation.x=-(.2+1.1*Math.max(0,c3));
  p.legL.ft.rotation.x=-(p.legL.th.rotation.x+p.legL.sh.rotation.x)*.4;p.legR.ft.rotation.x=-(p.legR.th.rotation.x+p.legR.sh.rotation.x)*.4;
  p.armL.sh.rotation.x=1.0*s2;p.armR.sh.rotation.x=1.0*s;p.armL.el.rotation.x=1.2;p.armR.el.rotation.x=1.2;p.armL.sh.rotation.z=-.1;p.armR.sh.rotation.z=.1;
