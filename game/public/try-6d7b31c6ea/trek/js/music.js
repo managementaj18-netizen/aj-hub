@@ -28,18 +28,34 @@ M.stop=function(){if(M.timer){clearInterval(M.timer);M.timer=null}if(M.out&&M.ac
 M.setSpeed=function(v){M.speed=v};
 M.mute=function(m){M.on=!m;if(!M.on&&M.out)M.out.gain.setTargetAtTime(0,M.ac.currentTime,.03);else if(M.out&&M.timer)M.out.gain.setTargetAtTime(M.menu?.22:.34,M.ac.currentTime,.05)};
 M.duck=function(d){if(M.out&&M.timer&&M.on)M.out.gain.setTargetAtTime(d?.08:(M.menu?.22:.34),M.ac.currentTime,.05)};
-M.bpm=function(){return M.menu?84:78+(M.speed-10)*5.2};
+M.bpm=function(){return M.menu?92:104+(M.speed-10)*5.4};
+M.setDanger=function(d){M.danger=!!d};
+function riser(t,len){var ac=M.ac,s=ac.createBufferSource(),g=ac.createGain(),f=ac.createBiquadFilter();s.buffer=M.noise;s.loop=true;f.type="bandpass";f.frequency.setValueAtTime(400,t);f.frequency.exponentialRampToValueAtTime(5000,t+len);g.gain.setValueAtTime(.0,t);g.gain.linearRampToValueAtTime(.14,t+len);g.gain.linearRampToValueAtTime(0,t+len+.05);s.connect(f);f.connect(g);g.connect(M.out);s.start(t);s.stop(t+len+.1)}
+function tom(t,f,vol){var ac=M.ac,o=ac.createOscillator(),g=ac.createGain();o.type="sine";o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*.5,t+.18);g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.001,t+.22);o.connect(g);g.connect(M.out);o.start(t);o.stop(t+.25)}
 function tick(){var ac=M.ac;if(!ac||!M.S)return;if(ac.state==="suspended")return;
- while(M.next<ac.currentTime+.14){var s=M.step,S=M.S,bpm=M.bpm(),sd=60/bpm/4,t=M.next,k=s%16,bar=Math.floor(s/16),chord=S.pr[bar%4],lvl=M.menu?0:Math.max(0,Math.min(1,(M.speed-10)/12));
+ while(M.next<ac.currentTime+.14){var s=M.step,S=M.S,bpm=M.bpm(),sd=60/bpm/4,t=M.next,k=s%16,bar=Math.floor(s/16),chord=S.pr[bar%4],lvl=M.menu?0:Math.max(0,Math.min(1,(M.speed-10)/12)),dg=M.danger&&!M.menu;
   if(S.swing&&k%2===1)t+=sd*S.swing;
-  /* bass on beats */
-  if(k%4===0||(lvl>.5&&k%8===6))note(t,degree(S,chord,-2),sd*(k%4===0?3.2:1.4),S.bass,.34);
-  /* chord pad stab */
-  if(k===0)[0,2,4].forEach(function(o){note(t,degree(S,chord+o,0),sd*7,"sine",.07)});
-  /* lead motif */
-  var m=S.motif[k];if(m>=0&&(!M.menu||k%2===0)){var dd=m+(bar%2?2:0);note(t,degree(S,chord+dd,1),sd*(1.6+(k%4===0?1:0)),S.lead,M.menu?.08:.1)}
-  /* drums arrive as the run speeds up */
-  if(!M.menu){if(k%4===0)kick(t,.5);if(lvl>.15&&k%4===2)hat(t,.07+lvl*.05,false);if(lvl>.4&&k%8===4)snare(t,.2);if(lvl>.65&&k%2===1)hat(t,.05,false);if(lvl>.8&&k%4===3)note(t,degree(S,chord+4,2),sd*.9,S.lead,.05)}
-  else if(k%8===0)kick(t,.18);
+  if(!M.menu){
+   /* intro riser into the first beat */
+   if(s===0)riser(t,sd*14);
+   /* four-on-the-floor kick, backbeat snare, driving hats */
+   if(k%4===0)kick(t,.62);
+   if(k%8===4)snare(t,.26+lvl*.1);
+   if(k%2===0)hat(t,.06+lvl*.05,false);
+   if(lvl>.25&&k%2===1)hat(t,.04+lvl*.04,false);
+   if(k===14&&bar%4===3){snare(t,.2);tom(t,200,.4)}if(k===15&&bar%4===3){snare(t,.22);tom(t,150,.4)}
+   if(bar%4===0&&k===0&&bar>0)hat(t,.14,true);
+   /* pumping eighth-note bass with octave pops */
+   if(k%2===0){var b=degree(S,chord,-2)+((k%8===6)?12:0);note(t,b,sd*1.7,"sawtooth",.2+(dg?.06:0))}
+   /* chord stabs on the off-beat */
+   if(k%4===2)[0,2,4].forEach(function(o){note(t,degree(S,chord+o,0),sd*1.6,"square",.05)});
+   /* arpeggio gets busier as you go faster */
+   if(lvl>.2&&k%2===1)note(t,degree(S,chord+[0,2,4,2][(k>>1)%4]+(lvl>.6?2:0),1),sd*1.2,"triangle",.07);
+   /* lead melody: bold, detuned saw pair */
+   var m=S.motif[k];if(m>=0){var dd=m+(bar%2?2:0),p=degree(S,chord+dd,1);note(t,p,sd*(1.8+(k%4===0?1.2:0)),"sawtooth",.1,-9);note(t,p,sd*(1.8+(k%4===0?1.2:0)),"square",.045,9)}
+   /* danger: low siren pulse and extra hats while the beast is close */
+   if(dg){if(k%2===0)note(t,S.root-12+(k%8<4?0:1),sd*1.9,"sawtooth",.1);hat(t,.07,false)}
+  }else{
+   if(k%8===0)kick(t,.2);if(k%4===0)note(t,degree(S,chord,-2),sd*3,S.bass,.2);if(k===0)[0,2,4].forEach(function(o){note(t,degree(S,chord+o,0),sd*7,"sine",.07)});var m2=S.motif[k];if(m2>=0&&k%2===0)note(t,degree(S,chord+m2,1),sd*2,S.lead,.08)}
   M.next+=sd;M.step++}}
 })(window.TK=window.TK||{});
