@@ -22,7 +22,7 @@ TK.flag=function(c,k,x,y,w,h){c.save();c.translate(x,y);c.lineWidth=1;c.strokeSt
 /* ---------- the runner (seen from behind): a Khmer girl exploring the world, wearing each country's traditional clothing ---------- */
 TK.paintPlayer=function(c,run,air,o){var sw=Math.sin(run),sw2=Math.sin(run+Math.PI);c.save();c.translate(70,142);c.lineJoin="round";c.lineCap="round";
  var top=o.top,trim=o.trim,bt=o.bottom,sk=o.skin,dk=shade(sk,-.18),tl=o.tlen||0;
- function leg(dx,ph){var lift=Math.max(0,ph)*11*(1-air)+air*13;
+ function leg(dx,ph){var lift=Math.max(0,ph)*17*(1-air)+air*13;
   var grad=c.createLinearGradient(dx-5,0,dx+5,0);grad.addColorStop(0,shade(sk,-.12));grad.addColorStop(1,shade(sk,.1));
   if(o.btype==="pants"){grad=c.createLinearGradient(dx-5,0,dx+5,0);grad.addColorStop(0,shade(bt[0],-.2));grad.addColorStop(1,bt[0])}
   c.fillStyle=grad;rr(c,dx-4.5,-34,9,34-lift*.9,4);c.fill();
@@ -47,7 +47,7 @@ TK.paintPlayer=function(c,run,air,o){var sw=Math.sin(run),sw2=Math.sin(run+Math.
  /* backpack (explorer) */
  var pg=c.createLinearGradient(-8,0,8,0);pg.addColorStop(0,"#c98a4a");pg.addColorStop(1,"#8f5a28");c.fillStyle=pg;rr(c,-8.5,-57,17,21,5);c.fill();c.strokeStyle="#5a3612";c.lineWidth=1;c.stroke();c.fillStyle="#e8c25a";c.fillRect(-4,-48,8,2.4);c.fillStyle="#5a3612";c.fillRect(-9,-56,3,16);c.fillRect(6,-56,3,16);
  /* arms */
- function arm(sd,ph){c.save();c.translate(sd*14.5,-57);c.rotate(ph*.55*(1-air)+sd*air*2.55*-1);
+ function arm(sd,ph){c.save();c.translate(sd*14.5,-57);c.rotate(ph*1.0*(1-air)+sd*air*2.55*-1);
   var sleeve=o.sleeve,sl=sleeve==="long"||sleeve==="wide"?19:sleeve==="3/4"?14:sleeve==="short"?7:0,ag=c.createLinearGradient(-3,0,3,0);ag.addColorStop(0,dk);ag.addColorStop(1,sk);c.fillStyle=ag;rr(c,-3.4,0,6.8,22,3.4);c.fill();
   if(sl){c.fillStyle=sleeve==="wide"?top[0]:top[0];if(sleeve==="wide"){c.beginPath();c.moveTo(-4,0);c.lineTo(4,0);c.lineTo(8,sl+3);c.lineTo(-8,sl+3);c.closePath();c.fill();c.fillStyle=trim;c.fillRect(-8,sl+1,16,2)}else{rr(c,-4.4,-1,8.8,sl,3.5);c.fill();c.fillStyle=trim;c.fillRect(-4.4,sl-2,8.8,1.6)}}
   if(o.acc==="feathers"&&!sl){c.strokeStyle="#ffd24a";c.lineWidth=1.4;c.beginPath();c.arc(0,15,3.6,0,7);c.stroke()}
