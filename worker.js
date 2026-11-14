@@ -16,6 +16,7 @@ export default {
 
     if (url.pathname === '/tg/webhook' && request.method === 'POST') return handleTg(request, env, ctx);
     if (url.pathname === '/fb/webhook') return handleFb(request, env, url);
+    if (url.pathname === '/wa/webhook') return handleWa(request, env, url, ctx);
     if (url.pathname.startsWith('/st/')) return stickerResponse(url.pathname.slice(4));
     if (url.pathname === '/privacy') return new Response("<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Privacy Policy - A&J Kampot Boutique</title><style>body{font-family:system-ui,sans-serif;max-width:720px;margin:40px auto;padding:0 18px;line-height:1.6;color:#1f2937}h1{color:#14254a}</style></head><body><h1>Privacy Policy</h1><p><b>A&J Kampot Boutique</b>, #163, Street 724, Krang Village, Kampot, Cambodia · ajkampotboutique@gmail.com · +855 87 882 020</p><p>We answer messages from guests on Telegram and Facebook Messenger with the help of an automated assistant, and we offer a Guest App for bookings, early check-in and requests.</p><h2>What we collect</h2><p>Your name, the messages you send us, and any details you choose to give us (phone number, email, nationality, travel dates, booking details, passport/ID photos for check-in, and payment receipts).</p><h2>How we use it</h2><p>Only to answer your questions, arrange your booking and check-in, and provide hotel services. Message history is kept for a few days to keep the conversation in context; check-in details are kept for up to 45 days in the app and then in our hotel records as required by Cambodian law.</p><h2>Sharing</h2><p>We do not sell your data. It is shared only with our staff and the service providers that run our systems (Meta, Telegram, Cloudflare, our booking system and AI providers used to draft replies).</p><h2>Your choices</h2><p>You can ask us at any time to see or delete your data by emailing ajkampotboutique@gmail.com or messaging us.</p><p>Last updated: November 2026</p></body></html>", { headers: { 'content-type': 'text/html; charset=utf-8' } });
     if (url.pathname === '/api/tgsetup') return tgSetup(env, url.origin);
@@ -766,6 +767,7 @@ async function sendToGuest(env, key, text, tags) {
   const kb = (web) => btns.length ? { reply_markup: { inline_keyboard: btns.map(b => [web && b.u !== MAP_URL ? { text: b.t, web_app: { url: b.u } } : { text: b.t, url: b.u }]) } } : {};
   if (key.startsWith('b:')) { const p = key.split(':'); const r = await tgApi(env, 'sendMessage', Object.assign({ business_connection_id: p[1], chat_id: p.slice(2).join(':'), text: t }, kb(false))); if (!r || !r.ok) return (r && r.description) || 'failed'; }
   else if (key.startsWith('d:')) { const r = await tgApi(env, 'sendMessage', Object.assign({ chat_id: key.slice(2), text: t }, kb(true))); if (!r || !r.ok) return (r && r.description) || 'failed'; }
+  else if (key.startsWith('w:')) { const pid = env.WA_PHONE_ID || (env.PRE && await env.PRE.get('cfg:waphone')); if (!pid) return 'WhatsApp not set up'; const b = btns[0]; const r = await waSend(env, pid, key.slice(2), b ? waButton(t, b.t.replace(/^[^A-Za-z\u1780-\u17FF]+/, '').split(' / ')[0], b.u) : waText(t)); if (!r || !r.messages) return (r && r.error && r.error.message) || 'failed (WhatsApp allows free replies only within 24 hours of the guest\'s last message)'; }
   else if (key.startsWith('f:') || key.startsWith('i:')) { const ig = key.startsWith('i:'); const r = btns.length && t.length <= 640 ? await fbSend(env, key.slice(2), { attachment: { type: 'template', payload: { template_type: 'button', text: t, buttons: btns.slice(0, 3).map(b => ({ type: 'web_url', url: b.u, title: b.t.slice(0, 20) })) } } }, ig) : await fbSend(env, key.slice(2), { text: t }, ig); if (!r || !r.message_id) return (r && r.error && r.error.message) || 'failed (Messenger allows replies only within 24 hours of the guest\'s last message)'; }
   else return 'unknown chat';
   const h = JSON.parse((await env.PRE.get('hist:' + key)) || '[]'); h.push({ role: 'assistant', content: t }); while (h.length > 16) h.shift();
@@ -1239,12 +1241,15 @@ function appButtons(biz) {
 // Voice → text with Google Gemini (free tier). Returns '' on any failure so the old 'staff will reply' path is used.
 async function transcribeVoice(env, f) {
   if ((f.file_size || 0) > 15 * 1024 * 1024 || (f.duration || 0) > 300) return '';
-  const info = await tgApi(env, 'getFile', { file_id: f.file_id });
-  const path = info && info.result && info.result.file_path;
-  if (!path) return '';
-  const fr = await fetch('https://api.telegram.org/file/bot' + env.BOT_TOKEN + '/' + path);
-  if (!fr.ok) return '';
-  const a = new Uint8Array(await fr.arrayBuffer());
+  let a = f.bytes;
+  if (!a) {
+    const info = await tgApi(env, 'getFile', { file_id: f.file_id });
+    const path = info && info.result && info.result.file_path;
+    if (!path) return '';
+    const fr = await fetch('https://api.telegram.org/file/bot' + env.BOT_TOKEN + '/' + path);
+    if (!fr.ok) return '';
+    a = new Uint8Array(await fr.arrayBuffer());
+  }
   let bin = '';
   for (let i = 0; i < a.length; i += 0x8000) bin += String.fromCharCode.apply(null, a.subarray(i, i + 0x8000));
   const data = btoa(bin);
@@ -1374,4 +1379,97 @@ async function otaText(env) {
   if (!recs.length) return '\nOTA BOOKINGS (Agoda, Booking.com, Expedia, Trip.com… read from the owner\'s Gmail): none current.';
   return '\nOTA BOOKINGS (Agoda, Booking.com, Expedia, Trip.com… read automatically from the owner\'s Gmail; these are also in Nobeds via the channel manager; OTA guests already paid/pay through the OTA, no deposit to the hotel). Format: OTA | booking id | status | guest | room | check-in → check-out | guests | sell price | hotel receives | payment | received at:\n' +
     recs.map(r => [r.ota, r.booking_id, r.status, r.guest + (r.country ? ' (' + r.country + ')' : ''), (r.room || '') + (r.rooms > 1 ? ' x' + r.rooms : ''), (r.cin || '?') + ' → ' + (r.cout || '?'), r.guests || '', r.total != null ? '$' + r.total : '', r.net != null ? '$' + r.net : '', r.payment || '', r.mail_at ? new Date(Date.parse(r.mail_at) + 7 * 3600000).toISOString().slice(0, 16).replace('T', ' ') + ' Cambodia' : ''].join(' | ')).join('\n');
+}
+
+// ===== WhatsApp (Cloud API, coexistence with the WhatsApp Business app on +855 87 882 020) =====
+// Needs Secret WA_TOKEN (permanent system-user token with whatsapp_business_messaging). Guest-started chats are free.
+const WA_VERIFY = 'ajkampot-wa-webhook';
+async function waSend(env, phoneId, to, msg) {
+  const r = await fetch(`${FB_API}/${phoneId}/messages`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + String(env.WA_TOKEN || '').trim() }, body: JSON.stringify(Object.assign({ messaging_product: 'whatsapp', recipient_type: 'individual', to }, msg)) });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) console.log('wa send failed', JSON.stringify(j).slice(0, 300));
+  else if (env.PRE && j.messages && j.messages[0]) await env.PRE.put('wasent:' + j.messages[0].id, '1', { expirationTtl: 3600 });
+  return j;
+}
+function waText(text) { return { type: 'text', text: { body: noEmoji(String(text)).slice(0, 4000), preview_url: false } }; }
+function waButton(text, label, url) { return { type: 'interactive', interactive: { type: 'cta_url', body: { text: noEmoji(String(text)).slice(0, 1024) }, action: { name: 'cta_url', parameters: { display_text: label.slice(0, 20), url } } } }; }
+async function handleWa(request, env, url, ctx) {
+  if (request.method === 'GET') {
+    if (url.searchParams.get('hub.mode') === 'subscribe' && url.searchParams.get('hub.verify_token') === WA_VERIFY) return new Response(url.searchParams.get('hub.challenge') || '', { status: 200 });
+    return new Response('forbidden', { status: 403 });
+  }
+  const raw = await request.text();
+  if (!(await fbSigOk(env, request, raw))) return new Response('bad signature', { status: 403 });
+  let body = {}; try { body = JSON.parse(raw); } catch (e) {}
+  if (body.object !== 'whatsapp_business_account' || !env.WA_TOKEN) return new Response('ok');
+  const jobs = [];
+  for (const entry of body.entry || []) for (const ch of entry.changes || []) {
+    const v = ch.value || {}; const phoneId = v.metadata && v.metadata.phone_number_id;
+    if (ch.field === 'smb_message_echoes') {
+      // staff typed in the WhatsApp Business app -> let them handle this chat (AI pauses)
+      for (const m of v.message_echoes || []) if (env.PRE && m.to && !(await env.PRE.get('wasent:' + m.id))) { await env.PRE.put('pause:w:' + m.to, '1', { expirationTtl: PAUSE_SEC }); await env.PRE.delete('pend:w:' + m.to); }
+      continue;
+    }
+    if (ch.field !== 'messages') continue;
+    const names = Object.fromEntries((v.contacts || []).map(c => [c.wa_id, c.profile && c.profile.name]));
+    for (const m of v.messages || []) jobs.push(onWaMessage(env, phoneId, m, names[m.from]).catch(e => console.log('wa error', e && (e.stack || e.message))));
+  }
+  if (ctx && ctx.waitUntil) ctx.waitUntil(Promise.all(jobs)); else await Promise.all(jobs);
+  return new Response('ok');
+}
+async function onWaMessage(env, phoneId, m, profileName) {
+  const from = m.from; if (!from || !phoneId) return;
+  if (env.PRE && !(await env.PRE.get('cfg:waphone'))) await env.PRE.put('cfg:waphone', phoneId);
+  if (env.PRE) { if (await env.PRE.get('wamid:' + m.id)) return; await env.PRE.put('wamid:' + m.id, '1', { expirationTtl: 86400 }); }
+  const key = 'w:' + from;
+  if (env.PRE && await env.PRE.get('pause:' + key)) return;
+  const who = (profileName || 'WhatsApp guest') + ' +' + from + ' (WhatsApp)';
+  fetch(`${FB_API}/${phoneId}/messages`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + String(env.WA_TOKEN).trim() }, body: JSON.stringify({ messaging_product: 'whatsapp', status: 'read', message_id: m.id }) }).catch(() => {});
+  let text = '';
+  if (m.type === 'text') text = (m.text && m.text.body || '').trim();
+  else if (m.type === 'button') text = (m.button && m.button.text) || '';
+  else if (m.type === 'interactive') text = (m.interactive && ((m.interactive.button_reply && m.interactive.button_reply.title) || (m.interactive.list_reply && m.interactive.list_reply.title))) || '';
+  else if ((m.type === 'audio' || m.type === 'voice') && env.GEMINI_API_KEY) {
+    try {
+      const au = m.audio || m.voice || {};
+      const meta = await (await fetch(`${FB_API}/${au.id}`, { headers: { authorization: 'Bearer ' + String(env.WA_TOKEN).trim() } })).json();
+      if (meta.url && (meta.file_size || 0) < 15 * 1024 * 1024) {
+        const br = await fetch(meta.url, { headers: { authorization: 'Bearer ' + String(env.WA_TOKEN).trim() } });
+        const bytes = new Uint8Array(await br.arrayBuffer());
+        const t = await transcribeVoice(env, { bytes, mime_type: (au.mime_type || meta.mime_type || 'audio/ogg').split(';')[0] });
+        if (t) text = '[Voice message, auto-transcribed]: ' + t;
+      }
+    } catch (e) { console.log('wa voice', e && e.message); }
+  }
+  if (!text) {
+    if (m.type === 'reaction' || m.type === 'sticker') return;
+    await helloOnce(env, key, () => waSend(env, phoneId, from, { type: 'image', image: { link: ST_BASE + 'hello.png?v=4' } }));
+    await waSend(env, phoneId, from, waText('Thank you! Our team will check it and reply shortly. / អរគុណបង! ខាងប្អូននឹងពិនិត្យ ហើយឆ្លើយបងឆាប់ៗ។'));
+    await notifyStaff(env, `📎 ${who} sent a photo/file/voice on WhatsApp - please check the WhatsApp Business app.`, key);
+    return;
+  }
+  const hist = env.PRE ? JSON.parse(await env.PRE.get('hist:' + key) || '[]') : [];
+  hist.push({ role: 'user', content: text });
+  while (hist.length > 16) hist.shift();
+  while (hist.length && hist[0].role !== 'user') hist.shift();
+  let reply = '';
+  try { const note = await bookingNote(env, key); reply = await askClaude(env, note ? hist.map((x, i) => i === hist.length - 1 ? { role: 'user', content: x.content + note } : x) : hist); } catch (e) { console.log('claude', e && e.message); }
+  if (!reply) {
+    await waSend(env, phoneId, from, waText('Thank you! Our team will reply shortly.'));
+    await notifyStaff(env, `💬 ${who}: ${text.slice(0, 500)}\n(AI could not answer - please reply)`, key);
+    return;
+  }
+  const wantApp = /\[APP\]/i.test(reply), wantMap = /\[MAP\]/i.test(reply), wantMoto = /\[MOTO\]/i.test(reply), wantStaff = /\[STAFF\]/i.test(reply), wantThx = /\[THX\]/i.test(reply), wantUrgent = /\[URGENT\]/i.test(reply);
+  const clean = reply.replace(/\[(APP|MAP|STAFF|THX|URGENT|MOTO)\]/gi, '').replace(/[ \t]+\n/g, '\n').trim() || 'OK';
+  await helloOnce(env, key, () => waSend(env, phoneId, from, { type: 'image', image: { link: ST_BASE + 'hello.png?v=4' } }));
+  const tok = (wantApp || wantMoto) ? await chatTok(env, key) : '';
+  const btn = wantMoto ? ['ជ្រើសរើសម៉ូតូ', APP_URL + '?page=moto&c=' + tok] : wantApp ? ['Open App', APP_URL + '?c=' + tok] : wantMap ? ['Map', MAP_URL] : null;
+  if (btn && clean.length <= 1000) await waSend(env, phoneId, from, waButton(clean, btn[0], btn[1]));
+  else { await waSend(env, phoneId, from, waText(clean)); if (btn) await waSend(env, phoneId, from, waButton('👇', btn[0], btn[1])); }
+  if (wantMap && btn && btn[1] !== MAP_URL) await waSend(env, phoneId, from, waButton('A&J Kampot Boutique', 'Map', MAP_URL));
+  if (wantThx) await waSend(env, phoneId, from, { type: 'image', image: { link: ST_BASE + 'thanks.png?v=4' } });
+  await afterGuestReply(env, { key, who, text, ch: 'WhatsApp', staff: wantStaff, urgent: wantUrgent });
+  hist.push({ role: 'assistant', content: clean });
+  if (env.PRE) await env.PRE.put('hist:' + key, JSON.stringify(hist), { expirationTtl: HIST_TTL });
+  if (wantStaff) await notifyStaff(env, `🙋 ${who} needs staff (WhatsApp):\n"${text.slice(0, 600)}"`, key);
 }
