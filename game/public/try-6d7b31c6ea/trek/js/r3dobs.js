@@ -17,7 +17,12 @@ var PAL={
  boreal:[["#c8a070","#6a3a20","#8a2a1a"],["#d8d4c8","#4a5a6a","#6a2a1a"],["#a8805a","#4a3018","#5a2a1a"]],
  trop:[["#e8d4a0","#7a5a2a","#2a6a3a"],["#c8a878","#5a3a1a","#2a6a3a"]],
  default:[["#e8d8b8","#8a4a3a","#5a3a2a"],["#d8c8a8","#5a4a4a","#4a3a2a"]]};
-var TEX={};Pr.flush=function(){TEX={}};
+var TEX={},LIB={},PC={},ALL=[];
+function markShared(o){o.traverse(function(m){if(!m.isMesh)return;if(m.geometry&&!m.geometry.userData.shared)m.geometry.userData.proto=1;(Array.isArray(m.material)?m.material:[m.material]).forEach(function(x){if(x&&!x.userData.shared)x.userData.proto=1})})}
+/* build each kind of street piece a few times at level start, then only clone it (clones share geometry and materials: no new GPU work while running) */
+function lib(key,n,make,r){var a=LIB[key]||(LIB[key]=[]);if(a.length<n){var g=make();markShared(g);ALL.push(g);a.push(g);return g.clone()}return a[Math.floor(r()*a.length)].clone()}
+Pr.flush=function(){TEX={};ALL.forEach(function(g){g.traverse(function(m){if(!m.isMesh)return;if(m.geometry&&m.geometry.userData.proto)m.geometry.dispose();(Array.isArray(m.material)?m.material:[m.material]).forEach(function(x){if(x&&x.userData.proto)x.dispose()})})});ALL=[];LIB={};PC={}};
+Pr.protos=function(){return ALL};
 function winFrame(g,x,y,w,h,kit,lit,arch,shut,col){var trim=col||"#5a4030";g.fillStyle=trim;if(arch){g.beginPath();g.moveTo(x-3,y+h);g.lineTo(x-3,y+w/2);g.arc(x+w/2,y+w/2,w/2+3,Math.PI,0);g.lineTo(x+w+3,y+h);g.closePath();g.fill()}else g.fillRect(x-3,y-3,w+6,h+6);
  var gr=g.createLinearGradient(x,y,x+w,y+h);if(lit){gr.addColorStop(0,"#ffe9a8");gr.addColorStop(1,"#f0b860")}else if(kit==="namer"){gr.addColorStop(0,"#bfe0f4");gr.addColorStop(1,"#5a8ab0")}else{gr.addColorStop(0,"#9ac4e0");gr.addColorStop(1,"#3a5a7a")}g.fillStyle=gr;if(arch){g.beginPath();g.moveTo(x,y+h);g.lineTo(x,y+w/2);g.arc(x+w/2,y+w/2,w/2,Math.PI,0);g.lineTo(x+w,y+h);g.closePath();g.fill()}else g.fillRect(x,y,w,h);
  g.fillStyle="rgba(255,255,255,.28)";g.beginPath();g.moveTo(x+2,y+h);g.lineTo(x+w*.45,y+2);g.lineTo(x+w*.6,y+2);g.lineTo(x+w*.15,y+h);g.fill();
@@ -96,22 +101,35 @@ function adobeHouse(r,L){var g=new T.Group(),c=pick(r,["#e8c898","#d8a878","#f0d
 function snowman(){var g=new T.Group();H.sph(.55,"#f4f8ff",0,.5,0,g);H.sph(.4,"#f4f8ff",0,1.2,0,g);H.sph(.28,"#f4f8ff",0,1.68,0,g);H.cyl(.18,.18,.22,H.mat("#2a2a2a"),0,1.98,0,g,10);H.cyl(.3,.3,.04,H.mat("#2a2a2a"),0,1.87,0,g,10);H.cone(.05,.3,H.mat("#ff8a1a"),0,1.68,-.3,g,6).rotation.x=-Math.PI/2;H.shadowAll(g,true,false);return g}
 
 /* ---------- the street generator ---------- */
-Pr.reset=function(L,S){};
+function treeMake(kd,r){return kd==="rocks"?rocks(r,"#9a9aa0"):tree(kd,r)}
+Pr.reset=function(L,S){var r=H.rnd(11+L.id.charCodeAt(0)*7),kit=L.kit,i;
+ [-1,1].forEach(function(sg){for(i=0;i<9;i++)lib("b"+sg,9,function(){return building(L,sg,r)},r)});
+ (NAT[kit]||["oak"]).forEach(function(kd){for(i=0;i<4;i++)lib("tree|"+kd,4,function(){return treeMake(kd,r)},r)});
+ for(i=0;i<3;i++){lib("hut",3,function(){return hut(r,L)},r);lib("ad",3,function(){return adobeHouse(r,L)},r)}lib("lamp0",1,function(){return lamp(r,false)},r);lib("lamp1",1,function(){return lamp(r,true)},r);lib("sn",1,snowman,r);
+ if(R.zones&&R.zones.length){lib("t0",1,function(){return tunnelSeg(L,false,false)},r);lib("t1",1,function(){return tunnelSeg(L,true,false)},r);lib("t2",1,function(){return tunnelSeg(L,true,true)},r)}
+ var E=[{t:"coin"},{t:"mag"},{t:"shield"},{t:"roll"},{t:"block"},{t:"low"},{t:"high"},{t:"low",full:1},{t:"high",full:1}];for(i=10;i<=16;i++)E.push({t:"block",len:i});E.forEach(function(e){Pr.entity(L,e)})};
+/* entities are cached too: one built copy, cloned for every coin/obstacle */
+Pr.entity=function(L,e){var key,make;
+ if(e.t==="coin"){key="coin";make=Pr.coin}else if(e.t==="mag"){key="mag";make=Pr.magnet}else if(e.t==="shield"){key="shield";make=Pr.shield}else if(e.t==="roll"){key="roll";make=Pr.roller}
+ else if(e.t==="block"&&e.len){key="train"+e.len;make=function(){return Pr.train(L,e.len)}}
+ else if(e.t==="finish"||e.t==="cp")return Pr.gate(e.t==="finish");else if(e.t==="chest")return Pr.chest();
+ else{key=e.t+"|"+((L.obs||{})[e.t])+"|"+(e.full?1:0);make=function(){return Pr.obstacle(L,e.t,!!e.full)}}
+ var p=PC[key];if(!p){p=PC[key]=make();markShared(p);ALL.push(p)}return p.clone()};
 var NAT={boreal:["snowpine","snowpine","snowpine"],namer:["oak","oak"],latam:["palm","cactus","oak"],trop:["jungle","banana","jungle","palm"],island:["palm","palm","palm"],andes:["rocks","fir"],pampas:["oak","oak"],savanna:["acacia","baobab","acacia"],desert:["palm","rocks","cactus"],med:["oak","palm"],euro:["oak","oak","birch"],alps:["snowpine","fir"],steppe:["rocks"],india:["palm","banana","oak"],east:["cherry","cherry","fir"],sea:["palm","banana","palm"],pacific:["fir","jungle","oak"],outback:["rocks","cactus","acacia"]};
 var CITY={namer:.82,euro:.85,med:.85,latam:.8,east:.7,sea:.78,india:.8,desert:.65,alps:.6,boreal:.5,trop:.28,savanna:.2,island:.3,andes:.3,pampas:.22,steppe:.18,pacific:.3,outback:.15};
 Pr.nextPiece=function(L,sg,street,cKey,S){var r=H.rnd((street["n"+cKey.slice(1)]+1)*977+(sg+2)*131+(L.id.charCodeAt(0)*17)+(L.id.charCodeAt(1)||0)*31);var z=street[cKey],kit=L.kit,cityP=CITY[kit]==null?.5:CITY[kit];
  var g,len,xoff=3.95;
  var zn=null;if(R.zones)for(var qi=0;qi<R.zones.length;qi++){var q=R.zones[qi];if(z>=q.a-1&&z<q.b){zn=q;break}}
- if(zn){if(sg>0){street[cKey]=z+8;return null}var first=z<zn.a+7.5,last=z+8>=zn.b;g=tunnelSeg(L,first||last,last&&!first);g.userData.zz=z+4;g.userData.len=4.5;g.userData.zstart=z;g.userData.tun=1;street[cKey]=z+8;return g}
- if(r()<cityP){g=building(L,sg,r);len=g.userData.fl;var xc=sg*(3.95+g.userData.bx/2+.5);g.position.x=xc;g.userData.zz=z;g.userData.len=len;g.userData.cx=xc;street[cKey]=z+len+.06;g.userData.zz=z+len/2;g.userData.len=len/2+.2;g.userData.zstart=z;return g}
+ if(zn){if(sg>0){street[cKey]=z+8;return null}var first=z<zn.a+7.5,last=z+8>=zn.b;g=lib("t"+((first||last)?(last&&!first?2:1):0),1,function(){return tunnelSeg(L,first||last,last&&!first)},r);g.userData.zz=z+4;g.userData.len=4.5;g.userData.zstart=z;g.userData.tun=1;street[cKey]=z+8;return g}
+ if(r()<cityP){g=lib("b"+sg,9,function(){return building(L,sg,r)},r);len=g.userData.fl;var xc=sg*(3.95+g.userData.bx/2+.5);g.position.x=xc;g.userData.zz=z;g.userData.len=len;g.userData.cx=xc;street[cKey]=z+len+.06;g.userData.zz=z+len/2;g.userData.len=len/2+.2;g.userData.zstart=z;return g}
  /* gap: tree, lamp, rocks, hut */
  var k=r(),x=sg*(4.3+r()*1.6);len=2.2+r()*2.4;
- if(k<.18&&(kit==="euro"||kit==="med"||kit==="namer"||kit==="latam"||kit==="alps"||kit==="india")){g=lamp(r,false);x=sg*3.45}
- else if(k<.3&&kit==="east"){g=lamp(r,true);x=sg*3.45}
- else if(k<.4&&(kit==="savanna"||kit==="trop"||kit==="island"||kit==="sea"||kit==="pacific"||kit==="outback")){g=kit==="trop"||kit==="island"||kit==="sea"||kit==="pacific"?hut(r,L):adobeHouse(r,L);x=sg*(5.3+r()*1.2);len=3.2}
- else if(k<.5&&(kit==="andes"||kit==="pampas"||kit==="steppe")){g=adobeHouse(r,L);x=sg*(5.3+r()*1.2);len=3.4}
- else if(k<.58&&(kit==="boreal"||kit==="alps")&&r()<.5){g=snowman();x=sg*4.2}
- else{var kinds=NAT[kit]||["oak"],kd=kinds[Math.floor(r()*kinds.length)];if(kd==="rocks")g=rocks(r,"#9a9aa0");else g=tree(kd,r);x=sg*(4.2+r()*3.2)}
+ if(k<.18&&(kit==="euro"||kit==="med"||kit==="namer"||kit==="latam"||kit==="alps"||kit==="india")){g=lib("lamp0",1,function(){return lamp(r,false)},r);x=sg*3.45}
+ else if(k<.3&&kit==="east"){g=lib("lamp1",1,function(){return lamp(r,true)},r);x=sg*3.45}
+ else if(k<.4&&(kit==="savanna"||kit==="trop"||kit==="island"||kit==="sea"||kit==="pacific"||kit==="outback")){g=(kit==="trop"||kit==="island"||kit==="sea"||kit==="pacific")?lib("hut",3,function(){return hut(r,L)},r):lib("ad",3,function(){return adobeHouse(r,L)},r);x=sg*(5.3+r()*1.2);len=3.2}
+ else if(k<.5&&(kit==="andes"||kit==="pampas"||kit==="steppe")){g=lib("ad",3,function(){return adobeHouse(r,L)},r);x=sg*(5.3+r()*1.2);len=3.4}
+ else if(k<.58&&(kit==="boreal"||kit==="alps")&&r()<.5){g=lib("sn",1,snowman,r);x=sg*4.2}
+ else{var kinds=NAT[kit]||["oak"],kd=kinds[Math.floor(r()*kinds.length)];g=lib("tree|"+kd,4,function(){return treeMake(kd,r)},r);x=sg*(4.2+r()*3.2)}
  g.position.x=x;g.userData.zz=z+len/2;g.userData.len=len/2+.5;g.userData.zstart=z;street[cKey]=z+len;return g};
 
 
@@ -190,8 +208,8 @@ Pr.train=function(L,len){var g=new T.Group(),pal=L.pal||["#d8302a","#fff","#2a5a
  [-1,1].forEach(function(s){H.box(.3,.22,.08,"#fff8c8",s*.55,.8,.05,g,{em:"#ffe890"})});
  H.box(1.1,.3,.1,"#fff",0,2.4,.05,g);
  return g};
-Pr.roller=function(){var g=new T.Group();var bar=new T.Group();bar.position.y=.55;g.add(bar);g.userData.spin=bar;var c=H.cyl(.55,.55,1.2,H.mat("#a8702a"),0,0,0,bar,18);c.rotation.z=Math.PI/2;[-.45,0,.45].forEach(function(x){var t=new T.Mesh(H.geo("rollring",function(){return new T.TorusGeometry(.56,.04,6,20)}),H.mat("#3a3a40"));t.rotation.y=Math.PI/2;t.position.x=x;bar.add(t)});H.box(.1,.9,.1,"#5a3a14",0,0,0,bar).rotation.x=0;H.shadowAll(g,true,false);return g};
-Pr.shield=function(){var g=new T.Group();var o=new T.Mesh(H.geo("shd",function(){return new T.OctahedronGeometry(.42)}),H.mat("#3aa0ff",{em:"#144a88"}));o.position.y=.1;g.add(o);var b=new T.Mesh(new T.SphereGeometry(.62,14,10),new T.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:.28,depthWrite:false}));g.add(b);g.userData.spin=o;return g};
+Pr.roller=function(){var g=new T.Group();var bar=new T.Group();bar.position.y=.55;g.add(bar);bar.name="spin";var c=H.cyl(.55,.55,1.2,H.mat("#a8702a"),0,0,0,bar,18);c.rotation.z=Math.PI/2;[-.45,0,.45].forEach(function(x){var t=new T.Mesh(H.geo("rollring",function(){return new T.TorusGeometry(.56,.04,6,20)}),H.mat("#3a3a40"));t.rotation.y=Math.PI/2;t.position.x=x;bar.add(t)});H.box(.1,.9,.1,"#5a3a14",0,0,0,bar).rotation.x=0;H.shadowAll(g,true,false);return g};
+Pr.shield=function(){var g=new T.Group();var o=new T.Mesh(H.geo("shd",function(){return new T.OctahedronGeometry(.42)}),H.mat("#3aa0ff",{em:"#144a88"}));o.position.y=.1;g.add(o);o.name="spin";var b=new T.Mesh(new T.SphereGeometry(.62,14,10),new T.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:.28,depthWrite:false}));g.add(b);return g};
 Pr.obstacle=function(L,type,full){var o=L.obs||{},name=o[type],w=full?5.8:1.7,g;
  var tab=type==="block"?SK:type==="low"?LK:HK;var f=tab[name]||tab[Object.keys(tab)[0]];g=f(w,L);if(full){g.scale.x=1}
  H.shadowAll(g,true,true);return g}

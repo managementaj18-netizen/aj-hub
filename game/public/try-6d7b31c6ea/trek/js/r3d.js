@@ -6,7 +6,7 @@ var W=360,HH=640;
 /* ---------- tiny helpers shared by the other r3d files ---------- */
 var MC={},GC={};H.texList=[];H.caches=[];
 H.memo=function(fn){var c={};H.caches.push(c);return function(){var k=Array.prototype.join.call(arguments,"|");return c[k]||(c[k]=fn.apply(null,arguments))}};
-H.free=function(o){o.traverse(function(m){if(!m.isMesh)return;if(m.geometry&&!(m.geometry.userData&&m.geometry.userData.shared))m.geometry.dispose();var ms=Array.isArray(m.material)?m.material:[m.material];ms.forEach(function(x){if(x&&!(x.userData&&x.userData.shared))x.dispose()})})};
+H.free=function(o){o.traverse(function(m){if(!m.isMesh)return;var gu=m.geometry&&m.geometry.userData;if(m.geometry&&!(gu&&(gu.shared||gu.proto)))m.geometry.dispose();var ms=Array.isArray(m.material)?m.material:[m.material];ms.forEach(function(x){var xu=x&&x.userData;if(x&&!(xu&&(xu.shared||xu.proto)))x.dispose()})})};
 H.flush=function(){H.texList.forEach(function(t){t.dispose()});H.texList=[];H.caches.forEach(function(c){for(var k in c)delete c[k]});for(var k in MC)MC[k].dispose();MC={};if(R.Props&&R.Props.flush)R.Props.flush()};
 H.mat=function(col,o){o=o||{};var k=col+"|"+(o.t?o.t.uuid:"")+"|"+(o.em||"")+"|"+(o.tr||"")+"|"+(o.ds?1:0)+"|"+(o.fl?1:0);var m=MC[k];if(!m){m=new T.MeshLambertMaterial({color:col,map:o.t||null,transparent:!!o.tr,opacity:o.tr||1,side:o.ds?T.DoubleSide:T.FrontSide,flatShading:!!o.fl});if(o.em)m.emissive=new T.Color(o.em);m.userData.shared=1;MC[k]=m}return m};
 H.geo=function(key,fn){var g=GC[key];if(!g){g=GC[key]=fn();g.userData.shared=1}return g};
@@ -76,24 +76,26 @@ R.reset=function(L,S){if(!R.ok)return;cur=L;curState=S;
  groundMesh=new T.Mesh(new T.PlaneGeometry(520,520),new T.MeshLambertMaterial({map:groundTex}));groundMesh.rotation.x=-Math.PI/2;groundMesh.position.set(0,-.03,-120);groundMesh.receiveShadow=true;world.add(groundMesh);
  var hz=TK.buildHorizon(L),bt=new T.CanvasTexture(hz);var bp=new T.Mesh(new T.PlaneGeometry(330,330*(hz.height/hz.width)),new T.MeshBasicMaterial({map:bt,transparent:true,fog:false,depthWrite:false}));bp.position.set(0,330*(hz.height/hz.width)/2-3,-215);bp.renderOrder=-1;backdrop=bp;world.add(bp);
  R.zones=[];if(L.len>1500){(L.len>2300?[.3,.64]:[.46]).forEach(function(f){var a=Math.round(L.len*f/8)*8;R.zones.push({a:a,b:a+152,first:true})})}R.base={hemi:.68,sun:.62,fog:new T.Color(L.fog)};
- R.Char.set(L,world);R.Props.reset(L,S);if(L.id==="kh"){var ak=R.Props.angkor(L.len+36);street.L.push(ak);world.add(ak)}};
+ R.Char.set(L,world);R.Props.reset(L,S);if(L.id==="kh"){var ak=R.Props.angkor(L.len+36);street.L.push(ak);world.add(ak)}
+ try{H.texList.forEach(function(t){renderer.initTexture(t)});var tmp=new T.Group();R.Props.protos().forEach(function(p){var c=p.clone();c.position.set(0,0,-25);tmp.add(c)});world.add(tmp);renderer.compile(scene,camera);world.remove(tmp)}catch(e){}};
 function disposeTree(o){if(o.parent)o.parent.remove(o)}
 
 /* ---------- per-frame: street, entities, runner, camera ---------- */
 function ensureStreet(S){var L=cur;["L","R"].forEach(function(sd){var cKey="c"+sd,sg=sd==="L"?-1:1;while(street[cKey]<S.D+64){var p=R.Props.nextPiece(L,sg,street,cKey,S);street["n"+sd]++;if(p){p.userData.zz=p.userData.zz;street[sd].push(p);world.add(p)}}});
  [street.L,street.R].forEach(function(arr){for(var i=arr.length-1;i>=0;i--){var p=arr[i];if(p.userData.zz+p.userData.len<S.D-14){world.remove(p);H.free(p);arr.splice(i,1)}else p.position.z=-(p.userData.zz-S.D)}})}
-function mkEntity(e){var L=cur,g=null;if(e.t==="coin")g=R.Props.coin();else if(e.t==="mag")g=R.Props.magnet();else if(e.t==="shield")g=R.Props.shield();else if(e.t==="roll")g=R.Props.roller();else if(e.t==="block"&&e.len)g=R.Props.train(L,e.len);else if(e.t==="finish"||e.t==="cp")g=R.Props.gate(e.t==="finish");else if(e.t==="chest")g=R.Props.chest();else g=R.Props.obstacle(L,e.t,!!e.full);return g}
+function mkEntity(e){return R.Props.entity(cur,e)}
+function mkEntityOld(e){var L=cur,g=null;if(e.t==="coin")g=R.Props.coin();else if(e.t==="mag")g=R.Props.magnet();else if(e.t==="shield")g=R.Props.shield();else if(e.t==="roll")g=R.Props.roller();else if(e.t==="block"&&e.len)g=R.Props.train(L,e.len);else if(e.t==="finish"||e.t==="cp")g=R.Props.gate(e.t==="finish");else if(e.t==="chest")g=R.Props.chest();else g=R.Props.obstacle(L,e.t,!!e.full);return g}
 function syncEnts(S){var seen=new Set();S.ents.forEach(function(e){var z=e.z-S.D;if(e.dead||z>86||z+(e.len||0)<-2.6){var o0=ents.get(e);if(o0){world.remove(o0);H.free(o0);ents.delete(e)}return}seen.add(e);var o=ents.get(e);if(!o){o=mkEntity(e);o.userData.e=e;ents.set(e,o);world.add(o)}
-  var x=e.full?0:e.lane*2;o.position.set(x,0,-z);if(e.t==="coin"){o.position.y=e.hh*1.0;o.rotation.y=S.t*3.2+e.z;o.scale.setScalar(1)}else if(e.t==="mag"){o.position.y=.9+Math.sin(S.t*4)*.08;o.rotation.y=S.t*2}else if(e.t==="shield"){o.position.y=.9+Math.sin(S.t*4)*.08;o.userData.spin.rotation.y=S.t*2.5}else if(e.t==="roll"){o.userData.spin.rotation.x=-z*1.9}else if(e.t==="chest"){R.Props.chestAnim(o,S.done?Math.min(1,S.doneT/1.2):0,z)}});
+  var x=e.full?0:e.lane*2;o.position.set(x,0,-z);if(e.t==="coin"){o.position.y=e.hh*1.0;o.rotation.y=S.t*3.2+e.z;o.scale.setScalar(1)}else if(e.t==="mag"){o.position.y=.9+Math.sin(S.t*4)*.08;o.rotation.y=S.t*2}else if(e.t==="shield"){o.position.y=.9+Math.sin(S.t*4)*.08;(o.userData.sp||(o.userData.sp=o.getObjectByName("spin"))).rotation.y=S.t*2.5}else if(e.t==="roll"){(o.userData.sp||(o.userData.sp=o.getObjectByName("spin"))).rotation.x=-z*1.9}else if(e.t==="chest"){R.Props.chestAnim(o,S.done?Math.min(1,S.doneT/1.2):0,z)}});
  ents.forEach(function(o,e){if(!seen.has(e)){world.remove(o);H.free(o);ents.delete(e)}})}
 
 R.render=function(S,dt){if(!R.ok||!cur)return;
- ensureStreet(S);syncEnts(S);
+ var _t0=performance.now();ensureStreet(S);var _t1=performance.now();syncEnts(S);var _t2=performance.now();
  var tk=0;(R.zones||[]).forEach(function(q){var e=Math.max(0,Math.min(1,(S.D-(q.a-6))/16)),x=Math.max(0,Math.min(1,((q.b+6)-S.D)/16));tk=Math.max(tk,Math.min(e,x))});R.tk=tk;if(R.base){hemi.intensity=R.base.hemi*(1-.55*tk);sun.intensity=R.base.sun*(1-.85*tk);scene.fog.color.copy(R.base.fog).lerp(TUN,tk);scene.fog.near=24-14*tk;scene.fog.far=100-38*tk;R.tl.intensity=tk*1.5;backdrop.visible=tk<.6}
  var off=S.D;roadTex.offset.y=(off/8)%1;walkTex.offset.y=(off/4)%1;
  var sp=Math.max(0,Math.min(1,(S.speed-cur.v0)/Math.max(3,cur.v1-cur.v0)));camera.fov=60+sp*6+(S.shake>0?2:0);camera.updateProjectionMatrix();
  camPlace(S.x*2,S.shake>0?S.shake:0);
- R.Char.update(S,dt,cur);
+ R.Char.update(S,dt,cur);R.prof={street:_t1-_t0,ents:_t2-_t1};
  /* the backdrop follows the camera sideways a hair so it feels far away */
  backdrop.position.x=S.x*.6;
  renderer.render(scene,camera)};
