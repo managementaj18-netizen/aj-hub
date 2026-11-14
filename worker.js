@@ -20,6 +20,14 @@ export default {
     if (url.pathname === '/privacy') return new Response("<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Privacy Policy - A&J Kampot Boutique</title><style>body{font-family:system-ui,sans-serif;max-width:720px;margin:40px auto;padding:0 18px;line-height:1.6;color:#1f2937}h1{color:#14254a}</style></head><body><h1>Privacy Policy</h1><p><b>A&J Kampot Boutique</b>, #163, Street 724, Krang Village, Kampot, Cambodia · ajkampotboutique@gmail.com · +855 87 882 020</p><p>We answer messages from guests on Telegram and Facebook Messenger with the help of an automated assistant, and we offer a Guest App for bookings, early check-in and requests.</p><h2>What we collect</h2><p>Your name, the messages you send us, and any details you choose to give us (phone number, email, nationality, travel dates, booking details, passport/ID photos for check-in, and payment receipts).</p><h2>How we use it</h2><p>Only to answer your questions, arrange your booking and check-in, and provide hotel services. Message history is kept for a few days to keep the conversation in context; check-in details are kept for up to 45 days in the app and then in our hotel records as required by Cambodian law.</p><h2>Sharing</h2><p>We do not sell your data. It is shared only with our staff and the service providers that run our systems (Meta, Telegram, Cloudflare, our booking system and AI providers used to draft replies).</p><h2>Your choices</h2><p>You can ask us at any time to see or delete your data by emailing ajkampotboutique@gmail.com or messaging us.</p><p>Last updated: November 2026</p></body></html>", { headers: { 'content-type': 'text/html; charset=utf-8' } });
     if (url.pathname === '/api/tgsetup') return tgSetup(env, url.origin);
     if (url.pathname === '/api/ota' && request.method === 'POST') return handleOtaIn(request, env);
+    if (url.pathname === '/api/igcheck') {
+      if (!env.OTA_SECRET || url.searchParams.get('k') !== String(env.OTA_SECRET).trim()) return json({ ok: false }, 403);
+      const t = encodeURIComponent(env.FB_PAGE_TOKEN || '');
+      const g = async (path) => { try { const j = await (await fetch(`${FB_API}/${path}${path.includes('?') ? '&' : '?'}access_token=${t}`)).json(); return j.error ? { error: j.error.message, code: j.error.code } : j; } catch (e) { return { error: String(e) }; } };
+      const page = await g('me?fields=id,name,instagram_business_account{id,username}');
+      const conv = await g('me/conversations?platform=instagram&limit=1&fields=id,updated_time');
+      return json({ page, conv: conv.error ? conv : { ok: true, n: (conv.data || []).length } });
+    }
 
     if (url.pathname === '/api/send' && request.method === 'POST') {
       return handleSend(request, env);
