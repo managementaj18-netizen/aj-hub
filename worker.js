@@ -310,7 +310,20 @@ async function onBookingButton(env, q) {
 // Meta webhook: callback URL <worker>/fb/webhook , verify token FB_VERIFY.
 const FB_VERIFY = 'ajkampot-fb-webhook';
 const FB_API = 'https://graph.facebook.com/v21.0';
-async function fbSend(env, psid, message) {
+async function fbSend(env, psid, message, ig) {
+  if (ig) {
+    // Instagram: no metadata; button templates become a short card with buttons (generic template)
+    const at = message.attachment;
+    if (at && at.type === 'template' && at.payload && at.payload.template_type === 'button') {
+      if (at.payload.text && at.payload.text !== '👇') await fbSend(env, psid, { text: at.payload.text }, true);
+      message = { attachment: { type: 'template', payload: { template_type: 'generic', elements: [{ title: 'A&J Kampot Boutique', buttons: at.payload.buttons.slice(0, 3) }] } } };
+    }
+    const r = await fetch(`${FB_API}/me/messages?access_token=${encodeURIComponent(env.FB_PAGE_TOKEN)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ recipient: { id: psid }, message: fbClean(message) }) });
+    const j = await r.json().catch(() => ({}));
+    if (j.message_id && env.PRE) await env.PRE.put('fbsent:' + j.message_id, '1', { expirationTtl: 3600 });
+    if (!r.ok) console.log('ig send failed', JSON.stringify(j).slice(0, 300));
+    return j;
+  }
   const r = await fetch(`${FB_API}/me/messages?access_token=${encodeURIComponent(env.FB_PAGE_TOKEN)}`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
     body: JSON.stringify({ recipient: { id: psid }, messaging_type: 'RESPONSE', message: Object.assign({ metadata: 'aj-bot' }, fbClean(message)) })
@@ -335,15 +348,18 @@ async function handleFb(request, env, url) {
   const raw = await request.text();
   if (!(await fbSigOk(env, request, raw))) return new Response('bad signature', { status: 403 });
   let body = {}; try { body = JSON.parse(raw); } catch (e) {}
-  if (body.object !== 'page' || !env.FB_PAGE_TOKEN) return new Response('ok');
+  if ((body.object !== 'page' && body.object !== 'instagram') || !env.FB_PAGE_TOKEN) return new Response('ok');
+  const ch = body.object === 'instagram' ? 'ig' : 'fb';
   for (const entry of body.entry || []) {
     for (const ev of entry.messaging || []) {
-      try { await onFbEvent(env, ev); } catch (e) { console.log('fb error', e && (e.stack || e.message)); }
+      try { await onFbEvent(env, ev, ch); } catch (e) { console.log('fb error', e && (e.stack || e.message)); }
     }
   }
   return new Response('ok');
 }
-async function onFbEvent(env, ev) {
+async function onFbEvent(env, ev, ch) {
+  const IG = ch === 'ig', P = IG ? 'i:' : 'f:', CHN = IG ? 'Instagram' : 'Messenger';
+  const send = (id, msg) => fbSend(env, id, msg, IG);
   const sid0 = ev.sender && ev.sender.id, isEcho = !!(ev.message && ev.message.is_echo);
   console.log('fb event', JSON.stringify({ k: Object.keys(ev).join(','), echo: isEcho, text: String((ev.message && ev.message.text) || (ev.postback && ev.postback.title) || '').slice(0, 40) }));
   // any guest action (message, button, ad click, "Get started") marks the time: Page auto-replies right after it are not staff
@@ -358,23 +374,26 @@ async function onFbEvent(env, ev) {
     if (m.metadata === 'aj-bot') return;
     await new Promise(r => setTimeout(r, 1500));                            // let fbSend store fbsent: first
     if (env.PRE && ev.recipient && Date.now() - +(await env.PRE.get('fblast:' + ev.recipient.id) || 0) < 15000) return; // automatic reply right after the guest wrote (Page instant reply etc.), not staff
-    if (env.PRE && !(await env.PRE.get('fbsent:' + m.mid)) && ev.recipient && ev.recipient.id) await env.PRE.put('pause:f:' + ev.recipient.id, '1', { expirationTtl: PAUSE_SEC }); await env.PRE.delete('pend:f:' + ev.recipient.id);
+    if (env.PRE && !(await env.PRE.get('fbsent:' + m.mid)) && ev.recipient && ev.recipient.id) await env.PRE.put('pause:' + P + ev.recipient.id, '1', { expirationTtl: PAUSE_SEC }); await env.PRE.delete('pend:' + P + ev.recipient.id);
     return;
   }
   const psid = ev.sender && ev.sender.id;
   if (!psid) return;
-  const key = 'f:' + psid;
+  const key = P + psid;
   if (env.PRE) await env.PRE.put('fblast:' + psid, String(Date.now()), { expirationTtl: 3600 });
   if (env.PRE && await env.PRE.get('pause:' + key)) return;
-  let name = 'Messenger guest';
-  try { const p = await (await fetch(`${FB_API}/${psid}?fields=first_name,last_name&access_token=${encodeURIComponent(env.FB_PAGE_TOKEN)}`)).json(); if (p.first_name) name = [p.first_name, p.last_name].filter(Boolean).join(' '); } catch (e) {}
-  const who = name + ' (Messenger)';
+  let name = CHN + ' guest';
+  try {
+    if (IG) { const p = await (await fetch(`${FB_API}/${psid}?fields=name,username&access_token=${encodeURIComponent(env.FB_PAGE_TOKEN)}`)).json(); if (p.name || p.username) name = (p.name || '') + (p.username ? ' @' + p.username : ''); }
+    else { const p = await (await fetch(`${FB_API}/${psid}?fields=first_name,last_name&access_token=${encodeURIComponent(env.FB_PAGE_TOKEN)}`)).json(); if (p.first_name) name = [p.first_name, p.last_name].filter(Boolean).join(' '); }
+  } catch (e) {}
+  const who = name.trim() + ' (' + CHN + ')';
   const text = (m.text || '').trim();
   if (!text) {
     if (m.sticker_id) return;
-    await helloOnce(env, key, () => fbSend(env, psid, { attachment: { type: 'image', payload: { url: ST_BASE + 'hello.png?v=4', is_reusable: true } } }));
-    await fbSend(env, psid, { text: 'Thank you! 🙏 Our team will check it and reply shortly. / អរគុណបង! 🙏 ក្រុមការងារយើងនឹងពិនិត្យ ហើយឆ្លើយបងឆាប់ៗ។' });
-    await notifyStaff(env, `📎 ${who} sent a photo/file/voice on Facebook Messenger — please check the Page inbox.`, key);
+    await helloOnce(env, key, () => send(psid, { attachment: { type: 'image', payload: { url: ST_BASE + 'hello.png?v=4', is_reusable: true } } }));
+    await send(psid, { text: 'Thank you! 🙏 Our team will check it and reply shortly. / អរគុណបង! 🙏 ក្រុមការងារយើងនឹងពិនិត្យ ហើយឆ្លើយបងឆាប់ៗ។' });
+    await notifyStaff(env, `📎 ${who} sent a photo/file/voice on ${CHN} — please check the inbox.`, key);
     return;
   }
   fetch(`${FB_API}/me/messages?access_token=${encodeURIComponent(env.FB_PAGE_TOKEN)}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ recipient: { id: psid }, sender_action: 'typing_on' }) }).catch(() => {});
@@ -385,8 +404,8 @@ async function onFbEvent(env, ev) {
   let reply = '';
   try { const note = await bookingNote(env, key); reply = await askClaude(env, note ? hist.map((x, i) => i === hist.length - 1 ? { role: 'user', content: x.content + note } : x) : hist); } catch (e) { console.log('claude', e && e.message); }
   if (!reply) {
-    await fbSend(env, psid, { text: 'Thank you! Our team will reply shortly. 🙏' });
-    await notifyStaff(env, `💬 ${who}: ${text.slice(0, 500)}\n(AI could not answer — please reply in the Page inbox)`, key);
+    await send(psid, { text: 'Thank you! Our team will reply shortly. 🙏' });
+    await notifyStaff(env, `💬 ${who}: ${text.slice(0, 500)}\n(AI could not answer — please reply)`, key);
     return;
   }
   const wantApp = /\[APP\]/i.test(reply), wantMap = /\[MAP\]/i.test(reply), wantStaff = /\[STAFF\]/i.test(reply), wantThx = /\[THX\]/i.test(reply), wantUrgent = /\[URGENT\]/i.test(reply);
@@ -395,17 +414,17 @@ async function onFbEvent(env, ev) {
   if (wantApp) buttons.push({ type: 'web_url', url: APP_URL + '?c=' + await chatTok(env, key), title: '📱 Open App' });
   if (wantMap) buttons.push({ type: 'web_url', url: MAP_URL, title: '📍 Map' });
   if (/\[MOTO\]/i.test(reply)) buttons.push({ type: 'web_url', url: APP_URL + '?page=moto&c=' + await chatTok(env, key), title: '🛵 Choose a motorbike' });
-  await helloOnce(env, key, () => fbSend(env, psid, { attachment: { type: 'image', payload: { url: ST_BASE + 'hello.png?v=4', is_reusable: true } } }));
-  if (buttons.length && clean.length <= 640) await fbSend(env, psid, { attachment: { type: 'template', payload: { template_type: 'button', text: clean, buttons } } });
+  await helloOnce(env, key, () => send(psid, { attachment: { type: 'image', payload: { url: ST_BASE + 'hello.png?v=4', is_reusable: true } } }));
+  if (buttons.length && clean.length <= 640) await send(psid, { attachment: { type: 'template', payload: { template_type: 'button', text: clean, buttons } } });
   else {
-    await fbSend(env, psid, { text: clean.slice(0, 2000) });
-    if (buttons.length) await fbSend(env, psid, { attachment: { type: 'template', payload: { template_type: 'button', text: '👇', buttons } } });
+    await send(psid, { text: clean.slice(0, 2000) });
+    if (buttons.length) await send(psid, { attachment: { type: 'template', payload: { template_type: 'button', text: '👇', buttons } } });
   }
-  if (wantThx) await fbSend(env, psid, { attachment: { type: 'image', payload: { url: ST_BASE + 'thanks.png?v=4', is_reusable: true } } });
-  await afterGuestReply(env, { key, who, text, ch: 'Messenger', staff: wantStaff, urgent: wantUrgent });
+  if (wantThx) await send(psid, { attachment: { type: 'image', payload: { url: ST_BASE + 'thanks.png?v=4', is_reusable: true } } });
+  await afterGuestReply(env, { key, who, text, ch: CHN, staff: wantStaff, urgent: wantUrgent });
   hist.push({ role: 'assistant', content: clean });
   if (env.PRE) await env.PRE.put('hist:' + key, JSON.stringify(hist), { expirationTtl: HIST_TTL });
-  if (wantStaff) await notifyStaff(env, `🙋 ${who} needs staff (Facebook Messenger):\n"${text.slice(0, 600)}"`, key);
+  if (wantStaff) await notifyStaff(env, `🙋 ${who} needs staff (${CHN}):\n"${text.slice(0, 600)}"`, key);
 }
 
 // ---- link a guest chat (Telegram / Messenger) to the booking made in the Guest App ----
@@ -739,7 +758,7 @@ async function sendToGuest(env, key, text, tags) {
   const kb = (web) => btns.length ? { reply_markup: { inline_keyboard: btns.map(b => [web && b.u !== MAP_URL ? { text: b.t, web_app: { url: b.u } } : { text: b.t, url: b.u }]) } } : {};
   if (key.startsWith('b:')) { const p = key.split(':'); const r = await tgApi(env, 'sendMessage', Object.assign({ business_connection_id: p[1], chat_id: p.slice(2).join(':'), text: t }, kb(false))); if (!r || !r.ok) return (r && r.description) || 'failed'; }
   else if (key.startsWith('d:')) { const r = await tgApi(env, 'sendMessage', Object.assign({ chat_id: key.slice(2), text: t }, kb(true))); if (!r || !r.ok) return (r && r.description) || 'failed'; }
-  else if (key.startsWith('f:')) { const r = btns.length && t.length <= 640 ? await fbSend(env, key.slice(2), { attachment: { type: 'template', payload: { template_type: 'button', text: t, buttons: btns.slice(0, 3).map(b => ({ type: 'web_url', url: b.u, title: b.t.slice(0, 20) })) } } }) : await fbSend(env, key.slice(2), { text: t }); if (!r || !r.message_id) return (r && r.error && r.error.message) || 'failed (Messenger allows replies only within 24 hours of the guest\'s last message)'; }
+  else if (key.startsWith('f:') || key.startsWith('i:')) { const ig = key.startsWith('i:'); const r = btns.length && t.length <= 640 ? await fbSend(env, key.slice(2), { attachment: { type: 'template', payload: { template_type: 'button', text: t, buttons: btns.slice(0, 3).map(b => ({ type: 'web_url', url: b.u, title: b.t.slice(0, 20) })) } } }, ig) : await fbSend(env, key.slice(2), { text: t }, ig); if (!r || !r.message_id) return (r && r.error && r.error.message) || 'failed (Messenger allows replies only within 24 hours of the guest\'s last message)'; }
   else return 'unknown chat';
   const h = JSON.parse((await env.PRE.get('hist:' + key)) || '[]'); h.push({ role: 'assistant', content: t }); while (h.length > 16) h.shift();
   await env.PRE.put('hist:' + key, JSON.stringify(h), { expirationTtl: HIST_TTL });
