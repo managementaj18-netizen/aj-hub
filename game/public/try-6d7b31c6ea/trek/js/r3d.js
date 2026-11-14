@@ -40,7 +40,7 @@ H.T=T;
 /* ---------- renderer, camera, light ---------- */
 var renderer,scene,camera,sun,hemi,gl,TUN=new T.Color(0x0c1418);
 var roadTex=null,groundTex=null,walkTex=null,roadMesh,groundMesh,walkL,walkR,backdrop,world,ents=new Map(),street={L:[],R:[]},cur=null,curState=null;
-R.init=function(canvas){try{renderer=new T.WebGLRenderer({canvas:canvas,antialias:true,alpha:false,powerPreference:"high-performance"});
+R.init=function(canvas){try{renderer=new T.WebGLRenderer({canvas:canvas,antialias:(window.devicePixelRatio||1)<2,alpha:false,powerPreference:"high-performance"});
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=T.PCFSoftShadowMap;renderer.setClearColor(0xbfe4f4,1);
  scene=new T.Scene();camera=new T.PerspectiveCamera(60,W/HH,.1,300);hemi=new T.HemisphereLight(0xcfe8ff,0x8a7a5a,.95);scene.add(hemi);
  sun=new T.DirectionalLight(0xfff2d0,.9);sun.position.set(-9,15,7);sun.target.position.set(0,0,-8);sun.castShadow=true;sun.shadow.mapSize.set(1024,1024);var sc=sun.shadow.camera;sc.left=-13;sc.right=13;sc.top=24;sc.bottom=-12;sc.near=1;sc.far=48;sun.shadow.bias=-.0006;sun.shadow.normalBias=.04;scene.add(sun);scene.add(sun.target);R.tl=new T.PointLight(0xffc880,0,22);R.tl.position.set(0,4.6,-3);scene.add(R.tl);
