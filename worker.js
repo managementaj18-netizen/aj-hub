@@ -17,6 +17,8 @@ export default {
     if (url.pathname === '/tg/webhook' && request.method === 'POST') return handleTg(request, env, ctx);
     if (url.pathname === '/fb/webhook') return handleFb(request, env, url);
     if (url.pathname === '/wa/webhook') return handleWa(request, env, url, ctx);
+    if (url.pathname === '/wa/connect') { if (!env.OTA_SECRET || url.searchParams.get('k') !== String(env.OTA_SECRET).trim()) return new Response('forbidden', { status: 403 }); return new Response(waConnectPage(url.searchParams.get('k'), url.searchParams.get('cfg') || (await env.PRE.get('cfg:waconfig')) || ''), { headers: { 'content-type': 'text/html; charset=utf-8' } }); }
+    if (url.pathname === '/wa/connect/finish' && request.method === 'POST') return waConnectFinish(request, env);
     if (url.pathname.startsWith('/st/')) return stickerResponse(url.pathname.slice(4));
     if (url.pathname === '/privacy') return new Response("<!doctype html><html><head><meta charset=\"utf-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Privacy Policy - A&J Kampot Boutique</title><style>body{font-family:system-ui,sans-serif;max-width:720px;margin:40px auto;padding:0 18px;line-height:1.6;color:#1f2937}h1{color:#14254a}</style></head><body><h1>Privacy Policy</h1><p><b>A&J Kampot Boutique</b>, #163, Street 724, Krang Village, Kampot, Cambodia · ajkampotboutique@gmail.com · +855 87 882 020</p><p>We answer messages from guests on Telegram and Facebook Messenger with the help of an automated assistant, and we offer a Guest App for bookings, early check-in and requests.</p><h2>What we collect</h2><p>Your name, the messages you send us, and any details you choose to give us (phone number, email, nationality, travel dates, booking details, passport/ID photos for check-in, and payment receipts).</p><h2>How we use it</h2><p>Only to answer your questions, arrange your booking and check-in, and provide hotel services. Message history is kept for a few days to keep the conversation in context; check-in details are kept for up to 45 days in the app and then in our hotel records as required by Cambodian law.</p><h2>Sharing</h2><p>We do not sell your data. It is shared only with our staff and the service providers that run our systems (Meta, Telegram, Cloudflare, our booking system and AI providers used to draft replies).</p><h2>Your choices</h2><p>You can ask us at any time to see or delete your data by emailing ajkampotboutique@gmail.com or messaging us.</p><p>Last updated: November 2026</p></body></html>", { headers: { 'content-type': 'text/html; charset=utf-8' } });
     if (url.pathname === '/api/tgsetup') return tgSetup(env, url.origin);
@@ -1384,8 +1386,51 @@ async function otaText(env) {
 // ===== WhatsApp (Cloud API, coexistence with the WhatsApp Business app on +855 87 882 020) =====
 // Needs Secret WA_TOKEN (permanent system-user token with whatsapp_business_messaging). Guest-started chats are free.
 const WA_VERIFY = 'ajkampot-wa-webhook';
+let _waTok = null;
+async function waTok(env) { if (env.WA_TOKEN) return String(env.WA_TOKEN).trim(); if (_waTok === null && env.PRE) _waTok = (await env.PRE.get('cfg:watoken')) || ''; return _waTok || ''; }
+const WA_APP_ID = '2388376985305109';
+// Owner-only page: connect the hotel's existing WhatsApp Business app number (Coexistence) with Embedded Signup.
+function waConnectPage(k, configId) {
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>A&J - Connect WhatsApp</title>
+<style>body{font-family:system-ui,sans-serif;max-width:560px;margin:40px auto;padding:0 16px;color:#1d2b4f}button{background:#25D366;color:#fff;border:0;border-radius:10px;padding:14px 22px;font-size:18px;cursor:pointer}#s{margin-top:18px;white-space:pre-wrap;background:#f4f6fb;border-radius:10px;padding:12px}</style></head><body>
+<h2>ភ្ជាប់ WhatsApp ទៅ Bot (A&J Kampot Boutique)</h2>
+<p>1. ចុចប៊ូតុងខាងក្រោម → Login ជាមួយ Facebook<br>2. ពេលសួរលេខទូរស័ព្ទ សូមបញ្ចូល <b>+855 87 882 020</b> (លេខដែលប្រើ WhatsApp Business)<br>3. ស្កេន QR ជាមួយ App WhatsApp Business ក្នុងទូរស័ព្ទ ហើយយល់ព្រមចែករំលែកសារ</p>
+<button id="b">ភ្ជាប់ WhatsApp</button><div id="s">រង់ចាំ...</div>
+<script>
+const K=${JSON.stringify(k)}, CFG=${JSON.stringify(configId)}; let info={};
+const S=t=>document.getElementById('s').textContent=t;
+window.addEventListener('message',e=>{ if(!/facebook\\.com$/.test(new URL(e.origin).hostname))return; try{const d=JSON.parse(e.data); if(d.type==='WA_EMBEDDED_SIGNUP'){info=Object.assign(info,d.data||{},{event:d.event}); S('Meta: '+d.event);} }catch(x){} });
+window.fbAsyncInit=function(){ FB.init({appId:'${WA_APP_ID}',autoLogAppEvents:true,xfbml:false,version:'v21.0'}); S('រួចរាល់ — សូមចុចប៊ូតុង'); };
+document.getElementById('b').onclick=()=>{ if(!window.FB){S('Facebook SDK មិនទាន់ផ្ទុក');return;} S('កំពុងបើក Facebook...');
+ FB.login(r=>{ if(!r.authResponse||!r.authResponse.code){S('បានបោះបង់ ឬមិនបានអនុញ្ញាត');return;}
+  S('កំពុងភ្ជាប់...'); setTimeout(()=>fetch('/wa/connect/finish',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({k:K,code:r.authResponse.code,info})}).then(x=>x.json()).then(j=>S(j.ok?'✅ ភ្ជាប់ WhatsApp រួចរាល់! Bot អាចឆ្លើយភ្ញៀវ WhatsApp ហើយ។\\n'+JSON.stringify(j.detail||{}):'❌ '+(j.error||'error'))).catch(e=>S('❌ '+e)),1500);
+ },{config_id:CFG,response_type:'code',override_default_response_type:true,extras:{setup:{},featureType:'whatsapp_business_app_onboarding',sessionInfoVersion:'3'}}); };
+</script><script async defer crossorigin="anonymous" src="https://connect.facebook.net/en_US/sdk.js"></script></body></html>`;
+}
+async function waConnectFinish(request, env) {
+  let p = {}; try { p = await request.json(); } catch (e) {}
+  if (!env.OTA_SECRET || p.k !== String(env.OTA_SECRET).trim()) return json({ ok: false, error: 'forbidden' }, 403);
+  if (!env.FB_APP_SECRET) return json({ ok: false, error: 'FB_APP_SECRET is not set in Cloudflare' });
+  const tr = await (await fetch(`${FB_API}/oauth/access_token?client_id=${WA_APP_ID}&client_secret=${encodeURIComponent(String(env.FB_APP_SECRET).trim())}&code=${encodeURIComponent(p.code || '')}`)).json();
+  if (!tr.access_token) return json({ ok: false, error: 'token exchange failed: ' + JSON.stringify(tr.error || tr).slice(0, 300) });
+  const tok = tr.access_token, info = p.info || {};
+  let waba = info.waba_id, phone = info.phone_number_id;
+  if (!waba) { // find the WABA shared with the app
+    const d = await (await fetch(`${FB_API}/debug_token?input_token=${encodeURIComponent(tok)}&access_token=${WA_APP_ID}|${encodeURIComponent(String(env.FB_APP_SECRET).trim())}`)).json();
+    const gs = (d.data && d.data.granular_scopes) || []; const g = gs.find(x => x.scope === 'whatsapp_business_management'); waba = g && g.target_ids && g.target_ids[0];
+  }
+  if (waba && !phone) { const ph = await (await fetch(`${FB_API}/${waba}/phone_numbers?access_token=${encodeURIComponent(tok)}`)).json(); phone = ph.data && ph.data[0] && ph.data[0].id; }
+  await env.PRE.put('cfg:watoken', tok); _waTok = tok;
+  if (waba) await env.PRE.put('cfg:waba', waba);
+  if (phone) await env.PRE.put('cfg:waphone', phone);
+  const detail = { waba, phone };
+  if (waba) detail.subscribe = await (await fetch(`${FB_API}/${waba}/subscribed_apps`, { method: 'POST', headers: { authorization: 'Bearer ' + tok } })).json();
+  if (phone) for (const t of ['smb_app_state_sync', 'history']) detail[t] = await (await fetch(`${FB_API}/${phone}/smb_app_data`, { method: 'POST', headers: { authorization: 'Bearer ' + tok, 'content-type': 'application/json' }, body: JSON.stringify({ messaging_product: 'whatsapp', sync_type: t }) })).json();
+  await tellOwner(env, '✅ WhatsApp (+855 87 882 020) ត្រូវបានភ្ជាប់ទៅ Bot រួចរាល់ហើយ។ ពីឥឡូវ Bot នឹងឆ្លើយភ្ញៀវ WhatsApp ដោយស្វ័យប្រវត្តិ ហើយបុគ្គលិកនៅតែប្រើ App WhatsApp Business បានធម្មតា។');
+  return json({ ok: true, detail });
+}
 async function waSend(env, phoneId, to, msg) {
-  const r = await fetch(`${FB_API}/${phoneId}/messages`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + String(env.WA_TOKEN || '').trim() }, body: JSON.stringify(Object.assign({ messaging_product: 'whatsapp', recipient_type: 'individual', to }, msg)) });
+  const r = await fetch(`${FB_API}/${phoneId}/messages`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + await waTok(env) }, body: JSON.stringify(Object.assign({ messaging_product: 'whatsapp', recipient_type: 'individual', to }, msg)) });
   const j = await r.json().catch(() => ({}));
   if (!r.ok) console.log('wa send failed', JSON.stringify(j).slice(0, 300));
   else if (env.PRE && j.messages && j.messages[0]) await env.PRE.put('wasent:' + j.messages[0].id, '1', { expirationTtl: 3600 });
@@ -1401,7 +1446,7 @@ async function handleWa(request, env, url, ctx) {
   const raw = await request.text();
   if (!(await fbSigOk(env, request, raw))) return new Response('bad signature', { status: 403 });
   let body = {}; try { body = JSON.parse(raw); } catch (e) {}
-  if (body.object !== 'whatsapp_business_account' || !env.WA_TOKEN) return new Response('ok');
+  if (body.object !== 'whatsapp_business_account' || !(await waTok(env))) return new Response('ok');
   const jobs = [];
   for (const entry of body.entry || []) for (const ch of entry.changes || []) {
     const v = ch.value || {}; const phoneId = v.metadata && v.metadata.phone_number_id;
@@ -1424,7 +1469,7 @@ async function onWaMessage(env, phoneId, m, profileName) {
   const key = 'w:' + from;
   if (env.PRE && await env.PRE.get('pause:' + key)) return;
   const who = (profileName || 'WhatsApp guest') + ' +' + from + ' (WhatsApp)';
-  fetch(`${FB_API}/${phoneId}/messages`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + String(env.WA_TOKEN).trim() }, body: JSON.stringify({ messaging_product: 'whatsapp', status: 'read', message_id: m.id }) }).catch(() => {});
+  fetch(`${FB_API}/${phoneId}/messages`, { method: 'POST', headers: { 'content-type': 'application/json', authorization: 'Bearer ' + await waTok(env) }, body: JSON.stringify({ messaging_product: 'whatsapp', status: 'read', message_id: m.id }) }).catch(() => {});
   let text = '';
   if (m.type === 'text') text = (m.text && m.text.body || '').trim();
   else if (m.type === 'button') text = (m.button && m.button.text) || '';
@@ -1432,9 +1477,9 @@ async function onWaMessage(env, phoneId, m, profileName) {
   else if ((m.type === 'audio' || m.type === 'voice') && env.GEMINI_API_KEY) {
     try {
       const au = m.audio || m.voice || {};
-      const meta = await (await fetch(`${FB_API}/${au.id}`, { headers: { authorization: 'Bearer ' + String(env.WA_TOKEN).trim() } })).json();
+      const meta = await (await fetch(`${FB_API}/${au.id}`, { headers: { authorization: 'Bearer ' + await waTok(env) } })).json();
       if (meta.url && (meta.file_size || 0) < 15 * 1024 * 1024) {
-        const br = await fetch(meta.url, { headers: { authorization: 'Bearer ' + String(env.WA_TOKEN).trim() } });
+        const br = await fetch(meta.url, { headers: { authorization: 'Bearer ' + await waTok(env) } });
         const bytes = new Uint8Array(await br.arrayBuffer());
         const t = await transcribeVoice(env, { bytes, mime_type: (au.mime_type || meta.mime_type || 'audio/ogg').split(';')[0] });
         if (t) text = '[Voice message, auto-transcribed]: ' + t;
