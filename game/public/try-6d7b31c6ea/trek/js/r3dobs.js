@@ -107,10 +107,10 @@ Pr.reset=function(L,S){var r=H.rnd(11+L.id.charCodeAt(0)*7),kit=L.kit,i;
  (NAT[kit]||["oak"]).forEach(function(kd){for(i=0;i<4;i++)lib("tree|"+kd,4,function(){return treeMake(kd,r)},r)});
  for(i=0;i<3;i++){lib("hut",3,function(){return hut(r,L)},r);lib("ad",3,function(){return adobeHouse(r,L)},r)}lib("lamp0",1,function(){return lamp(r,false)},r);lib("lamp1",1,function(){return lamp(r,true)},r);lib("sn",1,snowman,r);
  if(R.zones&&R.zones.length){lib("t0",1,function(){return tunnelSeg(L,false,false)},r);lib("t1",1,function(){return tunnelSeg(L,true,false)},r);lib("t2",1,function(){return tunnelSeg(L,true,true)},r)}
- var E=[{t:"coin"},{t:"mag"},{t:"shield"},{t:"roll"},{t:"block"},{t:"low"},{t:"high"},{t:"low",full:1},{t:"high",full:1}];for(i=10;i<=16;i++)E.push({t:"block",len:i});E.forEach(function(e){Pr.entity(L,e)})};
+ var E=[{t:"coin"},{t:"mag"},{t:"shield"},{t:"ramp"},{t:"jet"},{t:"roll"},{t:"block"},{t:"low"},{t:"high"},{t:"low",full:1},{t:"high",full:1}];for(i=10;i<=16;i++)E.push({t:"block",len:i});E.forEach(function(e){Pr.entity(L,e)})};
 /* entities are cached too: one built copy, cloned for every coin/obstacle */
 Pr.entity=function(L,e){var key,make;
- if(e.t==="coin"){key="coin";make=Pr.coin}else if(e.t==="mag"){key="mag";make=Pr.magnet}else if(e.t==="shield"){key="shield";make=Pr.shield}else if(e.t==="roll"){key="roll";make=Pr.roller}
+ if(e.t==="coin"){key="coin";make=Pr.coin}else if(e.t==="mag"){key="mag";make=Pr.magnet}else if(e.t==="shield"){key="shield";make=Pr.shield}else if(e.t==="roll"){key="roll";make=Pr.roller}else if(e.t==="ramp"){key="ramp";make=Pr.ramp}else if(e.t==="jet"){key="jet";make=Pr.jetpack}
  else if(e.t==="block"&&e.len){key="train"+e.len;make=function(){return Pr.train(L,e.len)}}
  else if(e.t==="finish"||e.t==="cp")return Pr.gate(e.t==="finish");else if(e.t==="chest")return Pr.chest();
  else{key=e.t+"|"+((L.obs||{})[e.t])+"|"+(e.full?1:0);make=function(){return Pr.obstacle(L,e.t,!!e.full)}}
@@ -200,16 +200,24 @@ var HK={
 /* ---------- long trains/trams (block a lane for a stretch), rolling barrels, shield ---------- */
 var trainTex=H.memo(function(body,acc,len){var t=H.tex(256,128,function(g,w,h){g.fillStyle=body;g.fillRect(0,0,w,h);g.fillStyle=acc;g.fillRect(0,h*.78,w,h*.1);g.fillRect(0,h*.06,w,h*.05);for(var i=0;i<4;i++){var x=i*64+10;g.fillStyle="#1a2a3a";g.fillRect(x,h*.22,44,h*.34);var gr=g.createLinearGradient(x,0,x+44,0);gr.addColorStop(0,"rgba(180,220,255,.5)");gr.addColorStop(.4,"rgba(180,220,255,0)");g.fillStyle=gr;g.fillRect(x,h*.22,44,h*.34);g.strokeStyle="rgba(0,0,0,.4)";g.lineWidth=2;g.strokeRect(x,h*.22,44,h*.34)}g.strokeStyle="rgba(0,0,0,.35)";g.beginPath();g.moveTo(1,0);g.lineTo(1,h);g.stroke()},true);t.repeat.set(len/4.1,1);return t});
 Pr.train=function(L,len){var g=new T.Group(),pal=L.pal||["#d8302a","#fff","#2a5a8a"],body=pal[2]&&pal[2]!==pal[0]?pal[2]:"#2a5a8a",acc=pal[0],tx=trainTex(body,acc,Math.round(len)),m=new T.MeshLambertMaterial({map:tx}),roof=H.mat(H.shade(body,.25)),dk=H.mat("#26282e");
- var b=new T.Mesh(new T.BoxGeometry(1.75,2.2,len),[m,m,roof,dk,H.mat(body),H.mat(body)]);b.position.set(0,1.5,-len/2);g.add(b);
+ var b=new T.Mesh(new T.BoxGeometry(1.75,2.1,len),[m,m,roof,dk,H.mat(body),H.mat(body)]);b.position.set(0,1.35,-len/2);g.add(b);
  H.box(1.8,.5,len+.05,"#2a2c32",0,.35,-len/2,g);
- H.box(1.5,.12,len*.9,"#9aa0a8",0,2.66,-len/2,g);
- for(var i=0;i<Math.floor(len/4);i++)H.box(.5,.14,.7,"#cfd4da",0,2.75,-2-i*4,g);
- var fw=H.box(1.5,.9,.06,"#1a2a3a",0,1.95,.04,g);H.box(1.6,.12,.08,acc,0,1.3,.05,g);
+ H.box(1.5,.06,len*.9,"#9aa0a8",0,2.43,-len/2,g);
+ for(var i=0;i<Math.floor(len/4);i++)H.box(.5,.08,.7,"#cfd4da",0,2.46,-2-i*4,g);
+ var fw=H.box(1.5,.9,.06,"#1a2a3a",0,1.8,.04,g);H.box(1.6,.12,.08,acc,0,1.3,.05,g);
  [-1,1].forEach(function(s){H.box(.3,.22,.08,"#fff8c8",s*.55,.8,.05,g,{em:"#ffe890"})});
- H.box(1.1,.3,.1,"#fff",0,2.4,.05,g);
+ H.box(1.1,.3,.1,"#fff",0,2.2,.05,g);
  return g};
 Pr.roller=function(){var g=new T.Group();var bar=new T.Group();bar.position.y=.55;g.add(bar);bar.name="spin";var c=H.cyl(.55,.55,1.2,H.mat("#a8702a"),0,0,0,bar,18);c.rotation.z=Math.PI/2;[-.45,0,.45].forEach(function(x){var t=new T.Mesh(H.geo("rollring",function(){return new T.TorusGeometry(.56,.04,6,20)}),H.mat("#3a3a40"));t.rotation.y=Math.PI/2;t.position.x=x;bar.add(t)});H.box(.1,.9,.1,"#5a3a14",0,0,0,bar).rotation.x=0;H.shadowAll(g,true,false);return g};
 Pr.shield=function(){var g=new T.Group();var o=new T.Mesh(H.geo("shd",function(){return new T.OctahedronGeometry(.42)}),H.mat("#3aa0ff",{em:"#144a88"}));o.position.y=.1;g.add(o);o.name="spin";var b=new T.Mesh(new T.SphereGeometry(.62,14,10),new T.MeshBasicMaterial({color:0x66ccff,transparent:true,opacity:.28,depthWrite:false}));g.add(b);return g};
+
+/* ramp up onto a train roof, and the jetpack pickup */
+Pr.ramp=function(){var g=new T.Group(),len=6,RHh=2.4,ang=Math.atan2(RHh,len),L2=Math.sqrt(len*len+RHh*RHh),wood=H.mat("#a8743a"),dk=H.mat("#6a4a22");
+ var plank=H.box(1.78,.16,L2,wood,0,RHh/2-.04,-len/2,g);plank.rotation.x=ang;
+ [-1,1].forEach(function(s){var rl=H.box(.1,.3,L2,dk,s*.86,RHh/2+.1,-len/2,g);rl.rotation.x=ang;for(var i=0;i<5;i++){var f=(i+.5)/5;H.box(.12,RHh*f,.12,dk,s*.86,RHh*f/2,-len*f,g)}});
+ for(var k=1;k<8;k++){var f2=k/8,st=H.box(1.7,.04,.1,"#3a2a14",0,RHh*f2+.03,-len*f2,g);st.rotation.x=ang}
+ H.box(1.8,.1,.3,"#ffd24a",0,.07,-.1,g);return H.merge(g,true,true)};
+Pr.jetpack=function(){var g=new T.Group();H.box(.5,.7,.3,"#c8402a",0,0,0,g);[-1,1].forEach(function(s){H.cyl(.14,.16,.7,H.mat("#8a8e98"),s*.18,-.05,.22,g,10);H.cone(.13,.28,H.mat("#ff9a2a",{em:"#aa4400"}),s*.18,-.5,.22,g,8).rotation.x=Math.PI;H.sph(.12,"#fff",s*.18,.34,.22,g)});H.box(.62,.1,.34,"#ffd24a",0,.3,0,g);var gl=new T.Mesh(new T.SphereGeometry(.75,12,10),new T.MeshBasicMaterial({color:0xffb04a,transparent:true,opacity:.22,depthWrite:false}));g.add(gl);return g};
 Pr.obstacle=function(L,type,full){var o=L.obs||{},name=o[type],w=full?5.8:1.7,g;
  var tab=type==="block"?SK:type==="low"?LK:HK;var f=tab[name]||tab[Object.keys(tab)[0]];g=f(w,L);if(full){g.scale.x=1}
  H.shadowAll(g,true,true);return g}
