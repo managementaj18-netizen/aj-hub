@@ -49,7 +49,7 @@ R.init=function(canvas){try{renderer=new T.WebGLRenderer({canvas:canvas,antialia
 R.setSize=function(cw,ch,pr){if(!R.ok)return;renderer.setPixelRatio(pr);renderer.setSize(cw,ch,false);camera.aspect=cw/ch;camera.updateProjectionMatrix()};
 R.shadows=function(on){if(R.ok)sun.castShadow=on};
 /* camera sits behind and above the runner, looking down the road like a chase camera */
-function camPlace(x,shake){camera.position.set(x*.4,3.0,6.4);camera.rotation.set(-.215,0,0);camera.rotation.order="YXZ";if(shake){camera.position.x+=Math.sin(shake*80)*.1;camera.position.y+=Math.cos(shake*70)*.08}camera.updateMatrixWorld(true)}
+function camPlace(x,shake,h){camera.position.set(x*.4,3.0+Math.min(3.6,h||0)*.42,6.4);camera.rotation.set(-.215,0,0);camera.rotation.order="YXZ";if(shake){camera.position.x+=Math.sin(shake*80)*.1;camera.position.y+=Math.cos(shake*70)*.08}camera.updateMatrixWorld(true)}
 /* where things land on the 360x640 screen, so 2D effects (sparkles, scores) line up with the 3D world */
 function projectConsts(){var v=new T.Vector3(0,0,0).project(camera);R.YP=(1-v.y)/2*HH;var a=new T.Vector3(2,0,0).project(camera);R.LW=(a.x-v.x)/2*W;var b=new T.Vector3(0,1,0).project(camera);R.UH=Math.abs((v.y-b.y)/2*HH);var f=new T.Vector3(0,0,-1e4).project(camera);R.HZ=(1-f.y)/2*HH}
 R.screen=function(x,y,z){var v=new T.Vector3(x,y,z).project(camera);return[(v.x+1)/2*W,(1-v.y)/2*HH]};
@@ -75,6 +75,7 @@ R.reset=function(L,S){if(!R.ok)return;cur=L;curState=S;
  var wm=new T.MeshLambertMaterial({map:walkTex});walkTex.repeat.set(1.6/2,260/4);[-1,1].forEach(function(s){var w=new T.Mesh(new T.BoxGeometry(1.7,.22,260),new T.MeshLambertMaterial({map:walkTex}));w.position.set(s*(3.1+.85),.11,-110);w.receiveShadow=true;world.add(w);var cb=new T.Mesh(new T.BoxGeometry(.12,.26,260),H.mat(H.shade(L.edge||"#e8e8e8",-.05)));cb.position.set(s*3.15,.12,-110);world.add(cb)});
  groundMesh=new T.Mesh(new T.PlaneGeometry(520,520),new T.MeshLambertMaterial({map:groundTex}));groundMesh.rotation.x=-Math.PI/2;groundMesh.position.set(0,-.03,-120);groundMesh.receiveShadow=true;world.add(groundMesh);
  var hz=TK.buildHorizon(L),bt=new T.CanvasTexture(hz);var bp=new T.Mesh(new T.PlaneGeometry(330,330*(hz.height/hz.width)),new T.MeshBasicMaterial({map:bt,transparent:true,fog:false,depthWrite:false}));bp.position.set(0,330*(hz.height/hz.width)/2-3,-215);bp.renderOrder=-1;backdrop=bp;world.add(bp);
+ var bm=new T.Mesh(new T.SphereGeometry(1.05,20,16),new T.MeshLambertMaterial({map:H.tex(128,128,function(g,w,h){g.fillStyle="#8a8272";g.fillRect(0,0,w,h);var rn=H.rnd(4);for(var i=0;i<700;i++){g.fillStyle="rgba("+(rn()<.5?"0,0,0":"255,255,255")+","+(rn()*.14)+")";g.fillRect(rn()*w,rn()*h,2+rn()*5,2+rn()*3)}g.strokeStyle="rgba(40,30,20,.6)";g.lineWidth=3;for(var k=0;k<9;k++){g.beginPath();var x=rn()*w,y=rn()*h;g.moveTo(x,y);for(var j=0;j<4;j++){x+=(rn()-.5)*40;y+=(rn()-.3)*30;g.lineTo(x,y)}g.stroke()}},true)}));bm.castShadow=true;bm.position.set(0,1.05,8);bm.visible=false;world.add(bm);R.boulder=bm;
  R.zones=[];if(L.len>1500){(L.len>2300?[.3,.64]:[.46]).forEach(function(f){var a=Math.round(L.len*f/8)*8;R.zones.push({a:a,b:a+152,first:true})})}R.base={hemi:.68,sun:.62,fog:new T.Color(L.fog)};
  R.Char.set(L,world);R.Props.reset(L,S);if(L.id==="kh"){var ak=R.Props.angkor(L.len+36);street.L.push(ak);world.add(ak)}
  try{H.texList.forEach(function(t){renderer.initTexture(t)});var tmp=new T.Group();R.Props.protos().forEach(function(p){var c=p.clone();c.position.set(0,0,-25);tmp.add(c)});world.add(tmp);renderer.compile(scene,camera);world.remove(tmp)}catch(e){}};
@@ -86,7 +87,7 @@ function ensureStreet(S){var L=cur;["L","R"].forEach(function(sd){var cKey="c"+s
 function mkEntity(e){return R.Props.entity(cur,e)}
 function mkEntityOld(e){var L=cur,g=null;if(e.t==="coin")g=R.Props.coin();else if(e.t==="mag")g=R.Props.magnet();else if(e.t==="shield")g=R.Props.shield();else if(e.t==="roll")g=R.Props.roller();else if(e.t==="block"&&e.len)g=R.Props.train(L,e.len);else if(e.t==="finish"||e.t==="cp")g=R.Props.gate(e.t==="finish");else if(e.t==="chest")g=R.Props.chest();else g=R.Props.obstacle(L,e.t,!!e.full);return g}
 function syncEnts(S){var seen=new Set();S.ents.forEach(function(e){var z=e.z-S.D;if(e.dead||z>86||z+(e.len||0)<-2.6){var o0=ents.get(e);if(o0){world.remove(o0);H.free(o0);ents.delete(e)}return}seen.add(e);var o=ents.get(e);if(!o){o=mkEntity(e);o.userData.e=e;ents.set(e,o);world.add(o)}
-  var x=e.full?0:e.lane*2;o.position.set(x,0,-z);if(e.t==="coin"){o.position.y=e.hh*1.0;o.rotation.y=S.t*3.2+e.z;o.scale.setScalar(1)}else if(e.t==="mag"){o.position.y=.9+Math.sin(S.t*4)*.08;o.rotation.y=S.t*2}else if(e.t==="shield"){o.position.y=.9+Math.sin(S.t*4)*.08;(o.userData.sp||(o.userData.sp=o.getObjectByName("spin"))).rotation.y=S.t*2.5}else if(e.t==="roll"){(o.userData.sp||(o.userData.sp=o.getObjectByName("spin"))).rotation.x=-z*1.9}else if(e.t==="chest"){R.Props.chestAnim(o,S.done?Math.min(1,S.doneT/1.2):0,z)}});
+  var x=e.full?0:e.lane*2;o.position.set(x,0,-z);if(e.t==="coin"){o.position.y=e.hh*1.0;o.rotation.y=S.t*3.2+e.z;o.scale.setScalar(1)}else if(e.t==="mag"){o.position.y=.9+Math.sin(S.t*4)*.08;o.rotation.y=S.t*2}else if(e.t==="jet"){o.position.y=.95+Math.sin(S.t*4)*.08;o.rotation.y=S.t*2}else if(e.t==="shield"){o.position.y=.9+Math.sin(S.t*4)*.08;(o.userData.sp||(o.userData.sp=o.getObjectByName("spin"))).rotation.y=S.t*2.5}else if(e.t==="roll"){(o.userData.sp||(o.userData.sp=o.getObjectByName("spin"))).rotation.x=-z*1.9}else if(e.t==="chest"){R.Props.chestAnim(o,S.done?Math.min(1,S.doneT/1.2):0,z)}});
  ents.forEach(function(o,e){if(!seen.has(e)){world.remove(o);H.free(o);ents.delete(e)}})}
 
 R.render=function(S,dt){if(!R.ok||!cur)return;
@@ -94,8 +95,8 @@ R.render=function(S,dt){if(!R.ok||!cur)return;
  var tk=0;(R.zones||[]).forEach(function(q){var e=Math.max(0,Math.min(1,(S.D-(q.a-6))/16)),x=Math.max(0,Math.min(1,((q.b+6)-S.D)/16));tk=Math.max(tk,Math.min(e,x))});R.tk=tk;if(R.base){hemi.intensity=R.base.hemi*(1-.55*tk);sun.intensity=R.base.sun*(1-.85*tk);scene.fog.color.copy(R.base.fog).lerp(TUN,tk);scene.fog.near=24-14*tk;scene.fog.far=100-38*tk;R.tl.intensity=tk*1.5;backdrop.visible=tk<.6}
  var off=S.D;roadTex.offset.y=(off/8)%1;walkTex.offset.y=(off/4)%1;
  var sp=Math.max(0,Math.min(1,(S.speed-cur.v0)/Math.max(3,cur.v1-cur.v0)));camera.fov=60+sp*6+(S.shake>0?2:0);camera.updateProjectionMatrix();
- camPlace(S.x*2,S.shake>0?S.shake:0);
- R.Char.update(S,dt,cur);R.prof={street:_t1-_t0,ents:_t2-_t1};
+ camPlace(S.x*2,S.shake>0?S.shake:0,S.h);
+ R.Char.update(S,dt,cur);if(R.boulder){var bv=S.cd<.8&&!S.done;R.boulder.visible=bv;if(bv){R.boulder.position.set(S.x*2*.6,1.05,3.1+S.cd*3.4);R.boulder.rotation.x-=S.speed*dt/1.05;R.boulder.rotation.z=Math.sin(S.t*3)*.05}}R.prof={street:_t1-_t0,ents:_t2-_t1};
  /* the backdrop follows the camera sideways a hair so it feels far away */
  backdrop.position.x=S.x*.6;
  renderer.render(scene,camera)};
