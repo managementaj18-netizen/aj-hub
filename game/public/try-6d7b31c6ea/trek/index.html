@@ -76,7 +76,7 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
 #top.hide{display:none}.arr.s{font-size:14px;opacity:.85}#cKm.t0{color:#7be07b}#cKm.t1{color:#ffd24a}#cKm.t2{color:#ff8a7a}
 </style></head><body>
 <div id="wrap">
- <div id="top" class="hide"><div class="pill"><small>Coins</small><b id="sc">0</b></div><div class="pill"><small>Distance</small><b id="ds">0m</b></div><div class="hearts" id="hr"></div><div class="sp"></div><button class="ib" id="pz" aria-label="pause">II</button><button class="ib" id="snd" aria-label="sound">♪</button></div>
+ <div id="top" class="hide"><div class="pill"><small>Pieces</small><b id="sc">0</b></div><div class="pill"><small>Distance</small><b id="ds">0m</b></div><div class="hearts" id="hr"></div><div class="sp"></div><button class="ib" id="pz" aria-label="pause">II</button><button class="ib" id="snd" aria-label="sound">♪</button></div>
  <div id="stage"><canvas id="gl"></canvas><canvas id="cv"></canvas></div>
 
  <div class="ov home" id="ovStart"><canvas id="hc"></canvas>
@@ -97,32 +97,32 @@ html,body{margin:0;height:100%;overflow:hidden;overscroll-behavior:none;backgrou
   </div></div>
 
  <div class="ov hide" id="ovHow"><div class="card"><h2>HOW TO PLAY</h2>
-  <div class="step"><canvas id="p1" width="172" height="128"></canvas><div><b>SWIPE LEFT / RIGHT</b><span>Change lane to dodge obstacles and grab coins.</span><i>អូសឆ្វេង-ស្ដាំ ដើម្បីប្ដូរខ្សែ។</i></div></div>
-  <div class="step"><canvas id="p2" width="172" height="128"></canvas><div><b>SWIPE UP = JUMP</b><span>Jump over low bars. High coins need a jump!</span><i>អូសឡើងលើ ដើម្បីលោត។</i></div></div>
+  <div class="step"><canvas id="p1" width="172" height="128"></canvas><div><b>SWIPE LEFT / RIGHT</b><span>Change lane. At each little house, read the clue and run through the RIGHT door to win a puzzle piece.</span><i>អូសឆ្វេង-ស្ដាំ ដើម្បីជ្រើសទ្វារត្រឹមត្រូវ។</i></div></div>
+  <div class="step"><canvas id="p2" width="172" height="128"></canvas><div><b>SWIPE UP = JUMP</b><span>Jump over low bars. Wrong door = a bump!</span><i>អូសឡើងលើ ដើម្បីលោត។</i></div></div>
   <div class="step"><canvas id="p3" width="172" height="128"></canvas><div><b>SWIPE DOWN = SLIDE</b><span>Slide under high bars and signs.</span><i>អូសចុះក្រោម ដើម្បីរអិលក្រោមស្លាក។</i></div></div>
   <div class="tipbox"><b>Your quest:</b> travel around the world. Each country is one level with its own clothes, obstacles and weather. Reach the FINISH to unlock the next country. The final treasure is at Angkor Wat! You have 3 hearts.</div>
   <div style="text-align:center;margin-top:12px"><button class="btn" id="how-ok">GOT IT!</button></div></div></div>
 
  <div class="ov hide" id="ovDone"><div class="res"><h2 id="dTitle">LEVEL COMPLETE!</h2><div class="sub" id="dSub"></div><div class="stars" id="dStars"></div>
-  <div class="r"><span>Coins collected</span><b id="dCoins">0</b></div><div class="r"><span>Hits taken</span><b id="dHits">0</b></div><div class="fact" id="dFact"></div><div class="stampgrid" id="dStamps"></div>
+  <div class="r"><span>Puzzle pieces</span><b id="dCoins">0</b></div><div class="r"><span>Hits taken</span><b id="dHits">0</b></div><canvas id="dPuz" width="260" height="130" style="display:block;margin:8px auto;border-radius:10px;box-shadow:0 3px 8px #0004"></canvas><div class="fact" id="dFact"></div><div class="stampgrid" id="dStamps"></div>
   <button class="btn" id="dNext">NEXT COUNTRY</button><button class="btn alt" id="dAgain">PLAY AGAIN</button><button class="btn alt" id="dShare">SHARE</button></div></div>
 
  <div class="ov hide" id="ovFail"><div class="res"><h2 style="color:#fff;-webkit-text-stroke:7px #7a1c1c;text-shadow:0 3px 0 #7a1c1c">OUCH!</h2><div class="sub" id="fSub"></div><div class="fact" style="background:#fff0e0;border-color:#f0c08a;color:#7a3a0a">No hearts left. Don't give up - the world is waiting!</div>
   <button class="btn" id="fRetry">TRY AGAIN</button><button class="btn alt" id="fMap">WORLD MAP</button><button class="btn alt" id="fHome" style="display:none"></button></div></div>
 </div>
 <script src="/track.js"></script>
-<script src="js/data.js?v=205"></script>
-<script src="js/countries.js?v=205"></script>
-<script src="js/music.js?v=205"></script>
-<script src="js/art.js?v=205"></script>
-<script src="js/art2.js?v=205"></script>
-<script src="js/world.js?v=205"></script>
-<script src="js/vendor/three.min.js?v=205"></script>
-<script src="js/r3d.js?v=205"></script>
-<script src="js/r3dchar.js?v=205"></script>
-<script src="js/r3dobs.js?v=205"></script>
-<script src="js/vendor/GLTFLoader.js?v=205"></script>
-<script src="js/vendor/SkeletonUtils.js?v=205"></script>
-<script src="js/r3dhero.js?v=205"></script>
-<script src="js/game.js?v=205"></script>
+<script src="js/data.js?v=206"></script>
+<script src="js/countries.js?v=206"></script>
+<script src="js/music.js?v=206"></script>
+<script src="js/art.js?v=206"></script>
+<script src="js/art2.js?v=206"></script>
+<script src="js/world.js?v=206"></script>
+<script src="js/vendor/three.min.js?v=206"></script>
+<script src="js/r3d.js?v=206"></script>
+<script src="js/r3dchar.js?v=206"></script>
+<script src="js/r3dobs.js?v=206"></script>
+<script src="js/vendor/GLTFLoader.js?v=206"></script>
+<script src="js/vendor/SkeletonUtils.js?v=206"></script>
+<script src="js/r3dhero.js?v=206"></script>
+<script src="js/game.js?v=206"></script>
 </body></html>

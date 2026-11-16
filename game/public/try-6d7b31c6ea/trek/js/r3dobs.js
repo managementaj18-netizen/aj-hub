@@ -107,9 +107,9 @@ Pr.reset=function(L,S){var r=H.rnd(11+L.id.charCodeAt(0)*7),kit=L.kit,i;
  (NAT[kit]||["oak"]).forEach(function(kd){for(i=0;i<4;i++)lib("tree|"+kd,4,function(){return treeMake(kd,r)},r)});
  for(i=0;i<3;i++){lib("hut",3,function(){return hut(r,L)},r);lib("ad",3,function(){return adobeHouse(r,L)},r)}lib("lamp0",1,function(){return lamp(r,false)},r);lib("lamp1",1,function(){return lamp(r,true)},r);lib("sn",1,snowman,r);
  if(R.zones&&R.zones.length){lib("t0",1,function(){return tunnelSeg(L,false,false)},r);lib("t1",1,function(){return tunnelSeg(L,true,false)},r);lib("t2",1,function(){return tunnelSeg(L,true,true)},r)}
- var E=[{t:"coin"},{t:"mag"},{t:"shield"},{t:"ramp"},{t:"jet"},{t:"roll"},{t:"block"},{t:"low"},{t:"high"},{t:"low",full:1},{t:"high",full:1}];for(i=10;i<=16;i++)E.push({t:"block",len:i});E.forEach(function(e){Pr.entity(L,e)})};
+ var E=[{t:"coin"},{t:"mag"},{t:"shield"},{t:"ramp"},{t:"jet"},{t:"roll"},{t:"block"},{t:"low"},{t:"high"},{t:"low",full:1},{t:"high",full:1}];for(i=10;i<=16;i++)E.push({t:"block",len:i});E.forEach(function(e){Pr.entity(L,e)});if(S&&S.ents)S.ents.forEach(function(e){if(e.t==="gate")e._3d=Pr.gateHouse(L,e)})};
 /* entities are cached too: one built copy, cloned for every coin/obstacle */
-Pr.entity=function(L,e){var key,make;
+Pr.entity=function(L,e){var key,make;if(e.t==="gate"){var g0=e._3d||Pr.gateHouse(L,e);e._3d=null;return g0}
  if(e.t==="coin"){key="coin";make=Pr.coin}else if(e.t==="mag"){key="mag";make=Pr.magnet}else if(e.t==="shield"){key="shield";make=Pr.shield}else if(e.t==="roll"){key="roll";make=Pr.roller}else if(e.t==="ramp"){key="ramp";make=Pr.ramp}else if(e.t==="jet"){key="jet";make=Pr.jetpack}
  else if(e.t==="block"&&e.len){key="train"+e.len;make=function(){return Pr.train(L,e.len)}}
  else if(e.t==="finish"||e.t==="cp")return Pr.gate(e.t==="finish");else if(e.t==="chest")return Pr.chest();
@@ -218,6 +218,37 @@ Pr.ramp=function(){var g=new T.Group(),len=6,RHh=2.4,ang=Math.atan2(RHh,len),L2=
  for(var k=1;k<8;k++){var f2=k/8,st=H.box(1.7,.04,.1,"#3a2a14",0,RHh*f2+.03,-len*f2,g);st.rotation.x=ang}
  H.box(1.8,.1,.3,"#ffd24a",0,.07,-.1,g);return H.merge(g,true,true)};
 Pr.jetpack=function(){var g=new T.Group();H.box(.5,.7,.3,"#c8402a",0,0,0,g);[-1,1].forEach(function(s){H.cyl(.14,.16,.7,H.mat("#8a8e98"),s*.18,-.05,.22,g,10);H.cone(.13,.28,H.mat("#ff9a2a",{em:"#aa4400"}),s*.18,-.5,.22,g,8).rotation.x=Math.PI;H.sph(.12,"#fff",s*.18,.34,.22,g)});H.box(.62,.1,.34,"#ffd24a",0,.3,0,g);var gl=new T.Mesh(new T.SphereGeometry(.75,12,10),new T.MeshBasicMaterial({color:0xffb04a,transparent:true,opacity:.22,depthWrite:false}));g.add(gl);return g};
+
+/* ---------- puzzle gates: a little house across the road with three identical doors; the clue is on the sign, the right door holds a puzzle piece ---------- */
+function signTex(w,h,fn){return H.tex(w,h,function(g){fn(g,w,h)})}
+function fitText(g,txt,maxW,start,font){var s=start;do{g.font=font.replace("#",s);s-=2}while(g.measureText(txt).width>maxW&&s>10)}
+Pr.relic=function(){var g=new T.Group(),teal=H.mat("#27c9b4",{em:"#0a5a50"}),gold=H.mat("#ffd24a",{em:"#6a4a00"}),a=.34;
+ var sh=new T.Shape();sh.moveTo(-a,-a);sh.lineTo(a,-a);sh.lineTo(a,-.09);sh.absarc(a,0,.09,-Math.PI/2,Math.PI/2,true);sh.lineTo(a,a);sh.lineTo(.09,a);sh.absarc(0,a,.09,0,Math.PI,false);sh.lineTo(-a,a);sh.lineTo(-a,-a);
+ var body=new T.Mesh(new T.ExtrudeGeometry(sh,{depth:.12,bevelEnabled:true,bevelSize:.02,bevelThickness:.02,bevelSegments:2}),teal);body.position.z=-.06;g.add(body);
+ var frame=new T.Mesh(new T.ExtrudeGeometry(sh,{depth:.06,bevelEnabled:false}),gold);frame.scale.set(1.12,1.12,1);frame.position.z=-.1;g.add(frame);
+ var star=new T.Shape();for(var i=0;i<10;i++){var an=-Math.PI/2+i*Math.PI/5,rr=i%2?.07:.17;i?star.lineTo(Math.cos(an)*rr,Math.sin(an)*rr):star.moveTo(Math.cos(an)*rr,Math.sin(an)*rr)}
+ var st=new T.Mesh(new T.ShapeGeometry(star),gold);st.position.z=.09;g.add(st);
+ var gl=new T.Mesh(new T.SphereGeometry(.85,12,10),new T.MeshBasicMaterial({color:0xffe38a,transparent:true,opacity:.28,depthWrite:false}));g.add(gl);return g};
+Pr.gateHouse=function(L,e){var q=e.q,g=new T.Group(),st=new T.Group(),W=7.6,Dp=7,wallH=3.3,pal=L.pal||["#a8452a","#fff","#8a6a4a"],wall="#d9c59c",trim="#6a4a2a",roofC=pal[0]||"#a8452a";
+ g.userData.slabs=[];
+ var pil=[[-3.325,.95],[-1,.3],[1,.3],[3.325,.95]];[0,-Dp+.5].forEach(function(z0){pil.forEach(function(p){H.box(p[1],wallH,.5,wall,p[0],wallH/2,z0-.25,st)})});
+ [-1,1].forEach(function(s){H.box(.3,wallH,Dp,wall,s*1,wallH/2,-Dp/2,st);H.box(.3,wallH,Dp,wall,s*3.65,wallH/2,-Dp/2,st)});
+ H.box(W,.55,.6,trim,0,wallH-.25,-.3,st);H.box(W,.55,.6,trim,0,wallH-.25,-Dp+.3,st);
+ H.box(W+.8,.3,Dp+.8,roofC,0,wallH+.18,-Dp/2,st);H.box(W+1.0,.16,Dp+1.0,H.shade(roofC,-.25),0,wallH+.02,-Dp/2,st);
+ [-1,1].forEach(function(s){H.cyl(.1,.1,1.6,H.mat(trim),s*3.2,wallH+1.1,-.4,st,8)});
+ H.merge(st,true,true);g.add(st);
+ /* clue board */
+ var bt=signTex(768,210,function(c,w,h){var gr=c.createLinearGradient(0,0,0,h);gr.addColorStop(0,"#16284a");gr.addColorStop(1,"#0c1730");c.fillStyle=gr;c.fillRect(0,0,w,h);c.strokeStyle="#ffd84a";c.lineWidth=8;c.strokeRect(6,6,w-12,h-12);c.fillStyle="#9fd8ff";c.font='400 26px "Lilita One",sans-serif';c.textAlign="center";c.fillText("WHICH DOOR HIDES THE PIECE?",w/2,46);c.fillStyle="#fff";fitText(c,q.prompt,w-130,92,'400 #px "Lilita One",sans-serif');c.strokeStyle="rgba(0,0,0,.6)";c.lineWidth=6;c.strokeText(q.prompt,w/2,150);c.fillText(q.prompt,w/2,150)});
+ var bm=new T.MeshLambertMaterial({map:bt}),bd=new T.Mesh(new T.BoxGeometry(7.4,2.0,.14),[H.mat("#14223e"),H.mat("#14223e"),H.mat("#14223e"),H.mat("#14223e"),bm,H.mat("#14223e")]);bd.position.set(0,wallH+1.55,-.45);g.add(bd);
+ /* door signs, doors and the hidden piece */
+ q.opts.forEach(function(op,i){var lane=(i-1)*2;
+  var tt=signTex(256,120,function(c,w,h){c.fillStyle="#f6ecd2";c.fillRect(0,0,w,h);c.strokeStyle="#6a4a2a";c.lineWidth=6;c.strokeRect(3,3,w-6,h-6);if(op.flag){TK.flag(c,op.flag,w/2-66,10,132,86);c.fillStyle="#2a1a0a";c.font='700 14px sans-serif';c.textAlign="center"}else{c.fillStyle="#2a1a0a";c.textAlign="center";fitText(c,op.label,w-24,62,'400 #px "Lilita One",sans-serif');c.fillText(op.label,w/2,h/2+20)}});
+  var sm=new T.MeshLambertMaterial({map:tt}),sb=new T.Mesh(new T.BoxGeometry(1.7,.8,.12),[H.mat(trim),H.mat(trim),H.mat(trim),H.mat(trim),sm,H.mat(trim)]);sb.position.set(lane,2.9,.05);g.add(sb);
+  var hinge=new T.Group();hinge.position.set(lane-.85,0,-.12);var slab=new T.Mesh(new T.BoxGeometry(1.7,2.6,.14),H.mat("#8a5a2e"));slab.position.set(.85,1.3,0);hinge.add(slab);[.5,1.3,2.1].forEach(function(y){var bar=new T.Mesh(new T.BoxGeometry(1.7,.1,.16),H.mat("#3a2a14"));bar.position.set(.85,y,0);hinge.add(bar)});var kn=new T.Mesh(new T.SphereGeometry(.09,8,6),H.mat("#ffd24a"));kn.position.set(1.4,1.2,.12);hinge.add(kn);g.add(hinge);g.userData.slabs.push(hinge);
+  if(op.ok){var rl=Pr.relic();rl.position.set(lane,1.25,-4);rl.visible=false;g.add(rl);g.userData.relic=rl;g.userData.relicLane=i}});
+ return g};
+Pr.gateAnim=function(o,e,S){var sl=o.userData.slabs;for(var i=0;i<sl.length;i++){var h=sl[i];h.rotation.y+=((e.opened===i?1.9:0)-h.rotation.y)*.16;if(e.broke===i)h.visible=false}
+ var rl=o.userData.relic;if(rl&&e.opened>=0){rl.visible=true;rl.rotation.y=S.t*3;rl.position.y=1.25+Math.sin(S.t*5)*.12}};
 Pr.obstacle=function(L,type,full){var o=L.obs||{},name=o[type],w=full?5.8:1.7,g;
  var tab=type==="block"?SK:type==="low"?LK:HK;var f=tab[name]||tab[Object.keys(tab)[0]];g=f(w,L);if(full){g.scale.x=1}
  H.shadowAll(g,true,true);return g}
