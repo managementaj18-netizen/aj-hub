@@ -6,7 +6,7 @@ var W=360,H=640,HZ=205,YP=545,D0=18,LW=96,UH=60,ZMAX=74,G=26,NL=TK.LEVELS.length
 function P(x,z){var s=D0/(D0+z);return{sx:180+x*LW*s,sy:HZ+(YP-HZ)*s,s:s}}
 var rr=TK.rr,shade=TK.shade;
 var cv=$("cv"),cx=cv.getContext("2d"),dpr=Math.min(1.5,window.devicePixelRatio||1);
-var RH=2.4,S0noShadow=false,R3=TK.R3D,use3d=false;try{use3d=!!(R3&&R3.init($("gl")))}catch(e){use3d=false}if(!use3d)$("gl").style.display="none";if(use3d){YP=R3.YP;LW=R3.LW;UH=R3.UH;try{if(R3.Hero)R3.Hero.load("models/")}catch(e){}try{if((navigator.hardwareConcurrency||8)<=4||(navigator.deviceMemory||4)<=2){R3.shadows(false);S0noShadow=true}}catch(e){}}
+var RH=2.4,S0noShadow=false,R3=TK.R3D,use3d=false;try{use3d=!!(R3&&R3.init($("gl")))}catch(e){use3d=false}if(!use3d)$("gl").style.display="none";if(use3d){YP=R3.YP;LW=R3.LW;UH=R3.UH;try{if(R3.Hero)R3.Hero.load("models/")}catch(e){}try{if((navigator.hardwareConcurrency||8)<=4||navigator.maxTouchPoints>1||(navigator.deviceMemory||4)<=2){R3.shadows(false);S0noShadow=true}}catch(e){}}
 var prog=ld("tk3_prog",null);if(!prog||!prog.stars||prog.stars.length!==NL)prog={stars:TK.LEVELS.map(function(){return 0}),unlocked:0,coins:0};var CHEAT=/[?&]unlock/.test(location.search);(function(){var real=0;for(var i=0;i<NL;i++)if(prog.stars[i]>0)real=i+1;prog.ru=Math.min(NL-1,real);prog.unlocked=CHEAT?NL-1:prog.ru})();function startIdx(){for(var i=0;i<NL;i++)if(!(prog.stars[i]>0))return i;return NL-1}
 function saveProg(){var u=prog.unlocked;prog.unlocked=prog.ru||0;sv("tk3_prog",prog);prog.unlocked=u}
 var S=TK.S={mode:"home",over:true,paused:false,li:0,L:TK.LEVELS[0],D:0,speed:13,lane:0,x:0,h:0,vy:0,slide:0,slideK:0,landT:0,jb:0,hearts:3,coins:0,spawned:0,hits:0,inv:0,t:0,ents:[],scen:[],parts:[],wx:[],nextRow:0,nextScen:0,banner:null,flash:0,shake:0,done:false,doneT:0,cp:null,cpHit:{},snd:ld("tk3_snd",true),seen:ld("tk3_seen",false),afterHow:false,sel:0};
@@ -67,7 +67,7 @@ var HEART1='url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%2
 /* ---------------- controls ---------------- */
 function clearBanner(){if(S.banner&&!S.banner.cp&&S.t-S.banner.t0>.5)S.banner=null}
 function move(d){if(S.mode!=="play"||S.over||S.done||S.paused)return;clearBanner();var n=Math.max(-1,Math.min(1,S.lane+d));if(n!==S.lane){S.lane=n;tone(300,.06,"triangle",.07)}}
-function jump(){if(S.mode!=="play"||S.over||S.done||S.paused)return;clearBanner();if(S.h<=S.fl+.06){S.vy=9.2;S.slide=0;S.jb=0;tone(420,.12,"triangle",.09)}else S.jb=.16}
+function jump(){if(S.mode!=="play"||S.over||S.done||S.paused)return;clearBanner();if(S.h<=S.fl+.06){S.vy=11;S.slide=0;S.jb=0;tone(420,.12,"triangle",.09)}else S.jb=.16}
 function slide(){if(S.mode!=="play"||S.over||S.done||S.paused)return;clearBanner();if(S.h>S.fl+.05)S.vy=-14;S.slide=.85;tone(200,.1,"sawtooth",.05)}
 function burst(x,y,col,n){for(var i=0;i<n;i++){var a=Math.random()*6.28,s=50+Math.random()*130;S.parts.push({x:x,y:y,vx:Math.cos(a)*s,vy:Math.sin(a)*s-60,life:.5+Math.random()*.3,c:col,r:2+Math.random()*3})}}
 function roar(){tone(90,.5,"sawtooth",.16);setTimeout(function(){tone(70,.6,"sawtooth",.14)},120)}
@@ -83,7 +83,7 @@ function step(dt){
  S.x+=(S.lane-S.x)*Math.min(1,dt*10.5);
  var fa=floorAt();S.fl=fa;
  if(S.jet>0){S.jet-=dt;S.vy=0;S.h+=(3.4-S.h)*Math.min(1,dt*4);if(S.jet<=0){S.jet=0;ftxt("JETPACK OVER",180,YP-140,"#ffb04a")}}
- else if(S.h>fa+.001||S.vy>0){S.vy-=G*dt;S.h+=S.vy*dt;if(S.h<=fa){S.h=fa;if(S.vy<-3){S.landT=.2;for(var di=0;di<7;di++)S.parts.push({x:180+S.x*LW+(Math.random()-.5)*40,y:YP-fa*UH,vx:(Math.random()-.5)*110,vy:-20-Math.random()*40,life:.35,c:"rgba(255,255,255,.65)",r:3+Math.random()*3})}S.vy=0;if(S.jb>0){S.jb=0;S.vy=9.2;tone(420,.12,"triangle",.09)}}}
+ else if(S.h>fa+.001||S.vy>0){S.vy-=G*dt;S.h+=S.vy*dt;if(S.h<=fa){S.h=fa;if(S.vy<-3){S.landT=.2;for(var di=0;di<7;di++)S.parts.push({x:180+S.x*LW+(Math.random()-.5)*40,y:YP-fa*UH,vx:(Math.random()-.5)*110,vy:-20-Math.random()*40,life:.35,c:"rgba(255,255,255,.65)",r:3+Math.random()*3})}S.vy=0;if(S.jb>0){S.jb=0;S.vy=11;tone(420,.12,"triangle",.09)}}}
  else if(S.h<fa){S.h=fa;S.vy=0}
  (function(){var K=.0017+.0013*L.dd,tg=bendShape(S.D)*bendFree(S.D)*K,sm=Math.min(1,dt*1.5);S.bendA+=(tg-S.bendA)*sm;S.bendY+=((bendFree(S.D)?.00085*Math.sin(S.D*.019+1.2):0)-S.bendY)*sm})();
  if(!S.bw&&S.D>L.len-150&&!S.done){S.bw=1;ftxt("BORDER AHEAD!",180,170,"#ff9a4a");tone(520,.15,"square",.1)}
@@ -234,7 +234,7 @@ function setBacking(){var st=$("stage"),w=st.clientWidth-8,h=st.clientHeight,sc=
  if(use3d){var gl=$("gl");gl.style.width=W*sc+"px";gl.style.height=H*sc+"px";gl.style.left=cv.offsetLeft+"px";gl.style.top=cv.offsetTop+"px";R3.setSize(W*sc,H*sc,Math.min(1.25,dpr)*(Q<1?Math.max(.6,Q):1))}}
 function resize(){setBacking();sizeHome();sizeLevels()}
 /* adaptive quality: if the phone cannot keep up, draw at a lower resolution so the game stays smooth */
-function adapt(dt){fAcc+=dt;fN++;if(fN>=40){var avg=fAcc/fN;if(use3d){if(avg>.022&&!S.noShadow){S.noShadow=true;R3.shadows(false)}else if(avg>.024&&Q>.6){Q=Math.max(.6,Q-.2);setBacking()}}else if(avg>.026&&Q>.55){Q=Math.max(.55,Q-.15);setBacking()}else if(avg<.0185&&Q<1){Q=Math.min(1,Q+.1);setBacking()}fAcc=0;fN=0}}
+function adapt(dt){fAcc+=dt;fN++;if(fN>=40){var avg=fAcc/fN;if(use3d){if(avg>.019&&!S.noShadow&&!S0noShadow){S.noShadow=true;R3.shadows(false)}else if(avg>.021&&Q>.5){Q=Math.max(.5,Q-.15);setBacking()}}else if(avg>.026&&Q>.55){Q=Math.max(.55,Q-.15);setBacking()}else if(avg<.0185&&Q<1){Q=Math.min(1,Q+.1);setBacking()}fAcc=0;fN=0}}
 
 /* ---------------- the home screen: the explorer changes into each country's clothes ---------------- */
 var hc=$("hc"),hx=hc.getContext("2d"),HW=360,HH=640,HS={x:0,y:0,w:0,h:0};
