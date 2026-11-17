@@ -26,7 +26,7 @@ function placeSigns(){var L=S.L,prev=-999;for(var D=100;D<L.len-130;D+=3){var a=
 function makeQ(k){var L=S.L,idx=S.li,pool=[],i;for(i=Math.max(0,idx-14);i<=Math.min(NL-1,idx+14);i++)if(i!==idx)pool.push(TK.LEVELS[i]);
  var pick=[],tries=0;while(pick.length<2&&tries++<80){var c=pool[(Math.random()*pool.length)|0];if(c&&pick.indexOf(c)<0&&c.cap!==L.cap&&c.n!==L.n)pick.push(c)}while(pick.length<2)pick.push(TK.LEVELS[(idx+3+pick.length)%NL]);
  var type=["cap","flag","cap2"][(k+idx)%3],ok=(Math.random()*3)|0,opts=[],ci=0,prompt;
- for(i=0;i<3;i++){var C=i===ok?L:pick[ci++];if(type==="cap"){opts.push({label:C.cap,ok:i===ok})}else if(type==="flag"){opts.push({flag:C.id,label:C.n,ok:i===ok})}else{opts.push({label:C.n,ok:i===ok})}}
+ for(i=0;i<3;i++){var C=i===ok?L:pick[ci++];if(type==="cap"){opts.push({flag:C.id,label:C.cap,ok:i===ok})}else if(type==="flag"){opts.push({flag:C.id,label:C.n,ok:i===ok})}else{opts.push({flag:C.id,label:C.n,ok:i===ok})}}
  prompt=type==="cap"?"CAPITAL OF "+L.n+"?":type==="flag"?"FLAG OF "+L.n+"?":L.cap.toUpperCase()+" IS THE CAPITAL OF…";
  return{type:type,prompt:prompt,opts:opts,ok:ok}}
 function rowGap(){var p=S.D/S.L.len;return Math.max(11,27-S.L.dd*9-p*6)}
