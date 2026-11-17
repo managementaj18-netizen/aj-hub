@@ -7,7 +7,7 @@ const LANGS={km:"km",en:"en"};
 const MAX_AUDIO=6*1024*1024,MAX_TEXT=2000;
 function same(a,b){a=String(a||"");b=String(b||"");if(a.length!==b.length)return false;let r=0;for(let i=0;i<a.length;i++)r|=a.charCodeAt(i)^b.charCodeAt(i);return r===0}
 const hits=new Map();
-function limited(ip){const now=Date.now(),a=(hits.get(ip)||[]).filter(t=>now-t<60000);a.push(now);hits.set(ip,a);if(hits.size>500)hits.clear();return a.length>30}
+function limited(ip){const now=Date.now(),a=(hits.get(ip)||[]).filter(t=>now-t<60000);a.push(now);hits.set(ip,a);if(hits.size>500)hits.clear();return a.length>60}
 export async function onRequest(ctx){
   const {request:req,env}=ctx,url=new URL(req.url),route=url.pathname.replace(/^\/api\/?/,"").split("/")[0],m=req.method;
   try{
