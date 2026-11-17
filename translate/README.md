@@ -4,6 +4,9 @@
 - Voice is converted to 16 kHz mono WAV in the phone, so it works on any device. Up to 2 minutes per recording.
 - Protected by a secret access code (`ACCESS_CODE`), so nobody else can use the free AI allowance. Without that secret every request is refused.
 
+## Meeting mode (live listening)
+Tap **Start listening to the meeting**: the mic stays open, the app cuts the sound at pauses (about 0.8 s of quiet, or 14 s max), sends each piece to speech-to-text, then translates it and shows big text at the top of the list (optionally read aloud). Default direction English → Khmer; the ⇄ button switches it. Needs internet. Test: `node tests/meeting.js` (mock AI, fake microphone).
+
 ## Honest limits
 - Needs internet to translate; offline it can only record and keep the queue.
 - The quality of Khmer speech recognition and Khmer translation has NOT been verified (tests use a mock AI). Try it with real sentences first.
