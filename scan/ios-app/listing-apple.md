@@ -1,6 +1,6 @@
-# Apple App Store text — S&A Scan (check each limit in App Store Connect)
+# Apple App Store text — S&A Doc Scan (check each limit in App Store Connect)
 
-**Name (max 30):** S&A Scan   _(if taken: "S&A Doc Scan")_
+**Name (max 30):** S&A Doc Scan   _(if taken, try "S&A Doc Scanner")_
 **Subtitle (max 30):** Scan IDs, passports, papers
 **Promo text (max 170):** Scan an ID card, passport or any paper with your camera, keep everything in your own private library and find it again in seconds. Khmer and English.
 **Keywords (max 100, comma separated):** scan,scanner,document,id card,passport,pdf,khmer,cambodia,receipt,library,business,camera
@@ -9,7 +9,7 @@
 **Price:** Free to download; subscription inside the app (see README): Monthly USD 4.99 or Yearly USD 39.99, both with a 7-day free trial.
 
 **Description (English):**
-S&A Scan turns your phone into a simple office scanner for the papers you use every day.
+S&A Doc Scan turns your phone into a simple office scanner for the papers you use every day.
 
 • Pick what you are scanning: ID card, passport or document. Each has its own guide on the screen.
 • Take a picture with the camera or import one from your photo gallery.
@@ -32,7 +32,7 @@ No objectionable content: expect 4+. Answer Apple's questions honestly.
 - Data is encrypted in transit (HTTPS). Users can delete their account and data inside the app.
 
 ## Review notes (for the Apple reviewer, English)
-"S&A Scan is a document scanner for small businesses. The camera is used only when the user taps Scan, to capture an ID card, passport or document, which is saved to the user's private library. The user needs an account (name, phone number and password). Demo account: [NAME] / [PASSWORD]. Account deletion: open the menu and tap 'Delete my account'. The subscription is sold with Apple In-App Purchase with a 7-day free trial."
+"S&A Doc Scan is a document scanner for small businesses. The camera is used only when the user taps Scan, to capture an ID card, passport or document, which is saved to the user's private library. The user needs an account (name, phone number and password). Demo account: [NAME] / [PASSWORD]. Account deletion: open the menu and tap 'Delete my account'. The subscription is sold with Apple In-App Purchase with a 7-day free trial."
 
 ## Export compliance
 The project declares `ITSAppUsesNonExemptEncryption = false` (only standard HTTPS).
