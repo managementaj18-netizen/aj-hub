@@ -2,7 +2,15 @@
 
 **Ready:** the iPhone project (`ios/`), a 1024 px icon, camera/photo permission texts, `npm run web` (packs the Scan screens inside the app), the privacy page (https://scan.soramma.app/privacy/), account deletion inside the app, and CORS on the Scan API so the app can talk to https://scan.soramma.app.
 
-**Subscription (built, NOT tested on a real iPhone):** Apple In-App Purchase through RevenueCat. How it works: a new user gets the **free trial from the server (set "trial days" = 7 in the Scan admin settings)**. When the trial ends the app shows the subscription screen (Monthly **USD 4.99**, Yearly **USD 39.99**, Restore purchases, Terms and Privacy links). After a purchase the app asks the server (`POST /api/iap/refresh`), the server asks RevenueCat and extends the account. The same account then works on the website too. Create the two Apple products **without** an Apple free-trial offer (the 7 days are given by the server; two trials in a row would be confusing). The iPhone app never shows how to pay outside Apple. Owner receives about 85% after Apple's 15% (Small Business Program).
+## VERSION 1 = FREE (do this first)
+Plan: put the app on the App Store **free** first, to learn whether Apple approves it. A free app needs only the **Free Apps Agreement (already Active)**. You do NOT need the Paid Apps Agreement, ABN/GST proof, tax forms, subscription products or RevenueCat for version 1. The app already behaves as free: requests from the iPhone app (header `x-app: ios`) are never locked by the trial (the server ignores the trial for the app while the Cloudflare variable `IOS_FREE` is not `0`). The website keeps its own trial.
+
+Version 1 steps: Part 1 (build and test), then Part 2 steps **2 and 5 only** (create the app, privacy policy and review notes), then upload with Xcode, TestFlight with friends, then **Add for Review**. Use the free texts in `listing-apple.md` (no subscription wording).
+
+Later, to start charging: do Part 2 steps 1, 3, 4 and Part 3 (ABN/GST, Paid Apps Agreement, subscription products, RevenueCat), put the RevenueCat key in `iap-config.json`, set the Cloudflare variable `IOS_FREE` = `0`, and release version 1.1.
+
+## Later: subscription (built, NOT tested on a real iPhone)
+Apple In-App Purchase through RevenueCat. How it works: a new user gets the **free trial from the server (set "trial days" = 7 in the Scan admin settings)**. When the trial ends the app shows the subscription screen (Monthly **USD 4.99**, Yearly **USD 39.99**, Restore purchases, Terms and Privacy links). After a purchase the app asks the server (`POST /api/iap/refresh`), the server asks RevenueCat and extends the account. The same account then works on the website too. Create the two Apple products **without** an Apple free-trial offer (the 7 days are given by the server; two trials in a row would be confusing). The iPhone app never shows how to pay outside Apple. Owner receives about 85% after Apple's 15% (Small Business Program).
 
 **Do not submit to App Review before the steps in Part 3 are done and you tested a purchase in TestFlight/Sandbox.**
 

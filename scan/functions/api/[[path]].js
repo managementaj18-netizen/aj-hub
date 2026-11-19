@@ -15,6 +15,8 @@ const DAY=86400000;
 const AUTO_DEFAULT="អរគុណ! យើងបានទទួលសាររបស់អ្នក ហើយនឹងឆ្លើយតបឆាប់ៗ។ / Thank you! We received your message and will reply soon.";
 const RESERVED=/^\s*(admin|administrator|owner|soramma|soramma scan|support)\s*$/i;
 let ready=false;
+/* the free iPhone app (version 1): requests from the app (header x-app: ios) are never locked. Set the Cloudflare variable IOS_FREE=0 later to switch the subscription on. */
+const appFree=(req,env)=>req.headers.get("x-app")==="ios"&&env.IOS_FREE!=="0";
 const J=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":"*"}});
 const hex=b=>Array.from(new Uint8Array(b)).map(x=>("0"+x.toString(16)).slice(-2)).join("");
 const rid=n=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return hex(a)};
@@ -51,7 +53,7 @@ async function authUser(db,req){const h=req.headers.get("authorization")||"";con
 export async function onRequest(ctx){
   const {request:req,env}=ctx,db=env.DB;
   /* the iPhone app calls this API from inside the app (another origin); we use bearer tokens, not cookies, so allowing any origin is safe */
-  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:{"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,PUT,DELETE,OPTIONS","access-control-allow-headers":"content-type,authorization","access-control-max-age":"86400"}});
+  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:{"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,PUT,DELETE,OPTIONS","access-control-allow-headers":"content-type,authorization,x-app","access-control-max-age":"86400"}});
   if(!db)return J({error:"no_db"},503);
   const url=new URL(req.url),parts=url.pathname.replace(/^\/api\/?/,"").split("/").filter(Boolean),m=req.method;
   try{
@@ -87,10 +89,11 @@ export async function onRequest(ctx){
       if(!ok){const n=f&&now()-f.ts<600000?f.n+1:1;await db.prepare("INSERT INTO fails(name,n,ts) VALUES(?,?,?) ON CONFLICT(name) DO UPDATE SET n=excluded.n,ts=excluded.ts").bind(key,n,now()).run();return J({error:"bad_login"},401)}
       await db.prepare("DELETE FROM fails WHERE name=?").bind(key).run();
       if(!u.active)return J({error:"blocked"},403);
-      return J({token:await newSession(db,u.id,req),user:pubUser(u)})}
+      return J({token:await newSession(db,u.id,req),user:pubUser(appFree(req,env)?{...u,expires:null}:u)})}
 
     const me=await authUser(db,req);if(!me)return J({error:"auth"},401);
     const owner=me.role==="owner";
+    if(appFree(req,env))me.expires=null;
 
     if(route==="logout"&&m==="POST"){const t=(req.headers.get("authorization")||"").slice(7);await db.prepare("DELETE FROM sessions WHERE token=?").bind(t).run();return J({ok:true})}
 
