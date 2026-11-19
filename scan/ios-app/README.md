@@ -1,4 +1,4 @@
-# Soramma Scan on iPhone — owner steps (on your Mac)
+# S&A Scan on iPhone — owner steps (on your Mac)
 
 **Ready:** the iPhone project (`ios/`), a 1024 px icon, camera/photo permission texts, `npm run web` (packs the Scan screens inside the app), the privacy page (https://scan.soramma.app/privacy/), account deletion inside the app, and CORS on the Scan API so the app can talk to https://scan.soramma.app.
 
@@ -14,8 +14,8 @@ The project was generated on Linux and never opened in Xcode, so the first build
 
 ## Part 2 — App Store Connect (once)
 1. **Agreements, Tax, and Banking** → accept the *Paid Apps* agreement, add bank account and tax forms (needed to sell anything; takes days).
-2. My Apps → + → New App: iOS, name **Soramma Scan**, bundle ID above, SKU `soramma-scan-1`.
-3. App → **Monetization → Subscriptions** → create group **Soramma Scan** → add subscription **Monthly** (ID `scan_monthly`), duration 1 month, price **USD 4.99**; add a second one **Yearly** (ID `scan_yearly`), duration 1 year, price **USD 39.99**. For each add **Introductory offer: Free, 7 days**, for new subscribers. Add localized name/description. Add a review screenshot of the paywall (after we build it).
+2. My Apps → + → New App: iOS, name **S&A Scan**, bundle ID above, SKU `soramma-scan-1`.
+3. App → **Monetization → Subscriptions** → create group **S&A Scan** → add subscription **Monthly** (ID `scan_monthly`), duration 1 month, price **USD 4.99**; add a second one **Yearly** (ID `scan_yearly`), duration 1 year, price **USD 39.99**. For each add **Introductory offer: Free, 7 days**, for new subscribers. Add localized name/description. Add a review screenshot of the paywall (after we build it).
 4. Join the **Small Business Program** (Apple takes 15% instead of 30%): developer.apple.com → App Store Small Business Program.
 5. Privacy policy URL: https://scan.soramma.app/privacy/ · App Privacy: data collected = name, phone number, user content (scans); linked to the user; not used for tracking.
 6. Review notes: give Apple a demo account (name + password) and say the camera is only used to scan documents.
