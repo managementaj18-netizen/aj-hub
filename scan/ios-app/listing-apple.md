@@ -6,7 +6,7 @@
 **Keywords (max 100, comma separated):** scan,scanner,document,id card,passport,pdf,khmer,cambodia,receipt,library,business,camera
 **Category:** Business (secondary: Productivity)
 **Support URL:** https://soramma.app/  ·  **Privacy policy URL:** https://scan.soramma.app/privacy/
-**Price:** Free to download; subscription inside the app (see README): Monthly USD 4.99 or Yearly USD 39.99, both with a 7-day free trial.
+**Price:** Free to download; subscription inside the app (see README): Monthly USD 4.99 or Yearly USD 39.99, after a 7-day free trial that the app gives to every new account.
 
 **Description (English):**
 S&A Doc Scan turns your phone into a simple office scanner for the papers you use every day.
@@ -32,7 +32,7 @@ No objectionable content: expect 4+. Answer Apple's questions honestly.
 - Data is encrypted in transit (HTTPS). Users can delete their account and data inside the app.
 
 ## Review notes (for the Apple reviewer, English)
-"S&A Doc Scan is a document scanner for small businesses. The camera is used only when the user taps Scan, to capture an ID card, passport or document, which is saved to the user's private library. The user needs an account (name, phone number and password). Demo account: [NAME] / [PASSWORD]. Account deletion: open the menu and tap 'Delete my account'. The subscription is sold with Apple In-App Purchase with a 7-day free trial."
+"S&A Doc Scan is a document scanner for small businesses. The camera is used only when the user taps Scan, to capture an ID card, passport or document, which is saved to the user's private library. The user needs an account (name, phone number and password). Demo account: [NAME] / [PASSWORD]. Account deletion: open the menu and tap 'Delete my account'. New accounts get a 7-day free trial; after that the app offers an auto-renewing subscription sold with Apple In-App Purchase."
 
 ## Export compliance
 The project declares `ITSAppUsesNonExemptEncryption = false` (only standard HTTPS).

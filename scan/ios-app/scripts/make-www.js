@@ -10,8 +10,12 @@ html=html.replace(/<link[^>]*fonts\.googleapis\.com[^>]*>\n?/g,'');
 if(html.includes('fonts.googleapis.com'))throw new Error('Google Fonts link still there');
 // no web manifest / service worker inside the app
 html=html.replace(/<link rel="manifest"[^>]*>\n?/,'');
+// In-App Purchase bridge: bundle src/iap.js (RevenueCat) into www/iap.js
+require('esbuild').buildSync({entryPoints:[path.join(__dirname,'..','src','iap.js')],bundle:true,format:'iife',minify:true,outfile:path.join(out,'iap.js')});
+const rc=JSON.parse(fs.readFileSync(path.join(__dirname,'..','iap-config.json'),'utf8')).revenueCatPublicKey;
+if(/PASTE/.test(rc))console.warn('WARNING: iap-config.json still has the placeholder key; the subscription screen will say "not ready".');
 // inside the app the data service must use the real internet address
-const cfg='<script>window.SORAMMA_API="https://scan.soramma.app";</script>\n';
+const cfg='<script>window.SORAMMA_API="https://scan.soramma.app";window.SA_RC_KEY='+JSON.stringify(rc)+';</script>\n<script src="iap.js"></script>\n';
 const i=html.indexOf('<script');if(i<0)throw new Error('no script tag');
 html=html.slice(0,i)+cfg+html.slice(i);
 fs.writeFileSync(path.join(out,'index.html'),html);
