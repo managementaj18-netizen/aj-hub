@@ -103,6 +103,17 @@ export async function onRequest(ctx){
       await db.prepare("DELETE FROM users WHERE id=?").bind(me.id).run();
       return J({ok:true})}
 
+    /* iPhone subscription: ask RevenueCat (secret key RC_SECRET) if this user has the "pro" entitlement and, if so, extend the account */
+    if(route==="iap"&&parts[1]==="refresh"&&m==="POST"){
+      if(owner)return J({ok:true,active:true});
+      if(!env.RC_SECRET)return J({error:"not_configured"},503);
+      const rr=await fetch("https://api.revenuecat.com/v1/subscribers/"+encodeURIComponent(me.id),{headers:{authorization:"Bearer "+env.RC_SECRET,"content-type":"application/json"}});
+      if(!rr.ok)return J({error:"rc_"+rr.status},502);
+      const jj=await rr.json().catch(()=>({})),en=jj&&jj.subscriber&&jj.subscriber.entitlements&&jj.subscriber.entitlements.pro;
+      const exp=en?(en.expires_date?Date.parse(en.expires_date):4102444800000):0;
+      if(exp>now()){await db.prepare("UPDATE users SET expires=?,active=1 WHERE id=?").bind(Math.max(exp,me.expires||0),me.id).run();return J({ok:true,active:true,expires:exp})}
+      return J({ok:true,active:false})}
+
     if(route==="sync"&&m==="GET"){
       const out={now:now(),user:pubUser(me),retention:num(await getSetting(db,"scanRetention",0)),...(await publicInfo(db))};
       if(owner){out.signupCode=await getSetting(db,"signupCode","");out.maxDevices=num(await getSetting(db,"maxDevices",3));out.supportAuto=await getSetting(db,"supportAuto",AUTO_DEFAULT)}
