@@ -7,13 +7,13 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>NSCameraUsageDescription</key>
-	<string>Soramma Scan uses the camera only when you choose to scan a document.</string>
+	<string>S&amp;A Doc Scan uses the camera only when you choose to scan a document.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
-	<string>Soramma Scan opens your photos only when you choose a picture to add to your library.</string>
+	<string>S&amp;A Doc Scan opens your photos only when you choose a picture to add to your library.</string>
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 	<key>CFBundleDisplayName</key>
-        <string>Soramma Scan</string>
+        <string>S&amp;A Doc Scan</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
