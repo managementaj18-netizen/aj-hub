@@ -1,0 +1,10 @@
+{
+  "appId": "com.soramma.scan",
+  "appName": "Soramma Scan",
+  "webDir": "www",
+  "backgroundColor": "#ffffff",
+  "ios": {
+    "contentInset": "automatic",
+    "limitsNavigationsToAppBoundDomains": false
+  }
+}

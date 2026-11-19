@@ -15,7 +15,7 @@ const DAY=86400000;
 const AUTO_DEFAULT="អរគុណ! យើងបានទទួលសាររបស់អ្នក ហើយនឹងឆ្លើយតបឆាប់ៗ។ / Thank you! We received your message and will reply soon.";
 const RESERVED=/^\s*(admin|administrator|owner|soramma|soramma scan|support)\s*$/i;
 let ready=false;
-const J=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{"content-type":"application/json","cache-control":"no-store"}});
+const J=(o,s=200)=>new Response(JSON.stringify(o),{status:s,headers:{"content-type":"application/json","cache-control":"no-store","access-control-allow-origin":"*"}});
 const hex=b=>Array.from(new Uint8Array(b)).map(x=>("0"+x.toString(16)).slice(-2)).join("");
 const rid=n=>{const a=new Uint8Array(n);crypto.getRandomValues(a);return hex(a)};
 async function hashCode(code,salt){const k=await crypto.subtle.importKey("raw",new TextEncoder().encode(code),"PBKDF2",false,["deriveBits"]);
@@ -50,6 +50,8 @@ async function authUser(db,req){const h=req.headers.get("authorization")||"";con
 
 export async function onRequest(ctx){
   const {request:req,env}=ctx,db=env.DB;
+  /* the iPhone app calls this API from inside the app (another origin); we use bearer tokens, not cookies, so allowing any origin is safe */
+  if(req.method==="OPTIONS")return new Response(null,{status:204,headers:{"access-control-allow-origin":"*","access-control-allow-methods":"GET,POST,PUT,DELETE,OPTIONS","access-control-allow-headers":"content-type,authorization","access-control-max-age":"86400"}});
   if(!db)return J({error:"no_db"},503);
   const url=new URL(req.url),parts=url.pathname.replace(/^\/api\/?/,"").split("/").filter(Boolean),m=req.method;
   try{

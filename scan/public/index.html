@@ -93,7 +93,7 @@ var TYPES={passport:{ic:"book",ratio:125/88},idcard:{ic:"card",ratio:85.6/54},do
 
 /* ---------- api ---------- */
 function api(method,path,body){var h={"content-type":"application/json"};if(TOK)h.authorization="Bearer "+TOK;
- return fetch("/api/"+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined}).then(function(r){return r.text().then(function(tx){var j;try{j=JSON.parse(tx)}catch(e){throw{code:"nojson",status:r.status}}if(!r.ok)throw{code:j.error||"err",status:r.status,j:j};return j})})}
+ return fetch((window.SORAMMA_API||"")+"/api/"+path,{method:method,headers:h,body:body?JSON.stringify(body):undefined}).then(function(r){return r.text().then(function(tx){var j;try{j=JSON.parse(tx)}catch(e){throw{code:"nojson",status:r.status}}if(!r.ok)throw{code:j.error||"err",status:r.status,j:j};return j})})}
 function sessionEnd(){TOK="";save(K_TOK,"");toast(t("sess_expired"));setTimeout(function(){location.reload()},900)}
 
 /* ---------- IndexedDB (pending uploads) ---------- */
