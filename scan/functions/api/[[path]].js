@@ -92,6 +92,15 @@ export async function onRequest(ctx){
 
     if(route==="logout"&&m==="POST"){const t=(req.headers.get("authorization")||"").slice(7);await db.prepare("DELETE FROM sessions WHERE token=?").bind(t).run();return J({ok:true})}
 
+    if(route==="account"&&m==="DELETE"){
+      if(owner)return J({error:"forbidden"},403);
+      await db.prepare("DELETE FROM scan_pages WHERE scan_id IN (SELECT id FROM scans WHERE user_id=?)").bind(me.id).run();
+      await db.prepare("DELETE FROM scans WHERE user_id=?").bind(me.id).run();
+      await db.prepare("DELETE FROM support WHERE user_id=?").bind(me.id).run();
+      await db.prepare("DELETE FROM sessions WHERE user_id=?").bind(me.id).run();
+      await db.prepare("DELETE FROM users WHERE id=?").bind(me.id).run();
+      return J({ok:true})}
+
     if(route==="sync"&&m==="GET"){
       const out={now:now(),user:pubUser(me),retention:num(await getSetting(db,"scanRetention",0)),...(await publicInfo(db))};
       if(owner){out.signupCode=await getSetting(db,"signupCode","");out.maxDevices=num(await getSetting(db,"maxDevices",3));out.supportAuto=await getSetting(db,"supportAuto",AUTO_DEFAULT)}
