@@ -5,6 +5,8 @@
 ## VERSION 1 = FREE (do this first)
 Plan: put the app on the App Store **free** first, to learn whether Apple approves it. A free app needs only the **Free Apps Agreement (already Active)**. You do NOT need the Paid Apps Agreement, ABN/GST proof, tax forms, subscription products or RevenueCat for version 1. The app already behaves as free: requests from the iPhone app (header `x-app: ios`) are never locked by the trial (the server ignores the trial for the app while the Cloudflare variable `IOS_FREE` is not `0`). The website keeps its own trial.
 
+**Free version = which features?** The iPhone build hides the Pro features: the **Report** tab and the business name/details/logo fields (flag `SA_HIDE_PRO`, set by `npm run web`; the website is unchanged). Free: scan ID / passport / document, import, library, plain PDF, auto-delete, support. Pro (planned for 1.1, with subscription): unlimited library (a free cap of about 20 scans is NOT built yet), Guest report, business logo/details on PDF. For 1.1 build with `HIDE_PRO=0 npm run sync`.
+
 Version 1 steps: Part 1 (build and test), then Part 2 steps **2 and 5 only** (create the app, privacy policy and review notes), then upload with Xcode, TestFlight with friends, then **Add for Review**. Use the free texts in `listing-apple.md` (no subscription wording).
 
 Later, to start charging: do Part 2 steps 1, 3, 4 and Part 3 (ABN/GST, Paid Apps Agreement, subscription products, RevenueCat), put the RevenueCat key in `iap-config.json`, set the Cloudflare variable `IOS_FREE` = `0`, and release version 1.1.
