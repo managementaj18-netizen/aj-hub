@@ -20,5 +20,9 @@ if(/PASTE/.test(rc))console.warn('WARNING: iap-config.json still has the placeho
 const cfg='<script>window.SORAMMA_API="https://scan.soramma.app";window.SA_RC_KEY='+JSON.stringify(rc)+';window.SA_HIDE_PRO='+JSON.stringify(HIDE_PRO)+';</script>\n<script src="iap.js"></script>\n';
 const i=html.indexOf('<script');if(i<0)throw new Error('no script tag');
 html=html.slice(0,i)+cfg+html.slice(i);
+// the app is called "S&A Doc Scan" on the App Store: show the same name inside the app (the website keeps "Soramma Scan")
+const APP_NAME='S&A Doc Scan';
+html=html.split('Soramma Scan').join(APP_NAME);
 fs.writeFileSync(path.join(out,'index.html'),html);
+['lib.js','i18n.js'].forEach(f=>{const q=path.join(out,f);if(fs.existsSync(q))fs.writeFileSync(q,fs.readFileSync(q,'utf8').split('Soramma Scan').join(APP_NAME))});
 console.log('www ready:',fs.readdirSync(out).join(', '));
