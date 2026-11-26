@@ -207,8 +207,8 @@ const nmKey=n=>String(n||'').toLowerCase().replace(/[^a-z0-9\u1780-\u17ff]/g,'')
 const sameName=(a,b)=>{ const x=nmKey(canon(a)), y=nmKey(canon(b)); return x.length>=3&&y.length>=3&&(x===y||x.includes(y)||y.includes(x)); };
 window.wkMine=()=>{ const box=$('wk_letters'), li=listById(LIST); if(!box||!li) return; const n=($('wk_name')||{}).value||'';
   document.querySelectorAll('.wk-wtag').forEach(e=>e.remove()); document.querySelectorAll('.wk-warnrow').forEach(e=>e.classList.remove('wk-warnrow'));
-  const W=activeWarns(li.id).filter(x=>sameName(n,x.staff)), P=activePraise(li.id).filter(x=>sameName(n,x.staff));
-  box.innerHTML=W.map(warnLetter).join('')+P.map(praiseLetter).join('');
+  const W=activeWarns(li.id).filter(x=>sameName(n,x.staff));
+  box.innerHTML=W.map(warnLetter).join('');
   W.forEach(x=>{ (x.badIds||[]).forEach(id=>{ const row=$('wr_'+id); if(!row) return; row.classList.add('wk-warnrow');
     const t=row.querySelector('.wk-t'); if(t) t.insertAdjacentHTML('beforeend',`<span class="wk-wtag">🔴 ព្រមានលើកទី ${KH_NUM(x.warn)} (${esc(fmtD(x.d))}) — ការងារនេះមិនត្រូវបានអនុវត្តពិតប្រាកដ។ សូមធ្វើឱ្យបានត្រឹមត្រូវ ហើយចុច ✔ តែពេលធ្វើរួចពិតប្រាកដ។</span>`); }); }); };
 window.wkSet=(id,v)=>{ const o=ANS[id]||(ANS[id]={v:'',n:''}); o.v=v; const row=$('wr_'+id); row.classList.remove('miss');
@@ -476,7 +476,7 @@ if($('bossApp')&&!$('bossApp').classList.contains('hide')){ injectBoss(); wkBoss
     box.querySelector('#ws_no').onclick=close; box.querySelector('#ws_go').onclick=go; }
   async function go(){ const b=box.querySelector('#ws_go'); b.disabled=true; b.textContent='⏳ កំពុងរក្សាទុក…';
     const errs=[]; try{ try{ await AC().load(bossKey()); }catch(e){ errs.push('load: '+e.message); } const w=wcfg(); const at=new Date().toISOString();
-      for(const x of W){ if(x.praise){ const a=(w.fb[x.staff]=Array.isArray(w.fb[x.staff])?w.fb[x.staff]:[]).filter(y=>!(y.ref===String(x.ref))); a.unshift({ref:String(x.ref),d:x.date,s:x.listName||'',m:x.comment||'',bad:[],at,praise:1,list:x.list||'',lists:x.lists||[]}); w.fb[x.staff]=a.slice(0,10); continue; } const marks={}; (x.badIds||[]).forEach(id=>{ marks[id]={m:'bad',...((x.badNotes||{})[id]?{n:x.badNotes[id]}:{})}; });
+      for(const x of W){ if(x.praise){ if(Array.isArray(w.fb[x.staff])) w.fb[x.staff]=w.fb[x.staff].filter(y=>!(y&&y.praise)); w.msg=Array.isArray(w.msg)?w.msg.filter(m=>!(m&&m.ref===String(x.ref))):[]; w.msg.unshift({id:'m'+Date.now().toString(36)+Math.random().toString(36).slice(2,5),at,to:x.to||{k:'s',v:'n'},who:x.staff,cat:'info',ref:String(x.ref),m:'🌟 លិខិតសរសើរ និងថ្លែងអំណរគុណ\n\n'+(x.comment||'')+'\n\n— គណៈគ្រប់គ្រង A&J Kampot Boutique'}); continue; } const marks={}; (x.badIds||[]).forEach(id=>{ marks[id]={m:'bad',...((x.badNotes||{})[id]?{n:x.badNotes[id]}:{})}; });
         const rec={type:'workreview',ref:String(x.ref),staff:x.staff,date:x.date,shift:'',shiftName:'',list:x.list||'',listName:x.listName||'',marks,comment:x.comment||'',warn:x.warn||1,at,ci:x.date,ciAt:at,device:'មេ'};
         let j=null; try{ j=await api('submit',{type:'workreview',data:rec,key:bossKey()}); if(j&&j.pdfToken) api('savePdf',{id:j.id,token:j.pdfToken,type:'workreview',pdf:''}).catch(()=>{}); if(j&&j.id&&x.replaceId) await api('delete',{key:bossKey(),id:String(x.replaceId)}).catch(e=>errs.push('delete: '+e.message)); }catch(e){ errs.push(x.staff+': '+e.message); }
         if(typeof REV==='object') REV[String(x.ref)]={...rec,_id:j&&j.id};
