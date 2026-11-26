@@ -88,6 +88,10 @@ const css=document.createElement('style'); css.textContent=`
 .wk-iss{display:inline-flex;gap:6px;align-items:center;border:1px solid var(--line);background:#fff;border-radius:99px;padding:6px 12px;font-size:14px;margin:0}
 .wk-fb{border-left:5px solid var(--warn);background:var(--warnbg);border-radius:12px;padding:10px 12px;margin:8px 0}
 .wk-fb.seen{opacity:.7}.wk-fb ul{margin:6px 0 0;padding-left:20px}
+.wk-warn{border:2px solid var(--bad);border-left-width:8px;background:var(--badbg);color:var(--ink,inherit);border-radius:12px;padding:12px 14px;margin:10px 0}
+.wk-warn h4{margin:0 0 6px;color:var(--bad);font-size:18px}.wk-warn ul{margin:6px 0;padding-left:20px}.wk-warn .sig{margin-top:8px;font-weight:700}
+.wk-row.wk-warnrow{border:2px solid var(--bad);background:var(--badbg)}.wk-wtag{display:block;margin-top:6px;color:var(--bad);font-weight:700;font-size:14px}
+.wk-n .w{position:absolute;top:4px;left:6px;font-size:16px}
 .wk-done{text-align:center;padding:26px 12px;border-radius:16px;margin:10px 0;font-size:22px;font-weight:700;background:var(--okbg);color:var(--ok)}
 td.wk-bad{color:var(--bad);font-weight:600}td.wk-ok{color:var(--ok)}td.wk-warn{color:var(--warn);font-weight:600}
 tr.wk-diff td{background:var(--warnbg)}
@@ -124,9 +128,10 @@ function drawMain(){
   const t=today(); const sent=new Set(logGet().filter(x=>x.date===t).map(x=>x.list));
   const G=groupsOf(), R=roomLists();
   if(!G.length&&!R.length){ box.innerHTML=`<div class="alert warn">មេមិនទាន់កំណត់បញ្ជីការងារទេ។</div>`; return; }
-  box.innerHTML=`<h2 style="margin-top:6px">${esc(DEFS.work.full)}</h2>${msgs}
+  const WARNS=activeWarns(), wl=new Set(WARNS.map(x=>x.list));
+  box.innerHTML=`<h2 style="margin-top:6px">${esc(DEFS.work.full)}</h2>${WARNS.map(warnLetter).join('')}${msgs}
   <div style="text-align:center;font-weight:600;margin-bottom:4px">👇 ជ្រើសវេន / ផ្នែករបស់អ្នក</div>
-  <div class="wk-names">${G.map((g,i)=>`<button class="wk-n ${g.lists.every(l=>sent.has(l.id))?'done':''}" onclick="wkGroup(${i})"><b>${unlockedG(g)?'':'🔒 '}${esc(g.k)}</b><small>${g.lists.length>1?g.lists.length+' បែប':g.lists[0].tasks.length+' ការងារ'}</small></button>`).join('')}</div>
+  <div class="wk-names">${G.map((g,i)=>`<button class="wk-n ${g.lists.every(l=>sent.has(l.id))?'done':''}" onclick="wkGroup(${i})">${g.lists.some(l=>wl.has(l.id))?'<span class="w">🔴</span>':''}<b>${unlockedG(g)?'':'🔒 '}${esc(g.k)}</b><small>${g.lists.length>1?g.lists.length+' បែប':g.lists[0].tasks.length+' ការងារ'}</small></button>`).join('')}</div>
   ${R.length?`<h3 style="margin:18px 0 8px">🚪 ឆែកបន្ទប់</h3><div class="wk-names">${R.map(l=>`<button class="wk-n" onclick="wkPickList('${esc(l.id)}')"><b>${esc(titleOf(l))}</b><small>${l.tasks.length} ចំណុច</small></button>`).join('')}</div>`:''}`;
 }
 const normCode=c=>String(c||'').toUpperCase().replace(/[\s\-_]/g,'').replace(/O/g,'0');
@@ -150,6 +155,24 @@ function drawVariants(box){
 window.wkBack=()=>{ const g=groupsOf().find(x=>x.k===GROUP); if(LIST&&g&&g.lists.length>1){ LIST=null; } else { LIST=null; GROUP=null; } ANS={}; drawMain(); window.scrollTo(0,0); };
 const unseenCount=n=>fbOf(n).filter(x=>String(x.at)>seenAt(n)).length;
 const fbList=n=>fbOf(n).slice(0,3).map(x=>`<div style="margin-top:6px"><b>${esc(dayName(x.d))} ${esc(fmtD(x.d))}${x.s?' · '+esc(x.s):''}</b>${x.m?`<div style="white-space:pre-wrap">${esc(x.m)}</div>`:''}${x.bad&&x.bad.length?`<div>❌ ការងារដែលមេឃើញថាមិនត្រឹមត្រូវ៖</div><ul>${x.bad.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}</div>`).join('');
+/* ---------- 🔴 warnings (boss review with a warning level) ----------
+   shown in red on the main page and inside the checklist they belong to, for WARN_DAYS days */
+const WARN_DAYS=30, KH_NUM=n=>String(n).replace(/\d/g,d=>'០១២៣៤៥៦៧៨៩'[d]);
+function activeWarns(listId){ const w=wcfg(), out=[], lim=pp(new Date(Date.now()-WARN_DAYS*864e5)).date;
+  Object.keys(w.fb||{}).forEach(n=>{ (Array.isArray(w.fb[n])?w.fb[n]:[]).forEach(x=>{ if(x&&x.warn>0&&String(x.d||'')>=lim&&(!listId||x.list===listId)) out.push({...x,staff:n}); }); });
+  return out.sort((a,b)=>String(b.at).localeCompare(String(a.at))); }
+function warnLetter(x){
+  const L=KH_NUM(x.warn||1);
+  return `<div class="wk-warn"><h4>🔴 លិខិតព្រមានលើកទី ${L}</h4>
+  <div><b>ជូនចំពោះ៖</b> ${esc(x.staff)} — ${esc(x.s||'')}</div>
+  <div style="margin-top:6px">ក្រុមហ៊ុនបានត្រួតពិនិត្យឃើញថា នៅ${esc(dayName(x.d))} ទី ${esc(fmtD(x.d))} លោកអ្នកបានចុច ✔ ធ្វើរួច លើការងារខាងក្រោម ប៉ុន្តែការងារនេះមិនត្រូវបានអនុវត្តពិតប្រាកដទេ៖</div>
+  ${x.bad&&x.bad.length?`<ul>${x.bad.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}
+  <div>យោងតាមលក្ខខណ្ឌនៃបញ្ជីការងារ ការចុចថាធ្វើរួច ខណៈដែលមិនបានធ្វើ ត្រូវចាត់ទុកថាជាការខុសវិន័យ។ ដូច្នេះ ក្រុមហ៊ុនសូមចេញលិខិតព្រមានលើកទី ${L} នេះ។</div>
+  <div style="margin-top:6px">សូមអនុវត្តការងារនីមួយៗឱ្យបានត្រឹមត្រូវ ហើយចុច ✔ តែការងារដែលបានធ្វើរួចពិតប្រាកដប៉ុណ្ណោះ។ ប្រសិនបើកើតឡើងម្តងទៀត ក្រុមហ៊ុននឹងអនុវត្តវិធានការបន្ថែម តាមវិធានវិន័យរបស់ក្រុមហ៊ុន។</div>
+  ${x.m?`<div style="margin-top:6px;white-space:pre-wrap"><b>សារបន្ថែមពីគណៈគ្រប់គ្រង៖</b> ${esc(x.m)}</div>`:''}
+  <div class="sig">គណៈគ្រប់គ្រង A&J Kampot Boutique</div></div>`; }
+function markWarnRows(listId){ activeWarns(listId).forEach(x=>{ (x.badIds||[]).forEach(id=>{ const row=$('wr_'+id); if(!row) return; row.classList.add('wk-warnrow');
+  const t=row.querySelector('.wk-t'); if(t) t.insertAdjacentHTML('beforeend',`<span class="wk-wtag">🔴 ព្រមានលើកទី ${KH_NUM(x.warn)} — ${esc(x.staff)} (${esc(fmtD(x.d))}) បានចុច ✔ តែមិនបានធ្វើ។ សូមធ្វើការងារនេះឱ្យបានពិតប្រាកដ។</span>`); }); }); }
 const markSeen=n=>{ const fb=fbOf(n); if(fb.length){ const s=jget(LS_SEEN,{}); s[n]=fb[0].at; jset(LS_SEEN,s); } };
 /* a task line starting with 🔧 is a maintenance task: shown inside a collapsible box below the shift's normal tasks */
 const isMnt=x=>/^\s*🔧/.test(String(x&&x.t||''));
@@ -157,7 +180,7 @@ const mntTxt=t=>String(t).replace(/^\s*🔧\s*(Maintenance\s*[:：]\s*)?/i,'');
 const wkRows=(A,p)=>A.map((x,i)=>`<div class="wk-row" id="wr_${x.id}"><div class="wk-t">${p}${i+1}. ${esc(p?mntTxt(x.t):x.t)}</div><div class="wk-b">${['y','n','na'].map(v=>`<button type="button" data-v="${v}" onclick="wkSet('${x.id}','${v}')">${ANS_LBL[v]}</button>`).join('')}</div><input class="wk-note hide" id="wn_${x.id}" placeholder="មូលហេតុ / ចំណាំ (ចាំបាច់)" oninput="wkNote('${x.id}',this.value)"></div>`).join('');
 function drawForm(box){
   const li=listById(LIST); if(!li){ LIST=null; return drawMain(); } const T=li.tasks;
-  box.innerHTML=`<h2 style="margin-top:6px">${esc(titleOf(li))}</h2>
+  box.innerHTML=`<h2 style="margin-top:6px">${esc(titleOf(li))}</h2>${activeWarns(li.id).map(warnLetter).join('')}
   <div class="fg"><label>ឈ្មោះរបស់អ្នក *<input id="wk_name" autocomplete="off" value="${esc(jget(LS_LAST,''))}" placeholder="វាយឈ្មោះពេញរបស់អ្នក"></label><label>ថ្ងៃទី<input type="date" id="wk_d" value="${esc(DATE)}"></label></div>
   ${li.room?`<div class="fg"><label>លេខបន្ទប់ *<input id="wk_room" inputmode="text" placeholder="ឧ. 201"></label><label>ស្ថានភាពបន្ទប់បន្ទាប់ពីឆែក *<select id="wk_rs"><option value="">— ជ្រើស —</option>${ROOM_STATUS.map(x=>`<option>${esc(x)}</option>`).join('')}</select></label></div><h3>⚠️ បញ្ហាដែលរកឃើញ (បើមាន)</h3><div class="row" style="gap:8px">${ROOM_ISSUES.map((x,i)=>`<label class="wk-iss"><input type="checkbox" value="${i}" style="width:auto;margin:0"> ${esc(x)}</label>`).join('')}</div><h3>បញ្ជីពិនិត្យបន្ទប់</h3>`:''}
   ${T.length?wkRows(T.filter(x=>!isMnt(x)),''):`<div class="alert warn">មេមិនទាន់កំណត់ការងារក្នុងបញ្ជីនេះទេ។</div>`}
@@ -168,7 +191,7 @@ function drawForm(box){
   <h3>✍️ ហត្ថលេខា / Signature *</h3><div class="sigwrap"><canvas id="wk_sig"></canvas><div class="ph">✍️ ស៊ីញ៉េនៅទីនេះ / Sign here</div></div>
   <div class="row" style="margin-top:8px"><button class="btn alt sm" onclick="sigClear('wk_sig')">លុប / Clear</button></div>
   <div class="nav2"><button class="btn alt" onclick="wkBack()">← ត្រលប់ក្រោយ</button><button class="btn big" id="wkSend" onclick="wkSubmit()">✅ ផ្ញើរបាយការណ៍</button></div>`;
-  initSig('wk_sig'); setTimeout(()=>sigResize('wk_sig'),30);
+  initSig('wk_sig'); setTimeout(()=>sigResize('wk_sig'),30); markWarnRows(li.id);
 }
 window.wkSet=(id,v)=>{ const o=ANS[id]||(ANS[id]={v:'',n:''}); o.v=v; const row=$('wr_'+id); row.classList.remove('miss');
   row.querySelectorAll('.wk-b button').forEach(b=>b.classList.toggle('on',b.dataset.v===v)); const i=$('wn_'+id); i.classList.toggle('hide',v!=='n'); if(v==='n') i.focus(); };
@@ -332,6 +355,7 @@ window.wkReview=i=>{
   $('dB').innerHTML=`<div style="max-width:640px"><details class="wk-noprint" style="margin-bottom:8px"><summary>✏️ កែឈ្មោះ / ថ្ងៃ / ម៉ោង របស់របាយការណ៍</summary><div class="fg"><label>ឈ្មោះបុគ្គលិក<input id="we_n" value="${esc(r.staff)}"></label><label>ថ្ងៃទី<input type="date" id="we_d" value="${esc(r.date)}"></label><label>ម៉ោង<input type="time" id="we_t" value="${esc(r.time||'')}"></label></div><button class="btn alt sm" id="we_s" onclick="wkEditSave()">💾 រក្សាទុកការកែ</button></details>${r.room?`<div class="alert ${r.roomStatus==='ត្រូវជួសជុល'?'bad':'ok'}">🚪 បន្ទប់ <b>${esc(r.room)}</b> · ${esc(r.roomStatus||'')}${r.issues&&r.issues.length?'<br>⚠️ '+r.issues.map(esc).join(' · '):''}</div>`:''}${r.leave?`<div class="muted">🕒 ម៉ោងចេញពីការងារ ${esc(r.leave)}</div>`:''}${r.notes?`<div class="alert warn">📝 ចំណាំបុគ្គលិក៖ ${esc(r.notes)}</div>`:''}${rows}
     ${r.sig?`<div class="muted" style="margin-top:8px">ហត្ថលេខាបុគ្គលិក</div><img src="${esc(r.sig)}" alt="" style="max-width:260px;background:#fff;border:1px solid var(--line);border-radius:10px">`:''}
     <label style="margin-top:12px">💬 សារទៅបុគ្គលិក (បុគ្គលិកឃើញពេលបើកទំព័រ)<textarea id="wk_cm" rows="3" placeholder="ឧ. សូមសម្អាតបន្ទប់ឲ្យស្អាតជាងនេះ">${esc((old&&old.comment)||'')}</textarea></label>
+    <label style="margin-top:8px">🔴 លិខិតព្រមាន (បង្ហាញពណ៌ក្រហមពេលបុគ្គលិកបើក checklist រយៈពេល ${WARN_DAYS} ថ្ងៃ)<select id="wk_warn">${[0,1,2,3].map(v=>`<option value="${v}" ${((old&&old.warn)||0)==v?'selected':''}>${v?'លើកទី '+KH_NUM(v):'— គ្មាន —'}</option>`).join('')}</select></label>
     <div class="row" style="flex-wrap:wrap;gap:8px"><button class="btn big" id="wkRvSave" onclick="wkRvSave()">💾 រក្សាទុកការត្រួតពិនិត្យ</button><button class="btn alt" onclick="wkRepPdf(this)">⬇ PDF</button><button class="btn alt" onclick="wkRepDrive(this)">☁️ Drive</button><button class="btn alt" onclick="wkRepPrint()">🖨 បោះពុម្ព</button><button class="btn alt" onclick="wkRepShare()">📤 ផ្ញើបន្ត</button><button class="btn alt" onclick="closeDlg()">បោះបង់</button></div><div id="wkRvMsg" class="muted"></div></div>`;
   tasksOf(r).forEach(t=>paintMark(t.id)); $('dlg').showModal();
 };
@@ -340,18 +364,20 @@ window.wkMark=(id,m)=>{ const o=RV.marks[id]||(RV.marks[id]={}); if(o.m===m) del
 window.wkMarkNote=(id,v)=>{ (RV.marks[id]||(RV.marks[id]={})).n=v; };
 window.wkRvSave=async()=>{
   const {r,old}=RV; const marks={}; tasksOf(r).forEach(t=>{ const m=RV.marks[t.id]; if(m&&m.m) marks[t.id]={m:m.m,...(m.m==='bad'&&m.n?{n:String(m.n).trim().slice(0,300)}:{})}; });
-  const comment=($('wk_cm').value||'').trim().slice(0,600);
+  const comment=($('wk_cm').value||'').trim().slice(0,600); const warn=Math.max(0,Math.min(3,parseInt(($('wk_warn')||{}).value,10)||0));
+  if(warn&&!Object.values(marks).some(m=>m.m==='bad')) return alert('ដើម្បីចេញលិខិតព្រមាន សូមចុច ✖ ខុស លើការងារដែលមិនបានធ្វើ យ៉ាងតិចមួយ');
   if(!Object.keys(marks).length&&!comment) return alert('សូមចុច ✔ ឬ ✖ យ៉ាងតិចមួយ ឬសរសេរសារ');
   const btn=$('wkRvSave'); btn.disabled=true; btn.textContent='⏳ កំពុងរក្សាទុក…';
   try{
     const bad=tasksOf(r).map((t,i)=>[t,i]).filter(([t])=>marks[t.id]&&marks[t.id].m==='bad').map(([t,i])=>'ចំណុចទី '+(i+1)+' : '+t.t+(marks[t.id].n?' — មេ៖ '+marks[t.id].n:''));
-    const rec={type:'workreview',ref:String(r._id),staff:r.staff,date:r.date,shift:r.shift||'',shiftName:r.shiftName||'',list:r.list||'',listName:lnOf(r),marks,comment,at:new Date().toISOString(),ci:r.date,ciAt:new Date().toISOString(),device:'មេ'};
+    const rec={type:'workreview',ref:String(r._id),staff:r.staff,date:r.date,shift:r.shift||'',shiftName:r.shiftName||'',list:r.list||'',listName:lnOf(r),marks,comment,warn,at:new Date().toISOString(),ci:r.date,ciAt:new Date().toISOString(),device:'មេ'};
     const j=await api('submit',{type:'workreview',data:rec,key:bossKey()}); if(j&&j.pdfToken) api('savePdf',{id:j.id,token:j.pdfToken,type:'workreview',pdf:''}).catch(()=>{});
     if(old&&old._id) api('delete',{key:bossKey(),id:String(old._id)}).catch(()=>{});
     REV[r._id]={...rec,_id:j.id};
     let kept=true;
-    if(comment||bad.length){ const w=wcfg(); const a=(w.fb[r.staff]=Array.isArray(w.fb[r.staff])?w.fb[r.staff]:[]).filter(x=>!(x.ref===String(r._id)));
-      a.unshift({ref:String(r._id),d:r.date,s:lnOf(r),m:comment,bad,at:rec.at}); w.fb[r.staff]=a.slice(0,10); kept=await pushCfg(); }
+    const badIds=tasksOf(r).filter(t=>marks[t.id]&&marks[t.id].m==='bad').map(t=>t.id);
+    if(comment||bad.length||warn){ const w=wcfg(); const a=(w.fb[r.staff]=Array.isArray(w.fb[r.staff])?w.fb[r.staff]:[]).filter(x=>!(x.ref===String(r._id)));
+      a.unshift({ref:String(r._id),d:r.date,s:lnOf(r),m:comment,bad,at:rec.at,...(warn?{warn,list:r.list||'',badIds}:{})}); w.fb[r.staff]=a.slice(0,10); kept=await pushCfg(); }
     closeDlg(); wkBoss(); if(!kept) alert(NOKEEP);
   }catch(e){ alert('រក្សាទុកមិនបាន៖ '+e.message); btn.disabled=false; btn.textContent='💾 រក្សាទុកការត្រួតពិនិត្យ'; }
 };
