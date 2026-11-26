@@ -491,14 +491,14 @@ if($('bossApp')&&!$('bossApp').classList.contains('hide')){ injectBoss(); wkBoss
   const info=c=>{ const w=(c&&c.work)||{}; const fb=w.fb||{}; const all=Object.values(fb).flat().filter(Boolean);
     return {lists:Array.isArray(w.lists)?w.lists.length:0, staff:Array.isArray(c&&c.staff)?c.staff.length:0, warn:all.filter(x=>x.warn).length, praise:all.filter(x=>x.praise).length, size:JSON.stringify(c||{}).length}; };
   const row=(t,i)=>`<div>${t}: បញ្ជីការងារ ${i.lists} · បុគ្គលិក ${i.staff} · 🔴 ${i.warn} · 🌟 ${i.praise} · ${i.size} តួ</div>`;
-  async function show(){ const loc=info(AC().get()); let srv='—'; try{ const j=await api('attCfg',{key:bossKey()}); srv=j&&j.cfg?row('ម៉ាស៊ីនមេ',info(j.cfg)):'គ្មាន'; }catch(e){ srv='⚠️ ម៉ាស៊ីនមេខូច៖ '+esc(e.message.slice(0,60)); }
+  async function show(){ const loc=info(window.ajCfg.get()); let srv='—'; try{ const j=await api('attCfg',{key:bossKey()}); srv=j&&j.cfg?row('ម៉ាស៊ីនមេ',info(j.cfg)):'គ្មាន'; }catch(e){ srv='⚠️ ម៉ាស៊ីនមេខូច៖ '+esc(e.message.slice(0,60)); }
     const okLocal=loc.lists>0;
     box.innerHTML=`<h2 style="margin-top:0">🔧 ជួសជុលការកំណត់ Hub</h2>${row('ទូរស័ព្ទនេះ',loc)}<div>${srv}</div>
     ${okLocal?`<p>ចុចប៊ូតុងខាងក្រោម ដើម្បីរក្សាទុកការកំណត់ពេញលេញពីទូរស័ព្ទនេះ ទៅម៉ាស៊ីនមេវិញ។</p>`:`<p style="color:var(--bad)">ទូរស័ព្ទនេះគ្មានការកំណត់ពេញលេញទេ — សូមកុំចុច ហើយប្រាប់ Claude។</p>`}
     <div class="nav2"><button class="btn alt" id="cf_no">បិទ</button>${okLocal?'<button class="btn big" id="cf_go">🔧 ជួសជុលឥឡូវ</button>':''}</div>`;
     box.querySelector('#cf_no').onclick=close; const g=box.querySelector('#cf_go'); if(g) g.onclick=go; }
   async function go(){ const b=box.querySelector('#cf_go'); b.disabled=true; b.textContent='⏳ កំពុងរក្សាទុក…';
-    try{ const c=AC().get(); await api('setAttCfg',{key:bossKey(),cfg:c}); const j=await api('attCfg',{key:bossKey()}); const i=info(j&&j.cfg);
+    try{ const c=window.ajCfg.get(); await api('setAttCfg',{key:bossKey(),cfg:c}); const j=await api('attCfg',{key:bossKey()}); const i=info(j&&j.cfg);
       box.innerHTML=`<h2 style="margin-top:0">${i.lists?'✅ ជួសជុលរួចរាល់':'⚠️ មិនទាន់រួច'}</h2>${row('ម៉ាស៊ីនមេ',i)}<div class="nav2"><button class="btn big" id="cf_ok">OK</button></div>`;
       box.querySelector('#cf_ok').onclick=close;
     }catch(e){ box.insertAdjacentHTML('beforeend',`<p style="color:var(--bad)">⚠️ ${esc(e.message)}</p>`); b.disabled=false; b.textContent='🔧 ជួសជុលឥឡូវ'; } }
