@@ -130,7 +130,7 @@ function drawMain(){
   const G=groupsOf(), R=roomLists();
   if(!G.length&&!R.length){ box.innerHTML=`<div class="alert warn">មេមិនទាន់កំណត់បញ្ជីការងារទេ។</div>`; return; }
   const WARNS=activeWarns(), wl=new Set(WARNS.flatMap(x=>[x.list,...(x.lists||[])]));
-  box.innerHTML=`<h2 style="margin-top:6px">${esc(DEFS.work.full)}</h2>${WARNS.map(warnLetter).join('')}${activePraise().map(praiseLetter).join('')}${msgs}
+  const PR=activePraise(); box.innerHTML=`<div class="muted" style="text-align:right;font-size:11px;margin-bottom:-14px">v25 · 🔴${WARNS.length} · 🌟${PR.length}</div><h2 style="margin-top:6px">${esc(DEFS.work.full)}</h2>${WARNS.map(warnLetter).join('')}${PR.map(praiseLetter).join('')}${msgs}
   <div style="text-align:center;font-weight:600;margin-bottom:4px">👇 ជ្រើសវេន / ផ្នែករបស់អ្នក</div>
   <div class="wk-names">${G.map((g,i)=>`<button class="wk-n ${g.lists.every(l=>sent.has(l.id))?'done':''}" onclick="wkGroup(${i})">${g.lists.some(l=>wl.has(l.id))?'<span class="w">🔴</span>':''}<b>${unlockedG(g)?'':'🔒 '}${esc(g.k)}</b><small>${g.lists.length>1?g.lists.length+' បែប':g.lists[0].tasks.length+' ការងារ'}</small></button>`).join('')}</div>
   ${R.length?`<h3 style="margin:18px 0 8px">🚪 ឆែកបន្ទប់</h3><div class="wk-names">${R.map(l=>`<button class="wk-n" onclick="wkPickList('${esc(l.id)}')"><b>${esc(titleOf(l))}</b><small>${l.tasks.length} ចំណុច</small></button>`).join('')}</div>`:''}`;
