@@ -303,7 +303,7 @@ window.wkCfgSave=async()=>{ const b=$('wkCfgSave'); b.disabled=true; b.textConte
   try{ const seen=new Set(); const out=[];
     EDL.forEach(l=>{ const name=String(l.name||'').trim().replace(/\s+/g,' ').slice(0,60); const lines=String(l.tasks||'').split(/\n+/).map(x=>x.trim().replace(/\s+/g,' ').slice(0,200)).filter(Boolean);
       if(!name&&!lines.length) return; const tasks=lines.map(t=>{ let id=tid(t); while(seen.has(id)) id+='x'; seen.add(id); return {id,t}; }); out.push({id:l.id,group:String(l.group||'').trim().replace(/\s+/g,' ').slice(0,60),name:name||'បញ្ជី '+(out.length+1),shifts:[],staff:[],tasks,...(l.room?{room:true}:{}),...(l.leave?{leave:true}:{}),...(l.code&&!l.room?{code:String(l.code).trim().toUpperCase().slice(0,30)}:{})}); });
-    w.lists=out; w.tasks={}; const kept=await pushCfg(); EDL=null; drawCfg(); const m=$('wkCfgMsg'); m.textContent=kept?'✅ រក្សាទុករួច — ថេប្លេតនឹងឃើញបញ្ជីថ្មីពេលបើកទំព័រ 📋':NOKEEP; m.style.color=kept?'var(--ok)':'var(--bad)'; wkBoss(); }
+    w.lists=out; w.tasks={}; let kept=false; try{ kept=await pushCfg(); }catch(e){ errs.push('cfg: '+e.message); } EDL=null; drawCfg(); const m=$('wkCfgMsg'); m.textContent=kept?'✅ រក្សាទុករួច — ថេប្លេតនឹងឃើញបញ្ជីថ្មីពេលបើកទំព័រ 📋':NOKEEP; m.style.color=kept?'var(--ok)':'var(--bad)'; wkBoss(); }
   catch(e){ alert(/Unknown action/.test(e.message)?'ម៉ាស៊ីនមេ (Apps Script) មិនទាន់ Deploy កំណែថ្មី':'រក្សាទុកមិនបាន៖ '+e.message); }
   finally{ const bb=$('wkCfgSave'); if(bb){ bb.disabled=false; bb.textContent='💾 រក្សាទុក'; } } };
 /* ---------- main report ---------- */
@@ -456,15 +456,15 @@ if($('bossApp')&&!$('bossApp').classList.contains('hide')){ injectBoss(); wkBoss
     <div class="nav2"><button class="btn alt" id="ws_no">បោះបង់</button><button class="btn big" id="ws_go">✅ ចេញលិខិតព្រមានទាំងអស់</button></div>`;
     box.querySelector('#ws_no').onclick=close; box.querySelector('#ws_go').onclick=go; }
   async function go(){ const b=box.querySelector('#ws_go'); b.disabled=true; b.textContent='⏳ កំពុងរក្សាទុក…';
-    try{ await AC().load(bossKey()); const w=wcfg(); const at=new Date().toISOString();
+    const errs=[]; try{ try{ await AC().load(bossKey()); }catch(e){ errs.push('load: '+e.message); } const w=wcfg(); const at=new Date().toISOString();
       for(const x of W){ const marks={}; (x.badIds||[]).forEach(id=>{ marks[id]={m:'bad',...((x.badNotes||{})[id]?{n:x.badNotes[id]}:{})}; });
         const rec={type:'workreview',ref:String(x.ref),staff:x.staff,date:x.date,shift:'',shiftName:'',list:x.list||'',listName:x.listName||'',marks,comment:x.comment||'',warn:x.warn||1,at,ci:x.date,ciAt:at,device:'មេ'};
-        const j=await api('submit',{type:'workreview',data:rec,key:bossKey()}); if(j&&j.pdfToken) api('savePdf',{id:j.id,token:j.pdfToken,type:'workreview',pdf:''}).catch(()=>{});
+        let j=null; try{ j=await api('submit',{type:'workreview',data:rec,key:bossKey()}); if(j&&j.pdfToken) api('savePdf',{id:j.id,token:j.pdfToken,type:'workreview',pdf:''}).catch(()=>{}); }catch(e){ errs.push(x.staff+': '+e.message); }
         if(typeof REV==='object') REV[String(x.ref)]={...rec,_id:j&&j.id};
         const a=(w.fb[x.staff]=Array.isArray(w.fb[x.staff])?w.fb[x.staff]:[]).filter(y=>!(y.ref===String(x.ref)));
         a.unshift({ref:String(x.ref),d:x.date,s:x.listName||'',m:x.comment||'',bad:x.bad||[],at,warn:x.warn||1,list:x.list||'',lists:x.lists||[],badIds:x.badIds||[]}); w.fb[x.staff]=a.slice(0,10); }
-      const kept=await pushCfg();
-      box.innerHTML=`<h2 style="margin-top:0">${kept?'✅ បានចេញលិខិតព្រមានរួចរាល់':'⚠️ បានរក្សាទុករបាយការណ៍ ប៉ុន្តែម៉ាស៊ីនមេមិនទាន់រក្សាសារ'}</h2><p>${W.map(x=>esc(x.staff)).join(' · ')}</p><p class="muted">បុគ្គលិកនឹងឃើញលិខិតពណ៌ក្រហម ពេលបើកទំព័រ 📋 ការងារប្រចាំថ្ងៃ (${WARN_DAYS} ថ្ងៃ)។</p><div class="nav2"><button class="btn big" id="ws_ok">OK</button></div>`;
+      let kept=false; try{ kept=await pushCfg(); }catch(e){ errs.push('cfg: '+e.message); }
+      box.innerHTML=`<h2 style="margin-top:0">${kept?'✅ បានចេញលិខិតព្រមានរួចរាល់':'⚠️ បានរក្សាទុករបាយការណ៍ ប៉ុន្តែម៉ាស៊ីនមេមិនទាន់រក្សាសារ'}</h2><p>${W.map(x=>esc(x.staff)).join(' · ')}</p>${errs.length?`<p class="muted" style="font-size:12px">ℹ️ ${errs.map(esc).join('<br>')}</p>`:''}<p class="muted">បុគ្គលិកនឹងឃើញលិខិតពណ៌ក្រហម ពេលបើកទំព័រ 📋 ការងារប្រចាំថ្ងៃ (${WARN_DAYS} ថ្ងៃ)។</p><div class="nav2"><button class="btn big" id="ws_ok">OK</button></div>`;
       box.querySelector('#ws_ok').onclick=()=>{ close(); if(typeof wkBoss==='function') try{ wkBoss(); }catch(e){} };
     }catch(e){ alert('មិនបាន៖ '+e.message); b.disabled=false; b.textContent='✅ ចេញលិខិតព្រមានទាំងអស់'; } }
   const wait=()=>{ if(bossKey()){ document.body.appendChild(ov); preview(); } else setTimeout(wait,1500); };
