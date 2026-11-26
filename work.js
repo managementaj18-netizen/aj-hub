@@ -165,11 +165,10 @@ function warnLetter(x){
   const L=KH_NUM(x.warn||1);
   return `<div class="wk-warn"><h4>🔴 លិខិតព្រមានលើកទី ${L}</h4>
   <div><b>ជូនចំពោះ៖</b> ${esc(x.staff)} — ${esc(x.s||'')}</div>
-  <div style="margin-top:6px">ក្រុមហ៊ុនបានត្រួតពិនិត្យឃើញថា នៅ${esc(dayName(x.d))} ទី ${esc(fmtD(x.d))} លោកអ្នកបានចុច ✔ ធ្វើរួច លើការងារខាងក្រោម ប៉ុន្តែការងារនេះមិនត្រូវបានអនុវត្តពិតប្រាកដទេ៖</div>
-  ${x.bad&&x.bad.length?`<ul>${x.bad.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>`:''}
-  <div>យោងតាមលក្ខខណ្ឌនៃបញ្ជីការងារ ការចុចថាធ្វើរួច ខណៈដែលមិនបានធ្វើ ត្រូវចាត់ទុកថាជាការខុសវិន័យ។ ដូច្នេះ ក្រុមហ៊ុនសូមចេញលិខិតព្រមានលើកទី ${L} នេះ។</div>
+  ${x.bad&&x.bad.length?`<div style="margin-top:6px">ក្រុមហ៊ុនបានត្រួតពិនិត្យឃើញថា នៅ${esc(dayName(x.d))} ទី ${esc(fmtD(x.d))} លោកអ្នកបានចុច ✔ ធ្វើរួច លើការងារខាងក្រោម ប៉ុន្តែការងារនេះមិនត្រូវបានអនុវត្តពិតប្រាកដទេ៖</div><ul>${x.bad.map(b=>`<li>${esc(b)}</li>`).join('')}</ul>
+  <div>យោងតាមលក្ខខណ្ឌនៃបញ្ជីការងារ ការចុចថាធ្វើរួច ខណៈដែលមិនបានធ្វើ ត្រូវចាត់ទុកថាជាការខុសវិន័យ។ ដូច្នេះ ក្រុមហ៊ុនសូមចេញលិខិតព្រមានលើកទី ${L} នេះ។</div>`:`<div style="margin-top:6px">ក្រុមហ៊ុនបានត្រួតពិនិត្យការងារនៅ${esc(dayName(x.d))} ទី ${esc(fmtD(x.d))} ហើយឃើញថាលោកអ្នកមិនបានអនុវត្តការងារតាមគោលការណ៍របស់ក្រុមហ៊ុន ដូចមានរៀបរាប់ខាងក្រោម។ ដូច្នេះ ក្រុមហ៊ុនសូមចេញលិខិតព្រមានលើកទី ${L} នេះ។</div>`}
   <div style="margin-top:6px">សូមអនុវត្តការងារនីមួយៗឱ្យបានត្រឹមត្រូវ ហើយចុច ✔ តែការងារដែលបានធ្វើរួចពិតប្រាកដប៉ុណ្ណោះ។ ប្រសិនបើកើតឡើងម្តងទៀត ក្រុមហ៊ុននឹងអនុវត្តវិធានការបន្ថែម តាមវិធានវិន័យរបស់ក្រុមហ៊ុន។</div>
-  ${x.m?`<div style="margin-top:6px;white-space:pre-wrap"><b>សារបន្ថែមពីគណៈគ្រប់គ្រង៖</b> ${esc(x.m)}</div>`:''}
+  ${x.m?`<div style="margin-top:6px;white-space:pre-wrap"><b>${x.bad&&x.bad.length?'សារបន្ថែមពីគណៈគ្រប់គ្រង៖':'មូលហេតុ និងវិធានការ៖'}</b> ${esc(x.m)}</div>`:''}
   <div class="sig">គណៈគ្រប់គ្រង A&J Kampot Boutique</div></div>`; }
 function markWarnRows(listId){ activeWarns(listId).forEach(x=>{ (x.badIds||[]).forEach(id=>{ const row=$('wr_'+id); if(!row) return; row.classList.add('wk-warnrow');
   const t=row.querySelector('.wk-t'); if(t) t.insertAdjacentHTML('beforeend',`<span class="wk-wtag">🔴 ព្រមានលើកទី ${KH_NUM(x.warn)} — ${esc(x.staff)} (${esc(fmtD(x.d))}) បានចុច ✔ តែមិនបានធ្វើ។ សូមធ្វើការងារនេះឱ្យបានពិតប្រាកដ។</span>`); }); }); }
@@ -365,7 +364,7 @@ window.wkMarkNote=(id,v)=>{ (RV.marks[id]||(RV.marks[id]={})).n=v; };
 window.wkRvSave=async()=>{
   const {r,old}=RV; const marks={}; tasksOf(r).forEach(t=>{ const m=RV.marks[t.id]; if(m&&m.m) marks[t.id]={m:m.m,...(m.m==='bad'&&m.n?{n:String(m.n).trim().slice(0,300)}:{})}; });
   const comment=($('wk_cm').value||'').trim().slice(0,600); const warn=Math.max(0,Math.min(3,parseInt(($('wk_warn')||{}).value,10)||0));
-  if(warn&&!Object.values(marks).some(m=>m.m==='bad')) return alert('ដើម្បីចេញលិខិតព្រមាន សូមចុច ✖ ខុស លើការងារដែលមិនបានធ្វើ យ៉ាងតិចមួយ');
+  if(warn&&!Object.values(marks).some(m=>m.m==='bad')&&!comment) return alert('ដើម្បីចេញលិខិតព្រមាន សូមចុច ✖ ខុស លើការងារដែលមិនបានធ្វើ ឬសរសេរមូលហេតុក្នុងប្រអប់សារ');
   if(!Object.keys(marks).length&&!comment) return alert('សូមចុច ✔ ឬ ✖ យ៉ាងតិចមួយ ឬសរសេរសារ');
   const btn=$('wkRvSave'); btn.disabled=true; btn.textContent='⏳ កំពុងរក្សាទុក…';
   try{
