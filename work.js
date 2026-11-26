@@ -465,9 +465,11 @@ if(location.hash==='#f/work') route(); else homeLink();
 if($('bossApp')&&!$('bossApp').classList.contains('hide')){ injectBoss(); wkBoss(); }
 /* ---------- 🔴 one-tap batch of warning letters: open the hub with ?warnset=<base64url JSON> while logged in as boss ----------
    JSON: [{staff,date,ref,list,listName,lists:[...],badIds:[...],badNotes:{id:note},bad:[text],comment,warn}] */
-(function warnSet(){
-  const q=new URLSearchParams(location.search).get('warnset'); if(!q) return;
-  let W; try{ W=JSON.parse(decodeURIComponent(escape(atob(q.replace(/-/g,'+').replace(/_/g,'/'))))); }catch(e){ return; } if(!Array.isArray(W)||!W.length) return;
+(async function warnSet(){
+  const sp=new URLSearchParams(location.search), q=sp.get('warnset'), z=sp.get('wz'); if(!q&&!z) return;
+  let W; try{ if(z){ const bin=atob(z.replace(/-/g,'+').replace(/_/g,'/')), u8=Uint8Array.from(bin,c=>c.charCodeAt(0));
+      W=JSON.parse(await new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).text()); }
+    else W=JSON.parse(decodeURIComponent(escape(atob(q.replace(/-/g,'+').replace(/_/g,'/'))))); }catch(e){ alert('Link ខូច៖ '+e.message); return; } if(!Array.isArray(W)||!W.length) return;
   const ov=document.createElement('div'); ov.style.cssText='position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.55);overflow:auto;padding:16px';
   const box=document.createElement('div'); box.style.cssText='max-width:680px;margin:0 auto;background:var(--bg,#fff);border-radius:16px;padding:16px'; ov.appendChild(box);
   const close=()=>{ ov.remove(); history.replaceState(null,'',location.pathname+location.hash); };
